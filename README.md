@@ -15,7 +15,7 @@ Planned Phases:
     2) Create the memory model and MMU
     3) Create the support hardware model
 
-Tergets for initial emulation:
+Targets for initial emulation:
     1) Tandy/RadioShack TRS-80 Color Computer 2 (with 6847T1 VDG and 6883 SAM
 	   aka: 74ls783, or 74ls785 (enhanced for different DRAM chip refresh
 	   timing.) with 4K, 16K, 32K or 64K* of RAM.
