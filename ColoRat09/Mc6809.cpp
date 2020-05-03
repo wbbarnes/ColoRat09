@@ -24,7 +24,7 @@ Mc6809::Mc6809()
 	cyclesLeft = 0;
 	mmu = nullptr;
 
-	opcode = nullptr;
+	exec = nullptr;
 
 	haltTriggered = true;
 	resetTriggered = true;
@@ -138,12 +138,12 @@ void Mc6809::TriggerFIRQ()
 //*****************************************************************************
 
 //*****************************************************************************
-//	External_Reset()
+//	HardwareRESET()
 //*****************************************************************************
 //	Resets the CPU to a functional state and starts executing code at a given
 // address via a jump vector table @ $FFFE (MSB) and $FFFF (LSB)
 // Highest priority after /halt signal.
-// Also an undocumented Opcode: $3E
+// Also an undocumented exec: $3E
 //
 // Address Mode: Inherent?
 // Condition Codes Affected: 
@@ -152,7 +152,7 @@ void Mc6809::TriggerFIRQ()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
-uint8_t Mc6809::External_Reset()
+uint8_t Mc6809::HardwareRESET()
 {
 	// COLD reset - cycle count is not really known.
 	reg_CC = CC::I | CC::F;
@@ -169,7 +169,7 @@ uint8_t Mc6809::External_Reset()
 
 
 //*****************************************************************************
-//	External_Nmi()
+//	NMI()
 //*****************************************************************************
 //	Non-Maskable Interrupt Request. Stores registers and starts executing code
 // at a given address via a jump vector table @ $FFFC (MSB) and $FFFD (LSB)
@@ -182,7 +182,7 @@ uint8_t Mc6809::External_Reset()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
-uint8_t Mc6809::External_Nmi()
+uint8_t Mc6809::NMI()
 {
 	switch (cyclesLeft)
 	{
@@ -247,7 +247,7 @@ uint8_t Mc6809::External_Nmi()
 
 
 //*****************************************************************************
-//	External_Firq()
+//	FIRQ()
 //*****************************************************************************
 //	Maskable Fast Interrupt Request. Stores registers  CC and PC and starts
 // executing code at a given address via a jump vector  table @ $FFF6 (MSB) and
@@ -261,7 +261,7 @@ uint8_t Mc6809::External_Nmi()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
-uint8_t Mc6809::External_Firq()
+uint8_t Mc6809::FIRQ()
 {
 	switch (cyclesLeft)
 	{
@@ -301,7 +301,7 @@ uint8_t Mc6809::External_Firq()
 
 
 //*****************************************************************************
-//	External_Irq()
+//	IRQ()
 //*****************************************************************************
 //	Maskable Interrupt Request. Stores registers and starts executing code at a
 // given address via a jump vector table @ $FFF8 (MSB) and $FFF9 (LSB)
@@ -314,7 +314,7 @@ uint8_t Mc6809::External_Firq()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
-uint8_t Mc6809::External_Irq()
+uint8_t Mc6809::IRQ()
 {
 	switch (cyclesLeft)
 	{
@@ -400,7 +400,7 @@ uint8_t Mc6809::External_Irq()
 // Condition Codes Affected:
 //	E, I, F
 //
-// NOTE: This is also a software instruction: 3F
+// NOTES: This is also a software instruction: 3F
 // 19 clocks, 1 bytes, inherent address mode
 //*****************************************************************************
 // Returns:
@@ -410,7 +410,7 @@ uint8_t Mc6809::SWI()
 {
 	switch (cyclesLeft)
 	{
-	case 19:	// R Opcode fetch			(PC) - already done by the time we get here
+	case 19:	// R Opcode Fetch			(PC) - already done by the time we get here
 		break;
 	case 18:	// R don't care				(PC+1)
 		++reg_PC;
@@ -481,7 +481,7 @@ uint8_t Mc6809::SWI()
 // Condition Codes Affected:
 //	E
 //
-// NOTE: This is also a software instruction: 103F
+// NOTES: This is also a software instruction: 103F
 // 20 clocks, 2 bytes, inherent address mode
 //*****************************************************************************
 // Returns:
@@ -492,9 +492,9 @@ uint8_t Mc6809::SWI2()
 	
 	switch (cyclesLeft)
 	{
-	case 20:	// R Opcode fetch			(PC)	- already done by the time we get here
+	case 20:	// R Opcode Fetch			(PC)	- already done by the time we get here
 		break;
-	case 19:	// R Opcode fetch 2nd byte	(PC+1)	- already done by the time we get here
+	case 19:	// R Opcode Fetch 2nd byte	(PC+1)	- already done by the time we get here
 		++reg_PC;
 		break;
 	case 18:	// R don't care				(PC+2)
@@ -565,7 +565,7 @@ uint8_t Mc6809::SWI2()
 // Condition Codes Affected:
 //	E
 //
-// NOTE: This is also a software instruction: 113F
+// NOTES: This is also a software instruction: 113F
 // 20 clocks, 2 bytes, inherent address mode
 //*****************************************************************************
 // Returns:
@@ -573,13 +573,11 @@ uint8_t Mc6809::SWI2()
 //*****************************************************************************
 uint8_t Mc6809::SWI3()
 {
-
-	
 	switch (cyclesLeft)
 	{
-	case 20:	// R Opcode fetch			(PC)	- already done by the time we get here
+	case 20:	// R Opcode Fetch			(PC)	- already done by the time we get here
 		break;
-	case 19:	// R Opcode fetch 2nd byte	(PC+1)	- already done by the time we get here
+	case 19:	// R Opcode Fetch 2nd byte	(PC+1)	- already done by the time we get here
 		++reg_PC;
 		break;
 	case 18:	// R don't care				(PC+2)
@@ -651,7 +649,7 @@ uint8_t Mc6809::SWI3()
 // Condition Codes Affected:
 //	CC
 //
-// NOTE: an UNDOCUMENTED Opcode: $3E
+// NOTES: an UNDOCUMENTED exec: $3E
 //
 //*****************************************************************************
 // Returns:
@@ -661,7 +659,7 @@ uint8_t Mc6809::Reset()
 {
 	switch (cyclesLeft)
 	{
-	case 19:	// R Opcode fetch			(PC) - already done by the time we get here
+	case 19:	// R Opcode Fetch			(PC) - already done by the time we get here
 		break;
 	case 18:	// R don't care				(PC+1)
 		++reg_PC;
@@ -865,7 +863,7 @@ uint8_t Mc6809::ABX()
 {
 	switch (cyclesLeft)
 	{
-	case 3:		// R opcode fetch			(PC)
+	case 3:		// R Opcode Fetch			(PC)
 		break;
 	case 2:		// R don't care				(PC+1)
 		++reg_PC;
@@ -896,7 +894,7 @@ uint8_t Mc6809::ASLA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
@@ -929,7 +927,7 @@ uint8_t Mc6809::ASLB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
@@ -962,7 +960,7 @@ uint8_t Mc6809::ASRA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = reg_A & 0x80;
@@ -995,7 +993,7 @@ uint8_t Mc6809::ASRB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = reg_B & 0x80;
@@ -1028,11 +1026,11 @@ uint8_t Mc6809::CLRA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_A = 0;
-		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::N)) | CC::Z | CC::C;
+		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
 		++reg_PC;
 		break;
 	}
@@ -1058,11 +1056,11 @@ uint8_t Mc6809::CLRB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_B = 0;
-		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::N)) | CC::Z | CC::C;
+		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
 		++reg_PC;
 		break;
 	}
@@ -1088,7 +1086,7 @@ uint8_t Mc6809::COMA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_A = ~reg_A;
@@ -1121,7 +1119,7 @@ uint8_t Mc6809::COMB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_B = ~reg_B;
@@ -1154,7 +1152,7 @@ uint8_t Mc6809::CWAI()
 {
 	switch (cyclesLeft)
 	{
-	case 20:		// R opcode fetch			(PC)		//1
+	case 20:		// R Opcode Fetch			(PC)		//1
 		--cyclesLeft;
 		break;
 	case 19:		// R CC Mask				(PC+1)		//2
@@ -1270,7 +1268,7 @@ uint8_t Mc6809::DAA()
 	uint8_t carry;
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		++reg_PC;
 		break;
 	case 1:
@@ -1312,7 +1310,7 @@ uint8_t Mc6809::DECA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		if (reg_A == 0)
@@ -1352,7 +1350,7 @@ uint8_t Mc6809::DECB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		if (reg_B == 0)
@@ -1390,7 +1388,7 @@ uint8_t Mc6809::EXG()
 {
 	switch (cyclesLeft)
 	{
-	case 8:		// R opcode fetch			(PC)
+	case 8:		// R Opcode Fetch			(PC)
 		break;
 	case 7:
 		data_lo = Read(reg_PC);
@@ -1399,7 +1397,7 @@ uint8_t Mc6809::EXG()
 	case 6:
 		data_hi = data_lo & 0xf0;
 		data_lo = data_lo & 0x0f;
-		if (data_lo & 0x80 != data_hi & 0x80)
+		if ((data_lo & 0x80) != (data_hi & 0x80))
 			;	// error in match-up
 		break;
 
@@ -1495,7 +1493,7 @@ uint8_t Mc6809::EXG()
 			{
 			case REG::Y:
 				reg_X = reg_Y;
-				reg_CC = word;
+				reg_Y = word;
 				break;
 			case REG::U:
 				reg_X = reg_U;
@@ -1679,7 +1677,7 @@ uint8_t Mc6809::INCA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		if (reg_A == 0xff)
@@ -1718,7 +1716,7 @@ uint8_t Mc6809::INCB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		if (reg_B == 0xff)
@@ -1759,7 +1757,7 @@ uint8_t Mc6809::LSLA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
@@ -1793,7 +1791,7 @@ uint8_t Mc6809::LSLB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
@@ -1825,7 +1823,7 @@ uint8_t Mc6809::LSRA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		++reg_PC;
 		break;
 	case 1:
@@ -1858,7 +1856,7 @@ uint8_t Mc6809::LSRB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = reg_B & 0x80;
@@ -1890,7 +1888,7 @@ uint8_t Mc6809::MUL()
 {
 	switch (cyclesLeft)
 	{
-	case 11:		// R opcode fetch			(PC)
+	case 11:		// R Opcode Fetch			(PC)
 		break;
 	case 10:
 		data = reg_A * reg_B;
@@ -1939,7 +1937,7 @@ uint8_t Mc6809::NEGA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
@@ -1972,7 +1970,7 @@ uint8_t Mc6809::NEGB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
@@ -2003,7 +2001,7 @@ uint8_t Mc6809::NOP()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		++reg_PC;
@@ -2030,7 +2028,7 @@ uint8_t Mc6809::ROLA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
@@ -2063,7 +2061,7 @@ uint8_t Mc6809::ROLB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
@@ -2096,7 +2094,7 @@ uint8_t Mc6809::RORA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
@@ -2128,7 +2126,7 @@ uint8_t Mc6809::RORB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		data_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
@@ -2199,7 +2197,7 @@ uint8_t Mc6809::SYNC()
 {
 	switch (cyclesLeft)
 	{
-	case 3:		// R opcode fetch			(PC)
+	case 3:		// R Opcode Fetch			(PC)
 		--cyclesLeft;
 		break;
 	case 2:
@@ -2229,7 +2227,7 @@ uint8_t Mc6809::TFR()
 {
 	switch (cyclesLeft)
 	{
-	case 6:		// R opcode fetch			(PC)
+	case 6:		// R Opcode Fetch			(PC)
 		break;
 	case 5:
 		data_lo = Read(reg_PC);
@@ -2238,7 +2236,7 @@ uint8_t Mc6809::TFR()
 	case 4:
 		data_hi = (data_lo & 0xf0) >> 4;
 		data_lo = data_lo & 0x0f;
-		if (data_lo & 0x80 != data_hi & 0x80)
+		if ((data_lo & 0x80) != (data_hi & 0x80))
 			;	// error in match-up
 		break;
 	case 3:
@@ -2454,7 +2452,7 @@ uint8_t Mc6809::TSTA()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
@@ -2484,7 +2482,7 @@ uint8_t Mc6809::TSTB()
 {
 	switch (cyclesLeft)
 	{
-	case 2:		// R opcode fetch			(PC)
+	case 2:		// R Opcode Fetch			(PC)
 		break;
 	case 1:
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
@@ -2514,11 +2512,11 @@ uint8_t Mc6809::TSTB()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
-uint8_t Mc6809::LEAS(int s)
+uint8_t Mc6809::LEAS()
 {
 	switch (cyclesLeft)
 	{
-	case 3:		// R opcode fetch			(PC)
+	case 3:		// R Opcode Fetch			(PC)
 		break;
 	case 2:		// R Post Byte				(PC+1)
 		break;
@@ -2547,7 +2545,7 @@ uint8_t Mc6809::LEAU()
 {
 	switch (cyclesLeft)
 	{
-	case 3:		// R opcode fetch			(PC)
+	case 3:		// R Opcode Fetch			(PC)
 		break;
 	case 2:		// R Post Byte				(PC+1)
 		break;
@@ -2577,7 +2575,7 @@ uint8_t Mc6809::LEAX()
 {
 	switch (cyclesLeft)
 	{
-	case 3:		// R opcode fetch			(PC)
+	case 3:		// R Opcode Fetch			(PC)
 		break;
 	case 2:		// R Post Byte				(PC+1)
 		break;
@@ -2608,7 +2606,7 @@ uint8_t Mc6809::LEAY()
 {
 	switch (cyclesLeft)
 	{
-	case 3:		// R opcode fetch			(PC)
+	case 3:		// R Opcode Fetch			(PC)
 		break;
 	case 2:		// R Post Byte				(PC+1)
 		break;
@@ -2644,23 +2642,25 @@ uint8_t Mc6809::BCC()
 {
 	switch (cyclesLeft)
 	{
-	case 4:		// R opcode fetch			{PC)
+	case 3:		// R Opcode Fetch			{PC)
 		break;
-	case 3:		// R Offset					(PC+1)
+	case 2:		// R Offset					(PC+1)
 		data_lo = Read(reg_PC++);
-		break;
-	case 2:		//R Don't care				($ffff)
-		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
-			cyclesLeft = 1;
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
 		break;
 	case 1:		//R Don't care				($ffff)
-		reg_PC +=
+		if ((reg_CC & CC::C) == 0)		// if carry is clear, we don't branch
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBCC()
+//*****************************************************************************
 // Long Branch on Carry Clear
 //
 // Memory Addressing Mode: Memory immediate
@@ -2674,26 +2674,32 @@ uint8_t Mc6809::LBCC()
 {
 	switch (cyclesLeft)
 	{
-	case 6:		// R opcode fetch			{PC)
+	case 6:		// R Opcode Fetch			{PC)
 		break;
-	case 5:		// R opcode byte 2			(PC+1)
-		data_hi = Read(reg_PC++);
+	case 5:		// R exec byte 2			(PC+1)
 		break;
 	case 4:		// R Offset	hi				(PC+2)
+		data_hi = Read(reg_PC++);
 		break;
 	case 3:		//R Offset	lo				(PC+3)
+		data_lo = Read(reg_PC++);
 		break;
 	case 2:		//R Don't care				($ffff)
 		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
-			cyclesLeft = 1;
+			--cyclesLeft;
 		break;
 	case 1:		//R Don't care				($ffff)
+		reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BCS()
+//*****************************************************************************
 // Branch on Carry Set          (C set)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2707,13 +2713,25 @@ uint8_t Mc6809::BCS()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBCS()
+//*****************************************************************************
 // Long Branch on Carry Set
 //
 // Memory Addressing Mode: Memory immediate
@@ -2727,13 +2745,32 @@ uint8_t Mc6809::LBCS()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 6:		// R Opcode Fetch			{PC)
 		break;
+	case 5:		// R exec byte 2			(PC+1)
+		break;
+	case 4:		// R Offset	hi				(PC+2)
+		data_hi = Read(reg_PC++);
+		break;
+	case 3:		//R Offset	lo				(PC+3)
+		data_lo = Read(reg_PC++);
+		break;
+	case 2:		//R Don't care				($ffff)
+		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
+			cyclesLeft = 1;
+		break;
+	case 1:		//R Don't care				($ffff)
+		break;
+		reg_PC += data;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BEQ()
+//*****************************************************************************
 // Branch if Equal              (Z set)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2747,13 +2784,25 @@ uint8_t Mc6809::BEQ()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if ((reg_CC & CC::Z) == CC::Z)		// if carry is clear, we don't branch
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBEQ()
+//*****************************************************************************
 // Long Branch if Equal
 //
 // Memory Addressing Mode: Memory immediate
@@ -2767,13 +2816,32 @@ uint8_t Mc6809::LBEQ()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 6:		// R Opcode Fetch			{PC)
+		break;
+	case 5:		// R exec byte 2			(PC+1)
+		break;
+	case 4:		// R Offset	hi				(PC+2)
+		data_hi = Read(reg_PC++);
+		break;
+	case 3:		//R Offset	lo				(PC+3)
+		data_lo = Read(reg_PC++);
+		break;
+	case 2:		//R Don't care				($ffff)
+		if ((reg_CC & CC::Z) == CC::Z)
+			cyclesLeft = 1;
+		break;
+	case 1:		//R Don't care				($ffff)
+		reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BGE()
+//*****************************************************************************
 // Branch if Greater or Equal (signed)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2787,13 +2855,25 @@ uint8_t Mc6809::BGE()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if (((reg_CC & CC::C) == CC::C) == ((reg_CC & CC::V) == CC::V ))
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBGE()
+//*****************************************************************************
 // Long Branch  if Greater or Equal
 //
 // Memory Addressing Mode: Memory immediate
@@ -2814,6 +2894,10 @@ uint8_t Mc6809::LBGE()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BGT()
+//*****************************************************************************
 // Branch if Greater than (signed)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2827,13 +2911,25 @@ uint8_t Mc6809::BGT()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if ((((reg_CC & CC::N) == CC::N) == ((reg_CC & CC::V) == CC::V)) && ((reg_CC &CC::Z) == 0))
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBGT()
+//*****************************************************************************
 // Long Branch if Greater than
 //
 // Memory Addressing Mode: Memory immediate
@@ -2854,6 +2950,10 @@ uint8_t Mc6809::LBGT()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BHI()
+//*****************************************************************************
 // Branch if Higher (unsigned)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2867,13 +2967,25 @@ uint8_t Mc6809::BHI()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if (((reg_CC & CC::C) == CC::C) && ((reg_CC & CC::Z) == CC::Z))
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBHI()
+//*****************************************************************************
 // Long Branch if Higher
 //
 // Memory Addressing Mode: Memory immediate
@@ -2894,6 +3006,10 @@ uint8_t Mc6809::LBHI()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BHS()
+//*****************************************************************************
 // Branch if higher or same (unsigned)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2903,17 +3019,29 @@ uint8_t Mc6809::LBHI()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
-uint8_t Mc6809::BHS()
+uint8_t Mc6809::BHS()			// BCC()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if ((reg_CC & CC::C) == 0)		// if carry is clear, we don't branch
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBHS()
+//*****************************************************************************
 // Long Branch if higher or same
 //
 // Memory Addressing Mode: Memory immediate
@@ -2934,6 +3062,10 @@ uint8_t Mc6809::LBHS()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BLE()
+//*****************************************************************************
 // Branch if Less than or Equal (signed)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2954,6 +3086,10 @@ uint8_t Mc6809::BLE()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBLE()
+//*****************************************************************************
 // Long Branch if Less than or Equal (signed)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2974,6 +3110,10 @@ uint8_t Mc6809::LBLE()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BLO()
+//*****************************************************************************
 // Branch if Lower (unsigned)
 //
 // Memory Addressing Mode: Memory immediate
@@ -2994,6 +3134,10 @@ uint8_t Mc6809::BLO()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBLO()
+//*****************************************************************************
 // Long Branch if Lower (unsigned)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3014,6 +3158,10 @@ uint8_t Mc6809::LBLO()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BLS()
+//*****************************************************************************
 // Branch if Lower or Same (unsigned)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3034,6 +3182,10 @@ uint8_t Mc6809::BLS()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBLS()
+//*****************************************************************************
 // Long Branch if Lower or Same (unsigned)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3054,6 +3206,10 @@ uint8_t Mc6809::LBLS()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BLT()
+//*****************************************************************************
 // Branch if less than (signed)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3074,6 +3230,10 @@ uint8_t Mc6809::BLT()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBLT()
+//*****************************************************************************
 // Long Branch if less than (signed)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3094,8 +3254,11 @@ uint8_t Mc6809::LBLT()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BMI()
+//*****************************************************************************
 // Branch on Minus 
-uint8_t Mc6809::BMI()
 //
 // Memory Addressing Mode: Memory immediate
 // Address Mode: Relative
@@ -3104,6 +3267,7 @@ uint8_t Mc6809::BMI()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
+uint8_t Mc6809::BMI()
 {
 	switch (cyclesLeft)
 	{
@@ -3114,6 +3278,10 @@ uint8_t Mc6809::BMI()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBMI()
+//*****************************************************************************
 // Long Branch on Minus
 //
 // Memory Addressing Mode: Memory immediate
@@ -3134,6 +3302,10 @@ uint8_t Mc6809::LBMI()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BNE()
+//*****************************************************************************
 // Branch if Not Equal (Z = 0)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3147,13 +3319,25 @@ uint8_t Mc6809::BNE()
 {
 	switch (cyclesLeft)
 	{
-	case 1:
+	case 3:		// R Opcode Fetch			{PC)
+		break;
+	case 2:		// R Offset					(PC+1)
+		data_lo = Read(reg_PC++);
+		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
+		break;
+	case 1:		//R Don't care				($ffff)
+		if ((reg_CC & CC::Z) == 0)		// if carry is clear, we don't branch
+			reg_PC += data;
 		break;
 	}
 	--cyclesLeft;
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBNE()
+//*****************************************************************************
 // Long Branch if Not Equal (Z = 0)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3174,8 +3358,11 @@ uint8_t Mc6809::LBNE()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BPL()
+//*****************************************************************************
 // Branch if Plus/Positive
-uint8_t Mc6809::BPL()
 //
 // Memory Addressing Mode: Memory immediate
 // Address Mode: Relative
@@ -3184,6 +3371,7 @@ uint8_t Mc6809::BPL()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
+uint8_t Mc6809::BPL()
 {
 	switch (cyclesLeft)
 	{
@@ -3194,6 +3382,10 @@ uint8_t Mc6809::BPL()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBPL()
+//*****************************************************************************
 // Long Branch if Plus/Positive
 //
 // Memory Addressing Mode: Memory immediate
@@ -3214,6 +3406,10 @@ uint8_t Mc6809::LBPL()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BRA()
+//*****************************************************************************
 // Branch Always
 //
 // Memory Addressing Mode: Memory immediate
@@ -3234,6 +3430,10 @@ uint8_t Mc6809::BRA()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBRA()
+//*****************************************************************************
 // Long Branch Always
 //
 // Memory Addressing Mode: Memory immediate
@@ -3254,6 +3454,10 @@ uint8_t Mc6809::LBRA()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BRN()
+//*****************************************************************************
 // Branch Never (another NOP)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3274,6 +3478,10 @@ uint8_t Mc6809::BRN()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBRN()
+//*****************************************************************************
 // Long Branch Never (another NOP)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3294,6 +3502,10 @@ uint8_t Mc6809::LBRN()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BSR()
+//*****************************************************************************
 // Branch to Subroutine
 //
 // Memory Addressing Mode: Memory immediate
@@ -3314,6 +3526,10 @@ uint8_t Mc6809::BSR()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBSR()
+//*****************************************************************************
 // Long Branch to Subroutine
 //
 // Memory Addressing Mode: Memory immediate
@@ -3334,7 +3550,19 @@ uint8_t Mc6809::LBSR()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BVC()
+//*****************************************************************************
 // Branch if no overflow (V is clear)
+//
+// Memory Addressing Mode: Memory immediate
+// Address Mode: Long Relative
+// Condition Codes Affected: None
+//*****************************************************************************
+// Returns:
+//	uint8_t - clock cycles remaining
+//*****************************************************************************
 uint8_t Mc6809::BVC()
 {
 	switch (cyclesLeft)
@@ -3346,6 +3574,10 @@ uint8_t Mc6809::BVC()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBVC()
+//*****************************************************************************
 // Long Branch if no overflow (V is clear)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3366,6 +3598,10 @@ uint8_t Mc6809::LBVC()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// BVS()
+//*****************************************************************************
 // Branch on overflow (V is set)
 //
 // Memory Addressing Mode: Memory immediate
@@ -3386,8 +3622,11 @@ uint8_t Mc6809::BVS()
 	return(cyclesLeft);
 }
 
+
+//*****************************************************************************
+// LBVS()
+//*****************************************************************************
 // Long Branch on overflow (V is set)
-uint8_t Mc6809::LBVS()
 //
 // Memory Addressing Mode: Memory immediate
 // Address Mode: Long Relative
@@ -3396,6 +3635,7 @@ uint8_t Mc6809::LBVS()
 // Returns:
 //	uint8_t - clock cycles remaining
 //*****************************************************************************
+uint8_t Mc6809::LBVS()
 {
 	switch (cyclesLeft)
 	{
@@ -3446,7 +3686,7 @@ uint8_t Mc6809::JSR()
 
 
 //*********************************************************************************************************************************
-// opcode - multi addressing modes
+// exec - multi addressing modes
 //*****************************************************************************
 
 
@@ -4163,21 +4403,21 @@ uint8_t Mc6809::XXX()
 //*****************************************************************************
 void Mc6809::Clock()
 {
-	// does this need to be moved above the rest? or at least the test to execute "opcode"?
-	if (opcode != nullptr)
-		if (opcode() == 0)
-			opcode == nullptr; 
+	// does this need to be moved above the rest? or at least the test to execute "exec"?
+	if (exec != nullptr)
+		if (exec() == 0)
+			exec = nullptr; 
 	else
 		if (haltTriggered)
 		return;
 	else if (resetTriggered)			// external RESET was triggered
-		External_Reset();
+		HardwareRESET();
 	else if (nmiTriggered)			// external NMI was triggered
-		External_Nmi();
+		NMI();
 	else if (firqTriggered)			// external FIRQ was triggered
-		External_Firq();
+		FIRQ();
 	else if (irqTriggered)			// external IRQ was triggered
-		External_Irq();
+		IRQ();
 	else 
 		Fetch(reg_PC);
 }
@@ -4190,7 +4430,7 @@ void Mc6809::Clock()
 //*****************************************************************************
 // Params:
 //	const uint16_t address	- the memory location (from MMU, SAM, or other)
-//							  to read from. NOTE: 6809 is 64K only: $0000-$FFFF
+//							  to read from. NOTES: 6809 is 64K only: $0000-$FFFF
 //*****************************************************************************
 // Returns:
 //	uint8_t

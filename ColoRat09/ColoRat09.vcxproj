@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Clock.cpp" />
     <ClCompile Include="CPU.cpp" />
+    <ClCompile Include="Cpu6809.cpp" />
     <ClCompile Include="DiscreetMMU.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mc6809.cpp" />
@@ -31,6 +32,7 @@
     <ClInclude Include="Clock.h" />
     <ClInclude Include="ConfigData.h" />
     <ClInclude Include="CPU.h" />
+    <ClInclude Include="Cpu6809.h" />
     <ClInclude Include="DiscreetMMU.h" />
     <ClInclude Include="Mc6809.h" />
     <ClInclude Include="MMU.h" />

@@ -19,11 +19,16 @@
 * File Summary:
 *
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Notes:
+* NOTES:
 *	Datasheets report opecodes,memory used, and cycles. This can be used for
-* emulation by opcode functionality in one cycle padded by the cycle time
+* emulation by exec functionality in one cycle padded by the cycle time
 * required, OR, as here, instruction-data balanced with clock cycles, for
 * real-time emulated CPU timing.
+*
+*   All unions that split a WORD (uint16_t) into BYTES (uint8_t) MUST observe
+* the following: On the emulated 6809: in memory, a 16-bit word is stored with
+* the MSB first... On the hardware the emulator runs on (Intel) this is
+* reversed. Motorola chips must observe THIS order as it appears here,
 ******************************************************************************/
 #pragma once
 
@@ -34,7 +39,7 @@
 class Mc6809 : public CPU
 {
 private:
-    uint8_t (*opcode)();
+    uint8_t (*exec)();
 
 	uint8_t cyclesLeft;
     bool resetTriggered;
@@ -48,27 +53,27 @@ private:
 	{
 		struct
 		{
-			uint8_t instruction_hi;
 			uint8_t instruction_lo;
-		};
+            uint8_t instruction_hi;
+        };
 		uint16_t instruction;
 	};
 	union
 	{
 		struct
 		{
-			uint8_t  data_hi;
 			uint8_t  data_lo;
-		};
+            uint8_t  data_hi;
+        };
 		uint16_t data;
 	};
     union
     {
-        uint8_t word;   // byte and word may be the same
+        uint16_t word;   // byte and word may be the same
         uint8_t byte;
     };
 
-	enum CC : int8_t
+	enum CC : uint8_t
 	{
 		C = (1 << 0),	// Carry       - indicates that a carry or a borrow was generated from bit seven
 		V = (1 << 1),	// Overflow    - indicates previous operation caused a signed arithmetic overflow.
@@ -80,7 +85,7 @@ private:
 		E = (1 << 7),	// Entire Flag - indicates All registers are stored on the stack during an interrupt ( 1 for all, 0 for CC and PC only)
 	};
 
-    enum REG : int8_t
+    enum REG : uint8_t
     {
         D = 0X00,
         X,
@@ -98,22 +103,22 @@ private:
 
     struct Vector
     {
-        uint8_t RESET_hi = 0xfffe;
-        uint8_t RESET_lo = 0xffff;
-        uint8_t NMI_hi = 0xfffc;
-        uint8_t NMI_lo = 0xfffd;
-        uint8_t SWI_hi = 0xfffa;
-        uint8_t SWI_lo = 0xfffb;
-        uint8_t IRQ_hi = 0xfff8;
-        uint8_t IRQ_lo = 0xfff9;
-        uint8_t FIRQ_hi = 0xfff6;
-        uint8_t FIRQ_lo = 0xfff7;
-        uint8_t SWI2_hi = 0xfff4;
-        uint8_t SWI2_lo = 0xfff5;
-        uint8_t SWI3_hi = 0xfff2;
-        uint8_t SWI3_lo = 0xfff3;
-        uint8_t Reserved_hi = 0xfff0;
-        uint8_t Reserved_lo = 0xfff1;
+        uint16_t RESET_hi = 0xfffe;
+        uint16_t RESET_lo = 0xffff;
+        uint16_t NMI_hi = 0xfffc;
+        uint16_t NMI_lo = 0xfffd;
+        uint16_t SWI_hi = 0xfffa;
+        uint16_t SWI_lo = 0xfffb;
+        uint16_t IRQ_hi = 0xfff8;
+        uint16_t IRQ_lo = 0xfff9;
+        uint16_t FIRQ_hi = 0xfff6;
+        uint16_t FIRQ_lo = 0xfff7;
+        uint16_t SWI2_hi = 0xfff4;
+        uint16_t SWI2_lo = 0xfff5;
+        uint16_t SWI3_hi = 0xfff2;
+        uint16_t SWI3_lo = 0xfff3;
+        uint16_t Reserved_hi = 0xfff0;
+        uint16_t Reserved_lo = 0xfff1;
     } InterruptVector;
 
 protected:
@@ -122,8 +127,8 @@ protected:
 	{
 		struct
 		{
-			uint8_t reg_A;      // 0x08
-			uint8_t reg_B;      // 0x09
+            uint8_t reg_B;      // 0x09     // lo byte of D
+            uint8_t reg_A;      // 0x08     // hi byte of D
 		};
 		uint16_t reg_D;         // 0x00
 	};
@@ -133,8 +138,8 @@ protected:
     {
         struct
         {
-            uint8_t reg_X_hi;
             uint8_t reg_X_lo;
+            uint8_t reg_X_hi;
         };
         uint16_t reg_X;             // 0x01
     };
@@ -142,8 +147,8 @@ protected:
     {
         struct
         {
-            uint8_t reg_Y_hi;
             uint8_t reg_Y_lo;
+            uint8_t reg_Y_hi;
         };
         uint16_t reg_Y;             // 0x02
     };
@@ -151,8 +156,8 @@ protected:
     {
         struct
         {
-            uint8_t reg_S_hi;
             uint8_t reg_S_lo;
+            uint8_t reg_S_hi;
         };
         uint16_t reg_S;             // 0x04
     };
@@ -160,8 +165,8 @@ protected:
     {
         struct
         {
-            uint8_t reg_U_hi;
             uint8_t reg_U_lo;
+            uint8_t reg_U_hi;
         };
         uint16_t reg_U;             // 0x03
     };
@@ -169,8 +174,8 @@ protected:
     {
         struct
         {
-            uint8_t reg_PC_hi;
             uint8_t reg_PC_lo;
+            uint8_t reg_PC_hi;
         };
         uint16_t reg_PC;            // 0x05
     };
@@ -182,10 +187,10 @@ protected:
     uint8_t Reset();        // undocumented soft reset interrupt
 
     // Externally triggered interrupts
-    uint8_t External_Reset();
-    uint8_t External_Nmi();
-    uint8_t External_Irq();
-    uint8_t External_Firq();
+    uint8_t HardwareRESET();
+    uint8_t NMI();
+    uint8_t IRQ();
+    uint8_t FIRQ();
 
 	// opcodes - interrupt
     uint8_t SWI();          // trigger Software Interrupt
@@ -274,7 +279,7 @@ protected:
     uint8_t TSTA();         // Test Register A, adjust N and Z Condition codes based on content
     uint8_t TSTB();         // Test Register B, adjust N and Z Condition codes based on content
 
-    // opcode - multi addressing modes
+    // exec - multi addressing modes
 
     uint8_t LEAS();         // Load Effective Address S (increment or decrement S by a given value. Use  an index register to load another)
     uint8_t LEAU();         // Load Effective Address U (increment or decrement U by a given value. Use  an index register to load another)
@@ -339,7 +344,7 @@ protected:
     uint8_t SUBD();         // Subtract from register D     (A << 8 | B)
     uint8_t TST();          // Test memory location, adjust N and Z Condition codes based on content
 
-    // Handle undefined opcodes (this would be the 6309 bad opcode / div zero trap)
+    // Handle undefined opcodes (this would be the 6309 bad exec / div zero trap)
     uint8_t XXX();          // INVALID INSTRUCTION! on 6309, this would trigger the invalid operation exception vector
 
 public:
