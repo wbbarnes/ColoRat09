@@ -32,16 +32,19 @@
 ******************************************************************************/
 #pragma once
 
+#include <string>
+#include <vector>
 #include "CPU.h"
 #include "MMU.h"
-
 
 class Cpu6809 //: public CPU
 {
 private:
 	MMU* bus;
 
-	uint8_t (Cpu6809::* exec)();
+	uint8_t (Cpu6809::*exec)();		// Mnemonic function from interpreted Opcode
+	uint8_t (Cpu6809::*mode)(uint8_t adjClock);		// addressing mode of the oppcode			- XXX *** XXX
+
 
 	union
 	{
@@ -87,17 +90,6 @@ private:
 		CC,
 		DP
 	};
-
-	enum AddressMode
-	{
-		INHERENT,
-		IMMEDIATE,
-		DIRECT,
-		EXTENDED,
-		INDEXED,
-		RELATIVE,
-	};
-	AddressMode Mode;
 
 protected:
 	uint8_t clocksLeft;
@@ -171,6 +163,21 @@ protected:
 		};
 		uint16_t reg_scratch;		// scratch register				(INTERNAL CPU USE ONLY)
 	};
+
+	struct OPCODE
+	{
+		uint8_t codeInstruction;
+		std::string name;
+		uint8_t (Cpu6809::*opcode)();		// Mnemonic function from interpreted Opcode
+		uint8_t (Cpu6809::*addrMode)(uint8_t adjClock);	// addressing mode of the oppcode			- XXX *** XXX
+	};
+
+	std::vector<Cpu6809::OPCODE> OpCodeP1;
+	std::vector<OPCODE> OpCodeP2;
+	std::vector<OPCODE> OpCodeP3;
+
+	std::vector<OPCODE> table;
+
 public:
 	bool resetTriggered;
 	bool nmiTriggered;
@@ -179,6 +186,14 @@ public:
 	bool haltTriggered;
 
 private:
+	uint8_t INH(uint8_t adjClock);
+	uint8_t IMM(uint8_t adjClock);
+	uint8_t DIR(uint8_t adjClock);
+	uint8_t EXT(uint8_t adjClock);
+	uint8_t IDX(uint8_t adjClock);
+	uint8_t REL(uint8_t adjClock);
+	uint8_t Ill(uint8_t adjClock);
+
 protected:
 	uint8_t Fetch(const uint16_t address);
 
@@ -188,7 +203,7 @@ protected:
 	uint8_t FIRQ();			// hardware FIRQ
 	uint8_t IRQ();			// hardware IRQ
 
-	uint8_t SoftRESET();	// Reset				- undocumented exec: $3E
+	uint8_t SoftRESET();	// Reset				- undocumented opcode: $3E
 	uint8_t SWI();			// Software Interrupt
 	uint8_t SWI2();			// Software Interrupt 2
 	uint8_t SWI3();			// Software Interrupt 3
@@ -211,38 +226,38 @@ protected:
 	uint8_t LBRN();			// Long Branch Never
 	uint8_t NOP();          // No Op, No Operation, Does nothing, affects PC only.
 
-    uint8_t BCC();          // Branch on Carry Clear        (C clear)							***	To-Do, Needs Work
-    uint8_t LBCC();         // Long Branch on Carry Clear										***	To-Do, Needs Work
-    uint8_t BCS();          // Branch on Carry Set          (C set)								***	To-Do, Needs Work
-    uint8_t LBCS();         // Long Branch on Carry Set											***	To-Do, Needs Work
-    uint8_t BEQ();          // Branch if Equal              (Z set)								***	To-Do, Needs Work
-    uint8_t LBEQ();         // Long Branch if Equal												***	To-Do, Needs Work
-    uint8_t BGE();          // Branch if Greater or Equal (signed)								***	To-Do, Needs Work
-    uint8_t LBGE();         // Long Branch  if Greater or Equal									***	To-Do, Needs Work
-    uint8_t BGT();          // Branch if Greater than (signed)									***	To-Do, Needs Work
-    uint8_t LBGT();         // Long Branch if Greater than										***	To-Do, Needs Work
-    uint8_t BHI();          // Branch if Higher (unsigned)										***	To-Do, Needs Work
-    uint8_t LBHI();         // Long Branch if Higher											***	To-Do, Needs Work
-    uint8_t BHS();          // Branch if higher or same (unsigned)								***	To-Do, Needs Work
-    uint8_t LBHS();         // Long Branch if higher or same									***	To-Do, Needs Work
-    uint8_t BLE();          // Branch if Less than or Equal (signed)							***	To-Do, Needs Work
-    uint8_t LBLE();         // Long Branch if Less than or Equal (signed)						***	To-Do, Needs Work
-    uint8_t BLO();          // Branch if Lower (unsigned)										***	To-Do, Needs Work
-    uint8_t LBLO();         // Long Branch if Lower (unsigned)									***	To-Do, Needs Work
-    uint8_t BLS();          // Branch if Lower or Same (unsigned)								***	To-Do, Needs Work
-    uint8_t LBLS();         // Long Branch if Lower or Same (unsigned)							***	To-Do, Needs Work
-    uint8_t BLT();          // Branch if less than (signed)										***	To-Do, Needs Work
-    uint8_t LBLT();         // Long Branch if less than (signed)								***	To-Do, Needs Work
-    uint8_t BMI();          // Branch on Minus													***	To-Do, Needs Work
-    uint8_t LBMI();         // Long Branch on Minus												***	To-Do, Needs Work
-    uint8_t BNE();          // Branch if Not Equal (Z = 0)										***	To-Do, Needs Work
-    uint8_t LBNE();         // Long Branch if Not Equal (Z = 0)									***	To-Do, Needs Work
-    uint8_t BPL();          // Branch if Plus/Positive											***	To-Do, Needs Work
-    uint8_t LBPL();         // Long Branch if Plus/Positive										***	To-Do, Needs Work
-    uint8_t BVC();          // Branch if no overflow (V is clear)								***	To-Do, Needs Work
-    uint8_t LBVC();         // Long Branch if no overflow (V is clear)							***	To-Do, Needs Work
-    uint8_t BVS();          // Branch on overflow (V is set)									***	To-Do, Needs Work
-    uint8_t LBVS();         // Long Branch on overflow (V is set)								***	To-Do, Needs Work
+    uint8_t BCC();          // Branch on Carry Clear
+    uint8_t LBCC();         // Long Branch on Carry Clear
+    uint8_t BCS();          // Branch on Carry Set
+    uint8_t LBCS();         // Long Branch on Carry Set
+    uint8_t BEQ();          // Branch if Equal
+    uint8_t LBEQ();         // Long Branch if Equal
+    uint8_t BGE();          // Branch if Greater or Equal (signed)
+    uint8_t LBGE();         // Long Branch  if Greater or Equal
+    uint8_t BGT();          // Branch if Greater than (signed)
+    uint8_t LBGT();         // Long Branch if Greater than
+    uint8_t BHI();          // Branch if Higher (unsigned)
+    uint8_t LBHI();         // Long Branch if Higher
+    uint8_t BHS();          // Branch if higher or same (unsigned)
+    uint8_t LBHS();         // Long Branch if higher or same
+    uint8_t BLE();          // Branch if Less than or Equal (signed)
+    uint8_t LBLE();         // Long Branch if Less than or Equal (signed)
+    uint8_t BLO();          // Branch if Lower (unsigned)
+    uint8_t LBLO();         // Long Branch if Lower (unsigned)
+    uint8_t BLS();          // Branch if Lower or Same (unsigned)
+    uint8_t LBLS();         // Long Branch if Lower or Same (unsigned)
+    uint8_t BLT();          // Branch if less than (signed)
+    uint8_t LBLT();         // Long Branch if less than (signed)
+    uint8_t BMI();          // Branch on Minus
+    uint8_t LBMI();         // Long Branch on Minus
+    uint8_t BNE();          // Branch if Not Equal
+    uint8_t LBNE();         // Long Branch if Not Equal (Z = 0)
+    uint8_t BPL();          // Branch if Plus/Positive
+    uint8_t LBPL();         // Long Branch if Plus/Positive
+    uint8_t BVC();          // Branch if no overflow
+    uint8_t LBVC();         // Long Branch if no overflow (V is clear)
+    uint8_t BVS();          // Branch on overflow
+    uint8_t LBVS();         // Long Branch on overflow (V is set)
 
 							// (increment or decrement S by a given value. Use  an index register to load another)
 	uint8_t LEAS();         // Load Effective Address S											***	To-Do, Needs Work
@@ -251,38 +266,38 @@ protected:
 	uint8_t LEAY();         // Load Effective Address Y											***	To-Do, Needs Work
 							// (increment or decrement S by a given value. Use  an index register to load another)
 
-	uint8_t ABX();          // Add B to X														***	To-Do, Needs Work
-	uint8_t ASLA();         // Arithmetic Shift Left A (Logical Shift Left fill LSb with 0)		***	To-Do, Needs Work
-	uint8_t ASLB();         // Arithmetic Shift Left B (Logical Shift Left fill LSb with 0)		***	To-Do, Needs Work
-	uint8_t ASRA();         // Arithmetic Shift Right A (fill MSb with Sign bit)				***	To-Do, Needs Work
-	uint8_t ASRB();         // Arithmetic Shift Right B (fill MSb with Sign bit)				***	To-Do, Needs Work
+	uint8_t ABX();          // Add B to X
+	uint8_t ASLA();         // Arithmetic Shift Left A (Logical Shift Left fill LSb with 0)
+	uint8_t ASLB();         // Arithmetic Shift Left B (Logical Shift Left fill LSb with 0)
+	uint8_t ASRA();         // Arithmetic Shift Right A (fill MSb with Sign bit)
+	uint8_t ASRB();         // Arithmetic Shift Right B (fill MSb with Sign bit)
 	uint8_t BITA();         // Bit Test on A with a specific value (by AND)						***	To-Do, Needs Work
 	uint8_t BITB();         // Bit Test on B with a specific value (by AND)						***	To-Do, Needs Work
-	uint8_t CLRA();         // Clear register A													***	To-Do, Needs Work
-	uint8_t CLRB();         // Clear register B													***	To-Do, Needs Work
-	uint8_t COMA();         // 1's Compliment A (i.e. XOR A with 0x00 or 0xFF)					***	To-Do, Needs Work
-	uint8_t COMB();         // 1's Compliment B (i.e. XOR B with 0x00 or 0xFF) 					***	To-Do, Needs Work
+	uint8_t CLRA();         // Clear register A
+	uint8_t CLRB();         // Clear register B
+	uint8_t COMA();         // 1's Compliment A
+	uint8_t COMB();         // 1's Compliment B
 	uint8_t DAA();          // Decimal Adjust A													***	To-Do, Needs Work
-	uint8_t DECA();         // Decrement A (A -= A      A = A - 1   --A     A--)				***	To-Do, Needs Work
-	uint8_t DECB();         // Decrement B (B -= B      B = B - 1   --B     B--) 				***	To-Do, Needs Work
+	uint8_t DECA();         // Decrement A
+	uint8_t DECB();         // Decrement B
 	uint8_t EXG();          // Exchange any two registers of the same size						***	To-Do, Needs Work
-	uint8_t INCA();         // Increment A (A += A      A = A + 1   ++A     A++)				***	To-Do, Needs Work
-	uint8_t INCB();         // Increment B (B += B      B = B + 1   ++B     B++)				***	To-Do, Needs Work
-	uint8_t LSLA();         // Logical Shift Left register A (LSb is loaded with 0)				***	To-Do, Needs Work
-	uint8_t LSLB();         // Logical Shift Left register B (LSb is loaded with 0)				***	To-Do, Needs Work
-	uint8_t LSRA();         // Logical Shift Right register A (MSb is loaded with 0)			***	To-Do, Needs Work
-	uint8_t LSRB();         // Logical Shift Right register B (MSb is loaded with 0)			***	To-Do, Needs Work
+	uint8_t INCA();         // Increment A
+	uint8_t INCB();         // Increment B
+	uint8_t LSLA();         // Logical Shift Left register A (LSb is loaded with 0)
+	uint8_t LSLB();         // Logical Shift Left register B (LSb is loaded with 0)
+	uint8_t LSRA();         // Logical Shift Right register A (MSb is loaded with 0)
+	uint8_t LSRB();         // Logical Shift Right register B (MSb is loaded with 0)
 	uint8_t MUL();          // Multiply register A * register B, store in register D			***	To-Do, Needs Work
-	uint8_t NEGA();         // 2's Complement (negate) register A								***	To-Do, Needs Work
-	uint8_t NEGB();         // 2's Complement (negate) register B								***	To-Do, Needs Work
-	uint8_t ROLA();         // Rotate Register A Left one bit through the Carry flag (9 bit rotate)					***	To-Do, Needs Work
-	uint8_t ROLB();         // Rotate Register B Left one bit through the Carry flag (9 bit rotate)					***	To-Do, Needs Work
-	uint8_t RORA();         // Rotate Register A Right one bit through the Carry flag (9 bit rotate)				***	To-Do, Needs Work
-	uint8_t RORB();         // Rotate Register B Right one bit through the Carry flag (9 bit rotate)				***	To-Do, Needs Work
-	uint8_t SEX();          // Sign Extend B into A ( A = Sign bit set on B ? 0xFF : 0x00)		***	To-Do, Needs Work
+	uint8_t NEGA();         // 2's Complement (negate) register A
+	uint8_t NEGB();         // 2's Complement (negate) register B
+	uint8_t ROLA();         // Rotate Register A Left one bit through the Carry flag (9 bit rotate)
+	uint8_t ROLB();         // Rotate Register B Left one bit through the Carry flag (9 bit rotate)
+	uint8_t RORA();         // Rotate Register A Right one bit through the Carry flag (9 bit rotate)
+	uint8_t RORB();         // Rotate Register B Right one bit through the Carry flag (9 bit rotate)
+	uint8_t SEX();          // Sign Extend B into A ( A = Sign bit set on B ? 0xFF : 0x00)
 	uint8_t TFR();          // Transfer/Copy one register to another (of the same size)			***	To-Do, Needs Work
-	uint8_t TSTA();         // Test Register A, adjust N and Z Condition codes based on content	***	To-Do, Needs Work
-	uint8_t TSTB();         // Test Register B, adjust N and Z Condition codes based on content	***	To-Do, Needs Work
+	uint8_t TSTA();         // Test Register A, adjust N and Z Condition codes based on content
+	uint8_t TSTB();         // Test Register B, adjust N and Z Condition codes based on content
 
 	uint8_t ADCA();         // Add to A + Carry													***	To-Do, Needs Work
 	uint8_t ADCB();         // Add to A + Carry													***	To-Do, Needs Work
@@ -328,7 +343,7 @@ protected:
 	uint8_t ROR();          // Rotate memory location Right one bit through the Carry flag (9 bit rotate)			***	To-Do, Needs Work
 	uint8_t SBCA();         // Subtract with carry (borrow) - register A						***	To-Do, Needs Work
 	uint8_t SBCB();         // Subtract with carry (borrow) - register B						***	To-Do, Needs Work
-	uint8_t STA();          // Store Register A													***	To-Do, Needs Work											***	To-Do, Needs Work											***	To-Do, Needs Work
+	uint8_t STA();          // Store Register A													***	To-Do, Needs Work
 	uint8_t STB();          // Store Register B 												***	To-Do, Needs Work
 	uint8_t STD();          // Store Register D     (A << 8 | B)								***	To-Do, Needs Work
 	uint8_t STS();          // Store Register S													***	To-Do, Needs Work
@@ -338,9 +353,9 @@ protected:
 	uint8_t SUBA();         // Subtract from register A											***	To-Do, Needs Work
 	uint8_t SUBB();         // Subtract from register A											***	To-Do, Needs Work
 	uint8_t SUBD();         // Subtract from register D     (A << 8 | B)						***	To-Do, Needs Work
-	uint8_t TST();          // Test memory location, adjust N and Z Condition codes based on content											***	To-Do, Needs Work
+	uint8_t TST();          // Test memory location, adjust N and Z Condition codes based on content				***	To-Do, Needs Work
 
-	uint8_t BadOp();          // INVALID INSTRUCTION!											***	To-Do, Needs Work
+	uint8_t XXX();          // INVALID INSTRUCTION!											***	To-Do, Needs Work
 
 public:
 	Cpu6809(MMU* device = nullptr);
@@ -352,5 +367,6 @@ public:
 
 	uint8_t Read(const uint16_t address, const bool readOnly = false);
 	void Write(const uint16_t address, const uint8_t byte);
+
 };
 

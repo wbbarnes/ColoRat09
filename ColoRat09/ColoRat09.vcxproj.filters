@@ -21,9 +21,6 @@
     <ClCompile Include="CPU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mc6809.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MMU.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -39,12 +36,15 @@
     <ClCompile Include="Cpu6809.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Motorola6809.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VDP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPU.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mc6809.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MMU.h">
@@ -63,6 +63,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Cpu6809.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Motorola6809.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VDP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

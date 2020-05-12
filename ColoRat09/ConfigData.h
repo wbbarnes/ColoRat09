@@ -5,7 +5,7 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *		 Author: William Barnes
 *		Created: 2020/04/23
-*	  Copyright: UNPUBLISHED (2020)
+*	  Copyright: 2020 - under Apache 2.0
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Modifications: (Who, whenm, what)
 *

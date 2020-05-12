@@ -202,13 +202,13 @@ JSR
 Relative Addressing Modes
 #########################
 
-BCC, BCS, BEQ, BGE, BGT, BHI, BHS, BLE, BLO, BLS, BLT, BMI, BNE, BPL, BRA, BRN, BVC, BVS
+bcc, bcs, beq, bge, bgt, bhi, bhs, ble, blo, bls, blt, bmi, bne, bpl, bra, brn, bvc, bvs
 ---------------------------
  1 R Opcode Fetch     PC
  2 R Offset           PC+1
  3 R Don't Care       $ffff
 
-LBCC, LBCS, LBEQ, LBGE, LBGT, LBHI, LBHS, LBLE, LBLO, LBLS, LBLT, LBMI, LBNE, LBPL, LBRN, LBVC, LBVS
+lbcc, lbcs, lbeq, lbge, lbgt, lbhi, lbhs, lble, lblo, lbls, lblt, lbmi, lbne, lbpl, lbrn, lbvc, lbvs
 ---------------------------------------------------------------------------------------
  1 R Opcode Fetch     PC    |                             |
  2 R Opcode 2nd Byte  PC+1  |                             |
@@ -218,7 +218,7 @@ LBCC, LBCS, LBEQ, LBGE, LBGT, LBHI, LBHS, LBLE, LBLO, LBLS, LBLT, LBMI, LBNE, LB
 Depends on branching        | IF Branch is not taken      | IF Branch is taken
                             |                             |  6 R Don't Care       $ffff
 
-BSR                         | LBSR                        | LBRA
+bsr                         | lbsr                        | lbra
 ----------------------------|-----------------------------|----------------------------
  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC
  2 R Offset           PC+1  |  2 R Offset High      PC+1  |  2 R Offset High      PC+1
@@ -234,14 +234,14 @@ BSR                         | LBSR                        | LBRA
 Inherent Addressing Modes
 #########################
 
-ASLA, ASRA, CLRA, COMA, DECA, INCA, LSLA, LSRA, NEGA, ROLA, RORA, TSTA
-ASLB, ASRB, CLRB, COMB, DECB, INCB, LSLB, LSRB, NEGB, ROLB, RORB, TSTB
-DAA, NOP, SEX
+asla, asra, clra, coma, deca, inca, lsla, lsra, NEGA, ROLA, RORA, TSTA
+aslb, asrb, clrb, comb, decb, incb, lslb, lsrb, NEGB, ROLB, RORB, TSTB
+DAA, nop, SEX
 ---------------------------
  1 R Opcode Fetch     PC
  2 R Don't Care       PC+1
 
-ABX                         | MUL
+abx                         | mul
 ----------------------------|----------------------------
  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC
  2 R Don't Care       PC+1  |  2 R Don't Care       PC+1
@@ -266,7 +266,7 @@ EXG                         | TFR
  7 R Don't Care       $ffff |
  8 R Don't Care       $ffff |
 
-RTS                         | RTI
+rts                         | rti
 ----------------------------|----------------------------------------------------------------------------------------
  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC    |                             |
  2 R Don't Care       PC+1  |  2 R Don't Care       PC+1  |                             |
@@ -299,7 +299,7 @@ PUSH 0-12 Bytes (0-8 Regs)  | PUSH 0-12 Bytes (0-8 Regs)  |  ? R Register ?     
  ? W ...                    |  ? W ...                    | END LOOP                    | END LOOP
 END LOOP                    | END LOOP                    |  ? R Don't Care       SP+X  |  ? R Don't Care       US+X
 
-SWI                         | SWI2                        | SWI3                        | RESET (undocumented Op $3e)
+swi                         | swi2                        | swi3                        | reset (undocumented op $3e)
 ----------------------------|-----------------------------|-----------------------------|----------------------------
  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC
  2 R Don't Care       PC+1  |  2 R Opcode 2nd Byte  PC+1  |  2 R Opcode 2nd Byte  PC+1  |  2 R Don't Care       PC+1
@@ -352,7 +352,7 @@ WHILE Interrupt Not Present |
 Hardware Interrupts
 ###################
 
-FIRQ                        | IRQ                         | NMI                         | RESET
+firq                        | irq                         | nmi                         | reset
 ----------------------------|-----------------------------|-----------------------------|----------------------------
  1 R ?                PC    |  1 R ?                PC    |  1 R ?                PC    | DO
  2 R ?                PC    |  2 R ?                PC    |  2 R ?                PC    |  ? R Don't Care       $fffe
