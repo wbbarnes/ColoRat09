@@ -37,13 +37,15 @@
 #include "CPU.h"
 #include "MMU.h"
 
+#define MC6809E
+
 class Cpu6809 //: public CPU
 {
 private:
 	MMU* bus;
 
-	uint8_t (Cpu6809::*exec)();		// Mnemonic function from interpreted Opcode
-	uint8_t (Cpu6809::*mode)(uint8_t adjClock);		// addressing mode of the oppcode			- XXX *** XXX
+	uint8_t (Cpu6809::*exec)();						// Mnemonic function from interpreted Opcode
+	uint8_t (Cpu6809::*mode)(uint8_t adjClock);	// addressing mode of the oppcode			- XXX *** XXX
 
 
 	union
@@ -166,10 +168,11 @@ protected:
 
 	struct OPCODE
 	{
-		uint8_t codeInstruction;
 		std::string name;
-		uint8_t (Cpu6809::*opcode)();		// Mnemonic function from interpreted Opcode
-		uint8_t (Cpu6809::*addrMode)(uint8_t adjClock);	// addressing mode of the oppcode			- XXX *** XXX
+		uint8_t (Cpu6809::*opcode)();						// Mnemonic function from interpreted Opcode
+		uint8_t minCycles;
+		uint8_t pgmBytes;
+		uint8_t (Cpu6809::*addrMode)(uint8_t adjClock);	// addressing mode of the oppcode
 	};
 
 	std::vector<Cpu6809::OPCODE> OpCodeP1;
@@ -186,6 +189,25 @@ public:
 	bool haltTriggered;
 
 private:
+	enum ADDR_MODE : uint8_t
+	{
+		Illegal,
+
+		Inherent,
+		Immediate,
+		Direct,
+		Extended,
+		Indexed,
+		Relative,
+		Register,
+
+		IdxInherent,
+		IdxImmediate,
+		IdxDirect,
+		IdxExtended,
+		IdxRelative,
+		IdxRegister,
+	};
 	uint8_t INH(uint8_t adjClock);
 	uint8_t IMM(uint8_t adjClock);
 	uint8_t DIR(uint8_t adjClock);
