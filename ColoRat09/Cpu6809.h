@@ -94,9 +94,29 @@ private:
 	};
 
 protected:
-	uint8_t clocksLeft;
+//	uint8_t clocksLeft;
 	uint8_t clocksUsed;
 
+	enum ADDR_MODE : uint8_t
+	{
+		Illegal,
+
+		Inherent,		// Inherent/Register, No other data required
+		Immediate,		// Data EA is immediately following opcode
+		Direct,
+		Extended,
+		Indexed,
+		Relative,
+		Register,
+
+		IdxZeroOffset,
+		IdxConstantOffset,
+		IdxAccumulatorOffset,
+		IdxAutoIncDec,
+		IdxIndirect,
+		RelShortLong,
+		RelPgmCounter,
+	} addressMode;
 
 	// Registers, Program/App accessible and internal to CPU only
 	uint8_t reg_CC;				// Condition Code register		(Program Accessible)	0B
@@ -172,7 +192,7 @@ protected:
 		uint8_t (Cpu6809::*opcode)();						// Mnemonic function from interpreted Opcode
 		uint8_t minCycles;
 		uint8_t pgmBytes;
-		uint8_t (Cpu6809::*addrMode)(uint8_t adjClock);	// addressing mode of the oppcode
+		ADDR_MODE (Cpu6809::*addrMode)(uint8_t adjClock);	// addressing mode of the oppcode
 	};
 
 	std::vector<Cpu6809::OPCODE> OpCodeP1;
@@ -182,39 +202,42 @@ protected:
 	std::vector<OPCODE> table;
 
 public:
-	bool resetTriggered;
-	bool nmiTriggered;
-	bool firqTriggered;
-	bool irqTriggered;
-	bool haltTriggered;
+	volatile bool resetTriggered;
+	volatile bool nmiTriggered;
+	volatile bool firqTriggered;
+	volatile bool irqTriggered;
+	volatile bool haltTriggered;
 
 private:
-	enum ADDR_MODE : uint8_t
-	{
-		Illegal,
 
-		Inherent,
-		Immediate,
-		Direct,
-		Extended,
-		Indexed,
-		Relative,
-		Register,
+	ADDR_MODE INH(uint8_t adjClock);
+	ADDR_MODE IMM(uint8_t adjClock);
+	ADDR_MODE DIR(uint8_t adjClock);
+	ADDR_MODE EXT(uint8_t adjClock);
+	ADDR_MODE IDX(uint8_t adjClock);
+	ADDR_MODE REL(uint8_t adjClock);
 
-		IdxInherent,
-		IdxImmediate,
-		IdxDirect,
-		IdxExtended,
-		IdxRelative,
-		IdxRegister,
-	};
-	uint8_t INH(uint8_t adjClock);
-	uint8_t IMM(uint8_t adjClock);
-	uint8_t DIR(uint8_t adjClock);
-	uint8_t EXT(uint8_t adjClock);
-	uint8_t IDX(uint8_t adjClock);
-	uint8_t REL(uint8_t adjClock);
-	uint8_t Ill(uint8_t adjClock);
+	ADDR_MODE Imm11(uint8_t adjClock);
+	ADDR_MODE Imm12(uint8_t adjClock);
+	ADDR_MODE Imm21(uint8_t adjClock);
+	ADDR_MODE Imm22(uint8_t adjClock);
+
+	ADDR_MODE Ext11(uint8_t adjClock);
+	ADDR_MODE Ext12(uint8_t adjClock);
+	ADDR_MODE Ext21(uint8_t adjClock);
+	ADDR_MODE Ext22(uint8_t adjClock);
+
+	ADDR_MODE Idx11(uint8_t adjClock);
+	ADDR_MODE Idx12(uint8_t adjClock);
+	ADDR_MODE Idx21(uint8_t adjClock);
+	ADDR_MODE Idx22(uint8_t adjClock);
+
+	ADDR_MODE Rel11(uint8_t adjClock);
+	ADDR_MODE Rel12(uint8_t adjClock);
+	ADDR_MODE Rel21(uint8_t adjClock);
+	ADDR_MODE Rel22(uint8_t adjClock);
+
+
 
 protected:
 	uint8_t Fetch(const uint16_t address);
@@ -225,15 +248,15 @@ protected:
 	uint8_t FIRQ();			// hardware FIRQ
 	uint8_t IRQ();			// hardware IRQ
 
-	uint8_t SoftRESET();	// Reset				- undocumented opcode: $3E
+	uint8_t SoftRESET();	// Reset				- undocumented opcode: $3E - Only undocumented opcode included
 	uint8_t SWI();			// Software Interrupt
 	uint8_t SWI2();			// Software Interrupt 2
 	uint8_t SWI3();			// Software Interrupt 3
 
 	uint8_t RTI();			// Return from Interrupt
 
-	uint8_t SYNC();			// Sync																***	To-Do, Needs Work
-	uint8_t CWAI();			// Start an interrupt sequence, but then wait for an interrupt.		***	To-Do, Needs Work
+	uint8_t SYNC();			// Sync																***	To-Do, Validate
+	uint8_t CWAI();			// Start an interrupt sequence, but then wait for an interrupt.		***	To-Do, Validate
 
 	uint8_t BSR();			// Branch to subroutine
 	uint8_t LBSR();			// Long Branch to Subroutine
@@ -328,7 +351,7 @@ protected:
 	uint8_t ADDD();         // Add to D (A << 8 | B)											***	To-Do, Needs Work
 	uint8_t ANDA();         // And A															***	To-Do, Needs Work
 	uint8_t ANDB();         // And B															***	To-Do, Needs Work
-	uint8_t ANDCC();        // And Condition Codes (clear one or more flags)					***	To-Do, Needs Work
+	uint8_t ANDCC();        // And Condition Codes (clear one or more flags)
 	uint8_t ASL();          // Arithmetic Shift Left Memory location (Logical Shift Left fill LSb with 0)			***	To-Do, Needs Work
 	uint8_t ASR();          // Arithmetic Shift Right Memory location (fill MSb with Sign bit)						***	To-Do, Needs Work
 	uint8_t CLR();          // Clear memory location																***	To-Do, Needs Work
@@ -356,7 +379,7 @@ protected:
 	uint8_t NEG();          // 2's Complement (negate) memory location							***	To-Do, Needs Work
 	uint8_t ORA();          // Logical OR register A											***	To-Do, Needs Work
 	uint8_t ORB();          // Logical OR register B											***	To-Do, Needs Work
-	uint8_t ORCC();         // Logical OR Condition Codes (set one or more flags)				***	To-Do, Needs Work
+	uint8_t ORCC();         // Logical OR Condition Codes (set one or more flags)
 	uint8_t PSHS();         // Push one or more registers onto the System Stack					***	To-Do, Needs Work
 	uint8_t PSHU();         // Push one or more registers onto the User Stack					***	To-Do, Needs Work
 	uint8_t PULS();         // Pull one or more registers from the System Stack					***	To-Do, Needs Work
@@ -378,6 +401,33 @@ protected:
 	uint8_t TST();          // Test memory location, adjust N and Z Condition codes based on content				***	To-Do, Needs Work
 
 	uint8_t XXX();          // INVALID INSTRUCTION!											***	To-Do, Needs Work
+
+
+	uint8_t LeaS_None();
+	uint8_t LeaS_Const();
+	uint8_t LeaS_Accumulator();
+	uint8_t LeaS_AutoIncDec();
+	uint8_t LeaS_Indirect();
+	uint8_t LeaU_None();
+	uint8_t LeaU_Const();
+	uint8_t LeaU_Accumulator();
+	uint8_t LeaU_AutoIncDec();
+	uint8_t LeaU_Indirect();
+	uint8_t LeaX_None();
+	uint8_t LeaX_Const();
+	uint8_t LeaX_Accumulator();
+	uint8_t LeaX_AutoIncDec();
+	uint8_t LeaX_Indirect();
+	uint8_t LeaY_None();
+	uint8_t LeaY_Const();
+	uint8_t LeaY_Accumulator();
+	uint8_t LeaY_AutoIncDec();
+	uint8_t LeaY_Indirect();
+
+	uint8_t TST_DIR();
+	uint8_t TST_EXT();
+	uint8_t TST_IDX();
+
 
 public:
 	Cpu6809(MMU* device = nullptr);

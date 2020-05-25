@@ -97,88 +97,88 @@ Cpu6809::Cpu6809(MMU* device)
 	opcode = 0x0000;
 
 	clocksUsed = 0;
-	clocksLeft = 0;
+//	clocksLeft = 0;
 
-	exec = nullptr;
-	mode = nullptr;
+	exec = nullptr ;
+	mode = nullptr ;
 
 	using op = Cpu6809;
 
 	OpCodeP1 =
 	{
 #ifdef USE_RESET_3E
-		{"NEG"  ,op::NEG  ,6 ,2 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COM"  ,op::COM  ,6 ,2 ,op::DIR}, {"LSR"      ,op::LSR  ,6 ,2 ,op::DIR}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"ROR"  ,op::ROR  ,6 ,2 ,op::DIR}, {"ASR"  ,op::ASR  ,6 ,2 ,op::DIR}, {"ASL/LSL"  ,op::LSL  ,6 ,2 ,op::DIR}, {"ROL"  ,op::ROL  ,6 ,2 ,op::DIR}, {"DEC"  ,op::DEC  ,6 ,2 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INC"  ,op::INC  ,6 ,2 ,op::DIR}, {"TST"  ,op::TST  ,6 ,2 ,op::DIR}, {"JMP"  ,op::JMP      ,3 ,2 ,op::DIR}, {"CLR"  ,op::CLR  ,6 ,2 ,op::DIR},
-		{"***"  ,nullptr  ,0 ,0 ,nullptr}, {"***"  ,nullptr  ,0 ,0 ,nullptr}, {"NOP"  ,op::NOP  ,2 ,1 ,op::INH}, {"SYNC" ,op::SYNC ,4 ,1 ,op::INH}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"LBRA" ,op::LBRA ,5 ,3 ,op::REL}, {"LBSR" ,op::LBSR ,9 ,3 ,op::REL}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"DAA"  ,op::DAA  ,2 ,1 ,op::INH}, {"ORCC" ,op::ORCC ,3 ,2 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"ANDCC",op::ANDCC,3 ,2 ,op::IMM}, {"SEX"  ,op::SEX  ,2 ,1 ,op::INH}, {"EXG"  ,op::EXG      ,8 ,2 ,op::IMM}, {"TFR"  ,op::TFR  ,6 ,2 ,op::IMM},
-		{"BRA"  ,op::BRA  ,3 ,2 ,op::REL}, {"BRN"  ,op::BRN  ,3 ,2 ,op::REL}, {"BHI"  ,op::BHI  ,3 ,2 ,op::REL}, {"BLS"  ,op::BLS  ,3 ,2 ,op::REL}, {"BHS/BCC"  ,op::BCC  ,3 ,2 ,op::REL}, {"BLO/BCS"  ,op::BCS  ,3 ,2 ,op::REL}, {"BNE"  ,op::BNE  ,3 ,2 ,op::REL}, {"BEQ"  ,op::BEQ  ,3 ,2 ,op::REL}, {"BVC"      ,op::BVC  ,3 ,2 ,op::REL}, {"BVS"  ,op::BVS  ,3 ,2 ,op::REL}, {"BPL"  ,op::BPL  ,3 ,2 ,op::REL}, {"BMI"  ,op::BMI  ,3 ,2 ,op::REL}, {"BGE"  ,op::BGE  ,3 ,2 ,op::REL}, {"BLT"  ,op::BLT  ,3 ,2 ,op::REL}, {"BGT"  ,op::BGT      ,3 ,2 ,op::REL}, {"BLE"  ,op::BLE  ,3 ,2 ,op::REL},
-		{"LEAX" ,op::LEAX ,4 ,2 ,op::IDX}, {"LEAY" ,op::LEAY ,4 ,2 ,op::IDX}, {"LEAS" ,op::LEAS ,4 ,2 ,op::IDX}, {"LEAU" ,op::LEAU ,4 ,2 ,op::IDX}, {"PSHS"     ,op::PSHS ,5 ,2 ,op::IMM}, {"PULS"     ,op::PULS ,5 ,2 ,op::IMM}, {"PSHU" ,op::PSHU ,5 ,2 ,op::IMM}, {"PULU" ,op::PULU ,5 ,2 ,op::IMM}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"RTS"  ,op::RTS  ,5 ,1 ,op::INH}, {"ABX"  ,op::ABX  ,3 ,1 ,op::INH}, {"RTI"  ,op::RTI  ,6 ,1 ,op::INH}, {"CWAI" ,op::CWAI ,20,2 ,op::INH}, {"MUL"  ,op::MUL  ,11,1 ,op::INH}, {"RESET",op::SoftRESET,1 ,1 ,nullptr}, {"SWI"  ,op::SWI  ,19,1 ,op::INH},
-		{"NEGA" ,op::NEGA ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COMA" ,op::COMA ,2 ,1 ,op::INH}, {"LSRA"     ,op::LSRA ,2 ,1 ,op::INH}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"RORA" ,op::RORA ,2 ,1 ,op::INH}, {"ASRA" ,op::ASRA ,2 ,1 ,op::INH}, {"ASLA/LSLA",op::LSLA ,2 ,1 ,op::INH}, {"ROLA" ,op::ROLA ,2 ,1 ,op::INH}, {"DECA" ,op::DECA ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INCA" ,op::INCA ,2 ,1 ,op::INH}, {"TSTA" ,op::TSTA ,2 ,1 ,op::INH}, {"???"  ,op::XXX      ,1 ,1 ,nullptr}, {"CLRA" ,op::CLRA ,2 ,1 ,op::INH},
-		{"NEGB" ,op::NEGB ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COMB" ,op::COMB ,2 ,1 ,op::INH}, {"LSRB"     ,op::LSRB ,2 ,1 ,op::INH}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"RORB" ,op::RORB ,2 ,1 ,op::INH}, {"ASRB" ,op::ASRB ,2 ,1 ,op::INH}, {"ASLB/LSLB",op::LSLB ,2 ,1 ,op::INH}, {"ROLB" ,op::ROLB ,2 ,1 ,op::INH}, {"DECB" ,op::DECB ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INCB" ,op::INCB ,2 ,1 ,op::INH}, {"TSTB" ,op::TSTB ,2 ,1 ,op::INH}, {"???"  ,op::XXX      ,1 ,1 ,nullptr}, {"CLRB" ,op::CLRB ,2 ,1 ,op::INH},
-		{"NEG"  ,op::NEG  ,6 ,2 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COM"  ,op::COM  ,6 ,2 ,op::IDX}, {"LSR"      ,op::LSR  ,6 ,2 ,op::IDX}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"ROR"  ,op::ROR  ,6 ,2 ,op::IDX}, {"ASR"  ,op::ASR  ,6 ,2 ,op::IDX}, {"ASL/LSL"  ,op::LSL  ,6 ,2 ,op::IDX}, {"ROL"  ,op::ROL  ,6 ,2 ,op::IDX}, {"DEC"  ,op::DEC  ,6 ,2 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INC"  ,op::INC  ,6 ,2 ,op::IDX}, {"TST"  ,op::TST  ,6 ,2 ,op::IDX}, {"JMP"  ,op::JMP      ,3 ,2 ,op::IDX}, {"CLR"  ,op::CLR  ,6 ,2 ,op::IDX},
-		{"NEG"  ,op::NEG  ,7 ,3 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COM"  ,op::COM  ,7 ,3 ,op::EXT}, {"LSR"      ,op::LSR  ,7 ,3 ,op::EXT}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"ROR"  ,op::ROR  ,7 ,3 ,op::EXT}, {"ASR"  ,op::ASR  ,7 ,3 ,op::EXT}, {"ASL/LSL"  ,op::LSL  ,7 ,3 ,op::EXT}, {"ROL"  ,op::ROL  ,7 ,3 ,op::EXT}, {"DEC"  ,op::DEC  ,7 ,3 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INC"  ,op::INC  ,7 ,3 ,op::EXT}, {"TST"  ,op::TST  ,7 ,3 ,op::EXT}, {"JMP"  ,op::JMP      ,4 ,3 ,op::EXT}, {"CLR"  ,op::CLR  ,7 ,3 ,op::EXT},
-		{"SUBA" ,op::SUBA ,2 ,2 ,op::IMM}, {"CMPA" ,op::CMPA ,2 ,2 ,op::IMM}, {"SBCA" ,op::SBCA ,2 ,2 ,op::IMM}, {"SUBD" ,op::SUBD ,4 ,3 ,op::IMM}, {"ANDA"     ,op::ANDA ,2 ,2 ,op::IMM}, {"BITA"     ,op::BITA ,2 ,2 ,op::IMM}, {"LDA"  ,op::LDA  ,2 ,2 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"EORA"     ,op::EORA ,2 ,2 ,op::IMM}, {"ADCA" ,op::ADCA ,2 ,2 ,op::IMM}, {"ORA"  ,op::ORA  ,2 ,2 ,op::IMM}, {"ADDA" ,op::ADDA ,2 ,2 ,op::IMM}, {"CMPX" ,op::CMPX ,4 ,3 ,op::IMM}, {"BSR"  ,op::BSR  ,7 ,2 ,op::REL}, {"LDX"  ,op::LDX      ,3 ,3 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"SUBA" ,op::SUBA ,4 ,2 ,op::DIR}, {"CMPA" ,op::CMPA ,4 ,2 ,op::DIR}, {"SBCA" ,op::SBCA ,4 ,2 ,op::DIR}, {"SUBD" ,op::SUBD ,6 ,2 ,op::DIR}, {"ANDA"     ,op::ANDA ,4 ,2 ,op::DIR}, {"BITA"     ,op::BITA ,4 ,2 ,op::DIR}, {"LDA"  ,op::LDA  ,4 ,2 ,op::DIR}, {"STA"  ,op::STA  ,4 ,2 ,op::DIR}, {"EORA"     ,op::EORA ,4 ,2 ,op::DIR}, {"ADCA" ,op::ADCA ,4 ,2 ,op::DIR}, {"ORA"  ,op::ORA  ,4 ,2 ,op::DIR}, {"ADDA" ,op::ADDA ,4 ,2 ,op::DIR}, {"CMPX" ,op::CMPX ,6 ,2 ,op::DIR}, {"JSR"  ,op::JSR  ,7 ,2 ,op::DIR}, {"LDX"  ,op::LDX      ,5 ,2 ,op::DIR}, {"STX"  ,op::STX  ,5 ,2 ,op::DIR},
-		{"SUBA" ,op::SUBA ,4 ,2 ,op::IDX}, {"CMPA" ,op::CMPA ,4 ,2 ,op::IDX}, {"SBCA" ,op::SBCA ,4 ,2 ,op::IDX}, {"SUBD" ,op::SUBD ,4 ,2 ,op::IDX}, {"ANDA"     ,op::ANDA ,4 ,2 ,op::IDX}, {"BITA"     ,op::BITA ,4 ,2 ,op::IDX}, {"LDA"  ,op::LDA  ,4 ,2 ,op::IDX}, {"STA"  ,op::STA  ,4 ,2 ,op::IDX}, {"EORA"     ,op::EORA ,4 ,2 ,op::IDX}, {"ADCA" ,op::ADCA ,4 ,2 ,op::IDX}, {"ORA"  ,op::ORA  ,4 ,2 ,op::IDX}, {"ADDA" ,op::ADDA ,4 ,2 ,op::IDX}, {"CMPX" ,op::CMPX ,6 ,2 ,op::IDX}, {"JSR"  ,op::JSR  ,7 ,2 ,op::IDX}, {"LDX"  ,op::LDX      ,5 ,2 ,op::IDX}, {"STX"  ,op::STX  ,5 ,2 ,op::IDX},
-		{"SUBA" ,op::SUBA ,5 ,3 ,op::EXT}, {"CMPA" ,op::CMPA ,5 ,3 ,op::EXT}, {"SBCA" ,op::SBCA ,5 ,3 ,op::EXT}, {"SUBD" ,op::SUBD ,7 ,3 ,op::EXT}, {"ANDA"     ,op::ANDA ,5 ,3 ,op::EXT}, {"BITA"     ,op::BITA ,5 ,3 ,op::EXT}, {"LDA"  ,op::LDA  ,5 ,3 ,op::EXT}, {"STA"  ,op::STA  ,5 ,3 ,op::EXT}, {"EORA"     ,op::EORA ,5 ,3 ,op::EXT}, {"ADCA" ,op::ADCA ,5 ,3 ,op::EXT}, {"ORA"  ,op::ORA  ,5 ,3 ,op::EXT}, {"ADDA" ,op::ADDA ,5 ,3 ,op::EXT}, {"CMPX" ,op::CMPX ,7 ,3 ,op::EXT}, {"JSR"  ,op::JSR  ,8 ,3 ,op::EXT}, {"LDX"  ,op::LDX      ,6 ,3 ,op::EXT}, {"STX"  ,op::STX  ,6 ,3 ,op::EXT},
-		{"SUBB" ,op::SUBB ,2 ,2 ,op::IMM}, {"CMPB" ,op::CMPB ,2 ,2 ,op::IMM}, {"SBCB" ,op::SBCB ,2 ,2 ,op::IMM}, {"ADDD" ,op::ADDD ,4 ,3 ,op::IMM}, {"ANDB"     ,op::ANDB ,2 ,2 ,op::IMM}, {"BITB"     ,op::BITB ,2 ,2 ,op::IMM}, {"LDB"  ,op::LDB  ,2 ,2 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"EORB"     ,op::EORB ,2 ,2 ,op::IMM}, {"ADCB" ,op::ADCB ,2 ,2 ,op::IMM}, {"ORB"  ,op::ORB  ,2 ,2 ,op::IMM}, {"ADDB" ,op::ADDB ,2 ,2 ,op::IMM}, {"LDD"  ,op::LDD  ,3 ,3 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDU"  ,op::LDU      ,3 ,3 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"SUBB" ,op::SUBB ,4 ,2 ,op::DIR}, {"CMPB" ,op::CMPB ,4 ,2 ,op::DIR}, {"SBCB" ,op::SBCB ,4 ,2 ,op::DIR}, {"ADDD" ,op::ADDD ,6 ,2 ,op::DIR}, {"ANDB"     ,op::ANDB ,4 ,2 ,op::DIR}, {"BITB"     ,op::BITB ,4 ,2 ,op::DIR}, {"LDB"  ,op::LDB  ,4 ,2 ,op::DIR}, {"STB"  ,op::STB  ,4 ,2 ,op::DIR}, {"EORB"     ,op::EORB ,4 ,2 ,op::DIR}, {"ADCB" ,op::ADCB ,4 ,2 ,op::DIR}, {"ORB"  ,op::ORB  ,4 ,2 ,op::DIR}, {"ADDB" ,op::ADDB ,4 ,2 ,op::DIR}, {"LDD"  ,op::LDD  ,5 ,2 ,op::DIR}, {"STD"  ,op::STD  ,5 ,2 ,op::DIR}, {"LDU"  ,op::LDU      ,5 ,2 ,op::DIR}, {"STU"  ,op::STU  ,5 ,2 ,op::DIR},
-		{"SUBB" ,op::SUBB ,4 ,2 ,op::IDX}, {"CMPB" ,op::CMPB ,4 ,2 ,op::IDX}, {"SBCB" ,op::SBCB ,4 ,2 ,op::IDX}, {"ADDD" ,op::ADDD ,6 ,2 ,op::IDX}, {"ANDB"     ,op::ANDB ,4 ,2 ,op::IDX}, {"BITB"     ,op::BITB ,4 ,2 ,op::IDX}, {"LDB"  ,op::LDB  ,4 ,2 ,op::IDX}, {"STB"  ,op::STB  ,4 ,2 ,op::IDX}, {"EORB"     ,op::EORB ,4 ,2 ,op::IDX}, {"ADCB" ,op::ADCB ,4 ,2 ,op::IDX}, {"ORB"  ,op::ORB  ,4 ,2 ,op::IDX}, {"ADDB" ,op::ADDB ,4 ,2 ,op::IDX}, {"LDD"  ,op::LDD  ,5 ,2 ,op::IDX}, {"STD"  ,op::STD  ,5 ,2 ,op::IDX}, {"LDU"  ,op::LDU      ,5 ,2 ,op::IDX}, {"STU"  ,op::STU  ,5 ,2 ,op::IDX},
-		{"SUBB" ,op::SUBB ,5 ,3 ,op::EXT}, {"CMPB" ,op::CMPB ,5 ,3 ,op::EXT}, {"SBCB" ,op::SBCB ,5 ,3 ,op::EXT}, {"ADDD" ,op::ADDD ,7 ,3 ,op::EXT}, {"ANDB"     ,op::ANDB ,5 ,3 ,op::EXT}, {"BITB"     ,op::BITB ,5 ,3 ,op::EXT}, {"LDB"  ,op::LDB  ,5 ,3 ,op::EXT}, {"STB"  ,op::STB  ,5 ,3 ,op::EXT}, {"EORB"     ,op::EORB ,5 ,3 ,op::EXT}, {"ADCB" ,op::ADCB ,5 ,3 ,op::EXT}, {"ORB"  ,op::ORB  ,5 ,3 ,op::EXT}, {"ADDB" ,op::ADDB ,5 ,3 ,op::EXT}, {"LDD"  ,op::LDD  ,6 ,3 ,op::EXT}, {"STD"  ,op::STD  ,6 ,3 ,op::EXT}, {"LDU"  ,op::LDU      ,6 ,3 ,op::EXT}, {"STU"  ,op::STU  ,6 ,3 ,op::EXT}
+		{"NEG"  ,&op::NEG  ,6 ,2 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COM"  ,&op::COM  ,6 ,2 ,&op::DIR}, {"LSR"      ,&op::LSR  ,6 ,2 ,&op::DIR}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"ROR"  ,&op::ROR  ,6 ,2 ,&op::DIR}, {"ASR"  ,&op::ASR  ,6 ,2 ,&op::DIR}, {"ASL/LSL"  ,&op::LSL  ,6 ,2 ,&op::DIR}, {"ROL"  ,&op::ROL  ,6 ,2 ,&op::DIR}, {"DEC"  ,&op::DEC  ,6 ,2 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INC"  ,&op::INC  ,6 ,2 ,&op::DIR}, {"TST"  ,&op::TST  ,6 ,2 ,&op::DIR}, {"JMP"  ,&op::JMP      ,3 ,2 ,&op::DIR}, {"CLR"  ,&op::CLR  ,6 ,2 ,&op::DIR},
+		{"***"  ,nullptr   ,0 ,0 ,nullptr }, {"***"  ,nullptr   ,0 ,0 ,nullptr }, {"NOP"  ,&op::NOP  ,2 ,1 ,&op::INH}, {"SYNC" ,&op::SYNC ,4 ,1 ,&op::INH}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"LBRA" ,&op::LBRA ,5 ,3 ,&op::REL}, {"LBSR" ,&op::LBSR ,9 ,3 ,&op::REL}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"DAA"  ,&op::DAA  ,2 ,1 ,&op::INH}, {"ORCC" ,&op::ORCC ,3 ,2 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"ANDCC",&op::ANDCC,3 ,2 ,&op::IMM}, {"SEX"  ,&op::SEX  ,2 ,1 ,&op::INH}, {"EXG"  ,&op::EXG      ,8 ,2 ,&op::IMM}, {"TFR"  ,&op::TFR  ,6 ,2 ,&op::IMM},
+		{"BRA"  ,&op::BRA  ,3 ,2 ,&op::REL}, {"BRN"  ,&op::BRN  ,3 ,2 ,&op::REL}, {"BHI"  ,&op::BHI  ,3 ,2 ,&op::REL}, {"BLS"  ,&op::BLS  ,3 ,2 ,&op::REL}, {"BHS/BCC"  ,&op::BCC  ,3 ,2 ,&op::REL}, {"BLO/BCS"  ,&op::BCS  ,3 ,2 ,&op::REL}, {"BNE"  ,&op::BNE  ,3 ,2 ,&op::REL}, {"BEQ"  ,&op::BEQ  ,3 ,2 ,&op::REL}, {"BVC"      ,&op::BVC  ,3 ,2 ,&op::REL}, {"BVS"  ,&op::BVS  ,3 ,2 ,&op::REL}, {"BPL"  ,&op::BPL  ,3 ,2 ,&op::REL}, {"BMI"  ,&op::BMI  ,3 ,2 ,&op::REL}, {"BGE"  ,&op::BGE  ,3 ,2 ,&op::REL}, {"BLT"  ,&op::BLT  ,3 ,2 ,&op::REL}, {"BGT"  ,&op::BGT      ,3 ,2 ,&op::REL}, {"BLE"  ,&op::BLE  ,3 ,2 ,&op::REL},
+		{"LEAX" ,&op::LEAX ,4 ,2 ,&op::IDX}, {"LEAY" ,&op::LEAY ,4 ,2 ,&op::IDX}, {"LEAS" ,&op::LEAS ,4 ,2 ,&op::IDX}, {"LEAU" ,&op::LEAU ,4 ,2 ,&op::IDX}, {"PSHS"     ,&op::PSHS ,5 ,2 ,&op::IMM}, {"PULS"     ,&op::PULS ,5 ,2 ,&op::IMM}, {"PSHU" ,&op::PSHU ,5 ,2 ,&op::IMM}, {"PULU" ,&op::PULU ,5 ,2 ,&op::IMM}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"RTS"  ,&op::RTS  ,5 ,1 ,&op::INH}, {"ABX"  ,&op::ABX  ,3 ,1 ,&op::INH}, {"RTI"  ,&op::RTI  ,6 ,1 ,&op::INH}, {"CWAI" ,&op::CWAI ,20,2 ,&op::INH}, {"MUL"  ,&op::MUL  ,11,1 ,&op::INH}, {"RESET",&op::SoftRESET,1 ,1 ,nullptr }, {"SWI"  ,&op::SWI  ,19,1 ,&op::INH},
+		{"NEGA" ,&op::NEGA ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COMA" ,&op::COMA ,2 ,1 ,&op::INH}, {"LSRA"     ,&op::LSRA ,2 ,1 ,&op::INH}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"RORA" ,&op::RORA ,2 ,1 ,&op::INH}, {"ASRA" ,&op::ASRA ,2 ,1 ,&op::INH}, {"ASLA/LSLA",&op::LSLA ,2 ,1 ,&op::INH}, {"ROLA" ,&op::ROLA ,2 ,1 ,&op::INH}, {"DECA" ,&op::DECA ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INCA" ,&op::INCA ,2 ,1 ,&op::INH}, {"TSTA" ,&op::TSTA ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX      ,1 ,1 ,nullptr }, {"CLRA" ,&op::CLRA ,2 ,1 ,&op::INH},
+		{"NEGB" ,&op::NEGB ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COMB" ,&op::COMB ,2 ,1 ,&op::INH}, {"LSRB"     ,&op::LSRB ,2 ,1 ,&op::INH}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"RORB" ,&op::RORB ,2 ,1 ,&op::INH}, {"ASRB" ,&op::ASRB ,2 ,1 ,&op::INH}, {"ASLB/LSLB",&op::LSLB ,2 ,1 ,&op::INH}, {"ROLB" ,&op::ROLB ,2 ,1 ,&op::INH}, {"DECB" ,&op::DECB ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INCB" ,&op::INCB ,2 ,1 ,&op::INH}, {"TSTB" ,&op::TSTB ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX      ,1 ,1 ,nullptr }, {"CLRB" ,&op::CLRB ,2 ,1 ,&op::INH},
+		{"NEG"  ,&op::NEG  ,6 ,2 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COM"  ,&op::COM  ,6 ,2 ,&op::IDX}, {"LSR"      ,&op::LSR  ,6 ,2 ,&op::IDX}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"ROR"  ,&op::ROR  ,6 ,2 ,&op::IDX}, {"ASR"  ,&op::ASR  ,6 ,2 ,&op::IDX}, {"ASL/LSL"  ,&op::LSL  ,6 ,2 ,&op::IDX}, {"ROL"  ,&op::ROL  ,6 ,2 ,&op::IDX}, {"DEC"  ,&op::DEC  ,6 ,2 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INC"  ,&op::INC  ,6 ,2 ,&op::IDX}, {"TST"  ,&op::TST  ,6 ,2 ,&op::IDX}, {"JMP"  ,&op::JMP      ,3 ,2 ,&op::IDX}, {"CLR"  ,&op::CLR  ,6 ,2 ,&op::IDX},
+		{"NEG"  ,&op::NEG  ,7 ,3 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COM"  ,&op::COM  ,7 ,3 ,&op::EXT}, {"LSR"      ,&op::LSR  ,7 ,3 ,&op::EXT}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"ROR"  ,&op::ROR  ,7 ,3 ,&op::EXT}, {"ASR"  ,&op::ASR  ,7 ,3 ,&op::EXT}, {"ASL/LSL"  ,&op::LSL  ,7 ,3 ,&op::EXT}, {"ROL"  ,&op::ROL  ,7 ,3 ,&op::EXT}, {"DEC"  ,&op::DEC  ,7 ,3 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INC"  ,&op::INC  ,7 ,3 ,&op::EXT}, {"TST"  ,&op::TST  ,7 ,3 ,&op::EXT}, {"JMP"  ,&op::JMP      ,4 ,3 ,&op::EXT}, {"CLR"  ,&op::CLR  ,7 ,3 ,&op::EXT},
+		{"SUBA" ,&op::SUBA ,2 ,2 ,&op::IMM}, {"CMPA" ,&op::CMPA ,2 ,2 ,&op::IMM}, {"SBCA" ,&op::SBCA ,2 ,2 ,&op::IMM}, {"SUBD" ,&op::SUBD ,4 ,3 ,&op::IMM}, {"ANDA"     ,&op::ANDA ,2 ,2 ,&op::IMM}, {"BITA"     ,&op::BITA ,2 ,2 ,&op::IMM}, {"LDA"  ,&op::LDA  ,2 ,2 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"EORA"     ,&op::EORA ,2 ,2 ,&op::IMM}, {"ADCA" ,&op::ADCA ,2 ,2 ,&op::IMM}, {"ORA"  ,&op::ORA  ,2 ,2 ,&op::IMM}, {"ADDA" ,&op::ADDA ,2 ,2 ,&op::IMM}, {"CMPX" ,&op::CMPX ,4 ,3 ,&op::IMM}, {"BSR"  ,&op::BSR  ,7 ,2 ,&op::REL}, {"LDX"  ,&op::LDX      ,3 ,3 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"SUBA" ,&op::SUBA ,4 ,2 ,&op::DIR}, {"CMPA" ,&op::CMPA ,4 ,2 ,&op::DIR}, {"SBCA" ,&op::SBCA ,4 ,2 ,&op::DIR}, {"SUBD" ,&op::SUBD ,6 ,2 ,&op::DIR}, {"ANDA"     ,&op::ANDA ,4 ,2 ,&op::DIR}, {"BITA"     ,&op::BITA ,4 ,2 ,&op::DIR}, {"LDA"  ,&op::LDA  ,4 ,2 ,&op::DIR}, {"STA"  ,&op::STA  ,4 ,2 ,&op::DIR}, {"EORA"     ,&op::EORA ,4 ,2 ,&op::DIR}, {"ADCA" ,&op::ADCA ,4 ,2 ,&op::DIR}, {"ORA"  ,&op::ORA  ,4 ,2 ,&op::DIR}, {"ADDA" ,&op::ADDA ,4 ,2 ,&op::DIR}, {"CMPX" ,&op::CMPX ,6 ,2 ,&op::DIR}, {"JSR"  ,&op::JSR  ,7 ,2 ,&op::DIR}, {"LDX"  ,&op::LDX      ,5 ,2 ,&op::DIR}, {"STX"  ,&op::STX  ,5 ,2 ,&op::DIR},
+		{"SUBA" ,&op::SUBA ,4 ,2 ,&op::IDX}, {"CMPA" ,&op::CMPA ,4 ,2 ,&op::IDX}, {"SBCA" ,&op::SBCA ,4 ,2 ,&op::IDX}, {"SUBD" ,&op::SUBD ,4 ,2 ,&op::IDX}, {"ANDA"     ,&op::ANDA ,4 ,2 ,&op::IDX}, {"BITA"     ,&op::BITA ,4 ,2 ,&op::IDX}, {"LDA"  ,&op::LDA  ,4 ,2 ,&op::IDX}, {"STA"  ,&op::STA  ,4 ,2 ,&op::IDX}, {"EORA"     ,&op::EORA ,4 ,2 ,&op::IDX}, {"ADCA" ,&op::ADCA ,4 ,2 ,&op::IDX}, {"ORA"  ,&op::ORA  ,4 ,2 ,&op::IDX}, {"ADDA" ,&op::ADDA ,4 ,2 ,&op::IDX}, {"CMPX" ,&op::CMPX ,6 ,2 ,&op::IDX}, {"JSR"  ,&op::JSR  ,7 ,2 ,&op::IDX}, {"LDX"  ,&op::LDX      ,5 ,2 ,&op::IDX}, {"STX"  ,&op::STX  ,5 ,2 ,&op::IDX},
+		{"SUBA" ,&op::SUBA ,5 ,3 ,&op::EXT}, {"CMPA" ,&op::CMPA ,5 ,3 ,&op::EXT}, {"SBCA" ,&op::SBCA ,5 ,3 ,&op::EXT}, {"SUBD" ,&op::SUBD ,7 ,3 ,&op::EXT}, {"ANDA"     ,&op::ANDA ,5 ,3 ,&op::EXT}, {"BITA"     ,&op::BITA ,5 ,3 ,&op::EXT}, {"LDA"  ,&op::LDA  ,5 ,3 ,&op::EXT}, {"STA"  ,&op::STA  ,5 ,3 ,&op::EXT}, {"EORA"     ,&op::EORA ,5 ,3 ,&op::EXT}, {"ADCA" ,&op::ADCA ,5 ,3 ,&op::EXT}, {"ORA"  ,&op::ORA  ,5 ,3 ,&op::EXT}, {"ADDA" ,&op::ADDA ,5 ,3 ,&op::EXT}, {"CMPX" ,&op::CMPX ,7 ,3 ,&op::EXT}, {"JSR"  ,&op::JSR  ,8 ,3 ,&op::EXT}, {"LDX"  ,&op::LDX      ,6 ,3 ,&op::EXT}, {"STX"  ,&op::STX  ,6 ,3 ,&op::EXT},
+		{"SUBB" ,&op::SUBB ,2 ,2 ,&op::IMM}, {"CMPB" ,&op::CMPB ,2 ,2 ,&op::IMM}, {"SBCB" ,&op::SBCB ,2 ,2 ,&op::IMM}, {"ADDD" ,&op::ADDD ,4 ,3 ,&op::IMM}, {"ANDB"     ,&op::ANDB ,2 ,2 ,&op::IMM}, {"BITB"     ,&op::BITB ,2 ,2 ,&op::IMM}, {"LDB"  ,&op::LDB  ,2 ,2 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"EORB"     ,&op::EORB ,2 ,2 ,&op::IMM}, {"ADCB" ,&op::ADCB ,2 ,2 ,&op::IMM}, {"ORB"  ,&op::ORB  ,2 ,2 ,&op::IMM}, {"ADDB" ,&op::ADDB ,2 ,2 ,&op::IMM}, {"LDD"  ,&op::LDD  ,3 ,3 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDU"  ,&op::LDU      ,3 ,3 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"SUBB" ,&op::SUBB ,4 ,2 ,&op::DIR}, {"CMPB" ,&op::CMPB ,4 ,2 ,&op::DIR}, {"SBCB" ,&op::SBCB ,4 ,2 ,&op::DIR}, {"ADDD" ,&op::ADDD ,6 ,2 ,&op::DIR}, {"ANDB"     ,&op::ANDB ,4 ,2 ,&op::DIR}, {"BITB"     ,&op::BITB ,4 ,2 ,&op::DIR}, {"LDB"  ,&op::LDB  ,4 ,2 ,&op::DIR}, {"STB"  ,&op::STB  ,4 ,2 ,&op::DIR}, {"EORB"     ,&op::EORB ,4 ,2 ,&op::DIR}, {"ADCB" ,&op::ADCB ,4 ,2 ,&op::DIR}, {"ORB"  ,&op::ORB  ,4 ,2 ,&op::DIR}, {"ADDB" ,&op::ADDB ,4 ,2 ,&op::DIR}, {"LDD"  ,&op::LDD  ,5 ,2 ,&op::DIR}, {"STD"  ,&op::STD  ,5 ,2 ,&op::DIR}, {"LDU"  ,&op::LDU      ,5 ,2 ,&op::DIR}, {"STU"  ,&op::STU  ,5 ,2 ,&op::DIR},
+		{"SUBB" ,&op::SUBB ,4 ,2 ,&op::IDX}, {"CMPB" ,&op::CMPB ,4 ,2 ,&op::IDX}, {"SBCB" ,&op::SBCB ,4 ,2 ,&op::IDX}, {"ADDD" ,&op::ADDD ,6 ,2 ,&op::IDX}, {"ANDB"     ,&op::ANDB ,4 ,2 ,&op::IDX}, {"BITB"     ,&op::BITB ,4 ,2 ,&op::IDX}, {"LDB"  ,&op::LDB  ,4 ,2 ,&op::IDX}, {"STB"  ,&op::STB  ,4 ,2 ,&op::IDX}, {"EORB"     ,&op::EORB ,4 ,2 ,&op::IDX}, {"ADCB" ,&op::ADCB ,4 ,2 ,&op::IDX}, {"ORB"  ,&op::ORB  ,4 ,2 ,&op::IDX}, {"ADDB" ,&op::ADDB ,4 ,2 ,&op::IDX}, {"LDD"  ,&op::LDD  ,5 ,2 ,&op::IDX}, {"STD"  ,&op::STD  ,5 ,2 ,&op::IDX}, {"LDU"  ,&op::LDU      ,5 ,2 ,&op::IDX}, {"STU"  ,&op::STU  ,5 ,2 ,&op::IDX},
+		{"SUBB" ,&op::SUBB ,5 ,3 ,&op::EXT}, {"CMPB" ,&op::CMPB ,5 ,3 ,&op::EXT}, {"SBCB" ,&op::SBCB ,5 ,3 ,&op::EXT}, {"ADDD" ,&op::ADDD ,7 ,3 ,&op::EXT}, {"ANDB"     ,&op::ANDB ,5 ,3 ,&op::EXT}, {"BITB"     ,&op::BITB ,5 ,3 ,&op::EXT}, {"LDB"  ,&op::LDB  ,5 ,3 ,&op::EXT}, {"STB"  ,&op::STB  ,5 ,3 ,&op::EXT}, {"EORB"     ,&op::EORB ,5 ,3 ,&op::EXT}, {"ADCB" ,&op::ADCB ,5 ,3 ,&op::EXT}, {"ORB"  ,&op::ORB  ,5 ,3 ,&op::EXT}, {"ADDB" ,&op::ADDB ,5 ,3 ,&op::EXT}, {"LDD"  ,&op::LDD  ,6 ,3 ,&op::EXT}, {"STD"  ,&op::STD  ,6 ,3 ,&op::EXT}, {"LDU"  ,&op::LDU      ,6 ,3 ,&op::EXT}, {"STU"  ,&op::STU  ,6 ,3 ,&op::EXT}
 #else
-		{"NEG"  ,op::NEG  ,6 ,2 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COM"  ,op::COM  ,6 ,2 ,op::DIR}, {"LSR"      ,op::LSR  ,6 ,2 ,op::DIR}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"ROR"  ,op::ROR  ,6 ,2 ,op::DIR}, {"ASR"  ,op::ASR  ,6 ,2 ,op::DIR}, {"ASL/LSL"  ,op::LSL  ,6 ,2 ,op::DIR}, {"ROL"  ,op::ROL  ,6 ,2 ,op::DIR}, {"DEC"  ,op::DEC  ,6 ,2 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INC"  ,op::INC  ,6 ,2 ,op::DIR}, {"TST"  ,op::TST  ,6 ,2 ,op::DIR}, {"JMP"  ,op::JMP  ,3 ,2 ,op::DIR}, {"CLR"  ,op::CLR  ,6 ,2 ,op::DIR},
-		{"***"  ,nullptr  ,0 ,0 ,nullptr}, {"***"  ,nullptr  ,0 ,0 ,nullptr}, {"NOP"  ,op::NOP  ,2 ,1 ,op::INH}, {"SYNC" ,op::SYNC ,4 ,1 ,op::INH}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"LBRA" ,op::LBRA ,5 ,3 ,op::REL}, {"LBSR" ,op::LBSR ,9 ,3 ,op::REL}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"DAA"  ,op::DAA  ,2 ,1 ,op::INH}, {"ORCC" ,op::ORCC ,3 ,2 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"ANDCC",op::ANDCC,3 ,2 ,op::IMM}, {"SEX"  ,op::SEX  ,2 ,1 ,op::INH}, {"EXG"  ,op::EXG  ,8 ,2 ,op::IMM}, {"TFR"  ,op::TFR  ,6 ,2 ,op::IMM},
-		{"BRA"  ,op::BRA  ,3 ,2 ,op::REL}, {"BRN"  ,op::BRN  ,3 ,2 ,op::REL}, {"BHI"  ,op::BHI  ,3 ,2 ,op::REL}, {"BLS"  ,op::BLS  ,3 ,2 ,op::REL}, {"BHS/BCC"  ,op::BCC  ,3 ,2 ,op::REL}, {"BLO/BCS"  ,op::BCS  ,3 ,2 ,op::REL}, {"BNE"  ,op::BNE  ,3 ,2 ,op::REL}, {"BEQ"  ,op::BEQ  ,3 ,2 ,op::REL}, {"BVC"      ,op::BVC  ,3 ,2 ,op::REL}, {"BVS"  ,op::BVS  ,3 ,2 ,op::REL}, {"BPL"  ,op::BPL  ,3 ,2 ,op::REL}, {"BMI"  ,op::BMI  ,3 ,2 ,op::REL}, {"BGE"  ,op::BGE  ,3 ,2 ,op::REL}, {"BLT"  ,op::BLT  ,3 ,2 ,op::REL}, {"BGT"  ,op::BGT  ,3 ,2 ,op::REL}, {"BLE"  ,op::BLE  ,3 ,2 ,op::REL},
-		{"LEAX" ,op::LEAX ,4 ,2 ,op::IDX}, {"LEAY" ,op::LEAY ,4 ,2 ,op::IDX}, {"LEAS" ,op::LEAS ,4 ,2 ,op::IDX}, {"LEAU" ,op::LEAU ,4 ,2 ,op::IDX}, {"PSHS"     ,op::PSHS ,5 ,2 ,op::IMM}, {"PULS"     ,op::PULS ,5 ,2 ,op::IMM}, {"PSHU" ,op::PSHU ,5 ,2 ,op::IMM}, {"PULU" ,op::PULU ,5 ,2 ,op::IMM}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"RTS"  ,op::RTS  ,5 ,1 ,op::INH}, {"ABX"  ,op::ABX  ,3 ,1 ,op::INH}, {"RTI"  ,op::RTI  ,6 ,1 ,op::INH}, {"CWAI" ,op::CWAI ,20,2 ,op::INH}, {"MUL"  ,op::MUL  ,11,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"SWI"  ,op::SWI  ,19,1 ,op::INH},
-		{"NEGA" ,op::NEGA ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COMA" ,op::COMA ,2 ,1 ,op::INH}, {"LSRA"     ,op::LSRA ,2 ,1 ,op::INH}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"RORA" ,op::RORA ,2 ,1 ,op::INH}, {"ASRA" ,op::ASRA ,2 ,1 ,op::INH}, {"ASLA/LSLA",op::LSLA ,2 ,1 ,op::INH}, {"ROLA" ,op::ROLA ,2 ,1 ,op::INH}, {"DECA" ,op::DECA ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INCA" ,op::INCA ,2 ,1 ,op::INH}, {"TSTA" ,op::TSTA ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CLRA" ,op::CLRA ,2 ,1 ,op::INH},
-		{"NEGB" ,op::NEGB ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COMB" ,op::COMB ,2 ,1 ,op::INH}, {"LSRB"     ,op::LSRB ,2 ,1 ,op::INH}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"RORB" ,op::RORB ,2 ,1 ,op::INH}, {"ASRB" ,op::ASRB ,2 ,1 ,op::INH}, {"ASLB/LSLB",op::LSLB ,2 ,1 ,op::INH}, {"ROLB" ,op::ROLB ,2 ,1 ,op::INH}, {"DECB" ,op::DECB ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INCB" ,op::INCB ,2 ,1 ,op::INH}, {"TSTB" ,op::TSTB ,2 ,1 ,op::INH}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CLRB" ,op::CLRB ,2 ,1 ,op::INH},
-		{"NEG"  ,op::NEG  ,6 ,2 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COM"  ,op::COM  ,6 ,2 ,op::IDX}, {"LSR"      ,op::LSR  ,6 ,2 ,op::IDX}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"ROR"  ,op::ROR  ,6 ,2 ,op::IDX}, {"ASR"  ,op::ASR  ,6 ,2 ,op::IDX}, {"ASL/LSL"  ,op::LSL  ,6 ,2 ,op::IDX}, {"ROL"  ,op::ROL  ,6 ,2 ,op::IDX}, {"DEC"  ,op::DEC  ,6 ,2 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INC"  ,op::INC  ,6 ,2 ,op::IDX}, {"TST"  ,op::TST  ,6 ,2 ,op::IDX}, {"JMP"  ,op::JMP  ,3 ,2 ,op::IDX}, {"CLR"  ,op::CLR  ,6 ,2 ,op::IDX},
-		{"NEG"  ,op::NEG  ,7 ,3 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"COM"  ,op::COM  ,7 ,3 ,op::EXT}, {"LSR"      ,op::LSR  ,7 ,3 ,op::EXT}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"ROR"  ,op::ROR  ,7 ,3 ,op::EXT}, {"ASR"  ,op::ASR  ,7 ,3 ,op::EXT}, {"ASL/LSL"  ,op::LSL  ,7 ,3 ,op::EXT}, {"ROL"  ,op::ROL  ,7 ,3 ,op::EXT}, {"DEC"  ,op::DEC  ,7 ,3 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"INC"  ,op::INC  ,7 ,3 ,op::EXT}, {"TST"  ,op::TST  ,7 ,3 ,op::EXT}, {"JMP"  ,op::JMP  ,4 ,3 ,op::EXT}, {"CLR"  ,op::CLR  ,7 ,3 ,op::EXT},
-		{"SUBA" ,op::SUBA ,2 ,2 ,op::IMM}, {"CMPA" ,op::CMPA ,2 ,2 ,op::IMM}, {"SBCA" ,op::SBCA ,2 ,2 ,op::IMM}, {"SUBD" ,op::SUBD ,4 ,3 ,op::IMM}, {"ANDA"     ,op::ANDA ,2 ,2 ,op::IMM}, {"BITA"     ,op::BITA ,2 ,2 ,op::IMM}, {"LDA"  ,op::LDA  ,2 ,2 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"EORA"     ,op::EORA ,2 ,2 ,op::IMM}, {"ADCA" ,op::ADCA ,2 ,2 ,op::IMM}, {"ORA"  ,op::ORA  ,2 ,2 ,op::IMM}, {"ADDA" ,op::ADDA ,2 ,2 ,op::IMM}, {"CMPX" ,op::CMPX ,4 ,3 ,op::IMM}, {"BSR"  ,op::BSR  ,7 ,2 ,op::REL}, {"LDX"  ,op::LDX  ,3 ,3 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"SUBA" ,op::SUBA ,4 ,2 ,op::DIR}, {"CMPA" ,op::CMPA ,4 ,2 ,op::DIR}, {"SBCA" ,op::SBCA ,4 ,2 ,op::DIR}, {"SUBD" ,op::SUBD ,6 ,2 ,op::DIR}, {"ANDA"     ,op::ANDA ,4 ,2 ,op::DIR}, {"BITA"     ,op::BITA ,4 ,2 ,op::DIR}, {"LDA"  ,op::LDA  ,4 ,2 ,op::DIR}, {"STA"  ,op::STA  ,4 ,2 ,op::DIR}, {"EORA"     ,op::EORA ,4 ,2 ,op::DIR}, {"ADCA" ,op::ADCA ,4 ,2 ,op::DIR}, {"ORA"  ,op::ORA  ,4 ,2 ,op::DIR}, {"ADDA" ,op::ADDA ,4 ,2 ,op::DIR}, {"CMPX" ,op::CMPX ,6 ,2 ,op::DIR}, {"JSR"  ,op::JSR  ,7 ,2 ,op::DIR}, {"LDX"  ,op::LDX  ,5 ,2 ,op::DIR}, {"STX"  ,op::STX  ,5 ,2 ,op::DIR},
-		{"SUBA" ,op::SUBA ,4 ,2 ,op::IDX}, {"CMPA" ,op::CMPA ,4 ,2 ,op::IDX}, {"SBCA" ,op::SBCA ,4 ,2 ,op::IDX}, {"SUBD" ,op::SUBD ,4 ,2 ,op::IDX}, {"ANDA"     ,op::ANDA ,4 ,2 ,op::IDX}, {"BITA"     ,op::BITA ,4 ,2 ,op::IDX}, {"LDA"  ,op::LDA  ,4 ,2 ,op::IDX}, {"STA"  ,op::STA  ,4 ,2 ,op::IDX}, {"EORA"     ,op::EORA ,4 ,2 ,op::IDX}, {"ADCA" ,op::ADCA ,4 ,2 ,op::IDX}, {"ORA"  ,op::ORA  ,4 ,2 ,op::IDX}, {"ADDA" ,op::ADDA ,4 ,2 ,op::IDX}, {"CMPX" ,op::CMPX ,6 ,2 ,op::IDX}, {"JSR"  ,op::JSR  ,7 ,2 ,op::IDX}, {"LDX"  ,op::LDX  ,5 ,2 ,op::IDX}, {"STX"  ,op::STX  ,5 ,2 ,op::IDX},
-		{"SUBA" ,op::SUBA ,5 ,3 ,op::EXT}, {"CMPA" ,op::CMPA ,5 ,3 ,op::EXT}, {"SBCA" ,op::SBCA ,5 ,3 ,op::EXT}, {"SUBD" ,op::SUBD ,7 ,3 ,op::EXT}, {"ANDA"     ,op::ANDA ,5 ,3 ,op::EXT}, {"BITA"     ,op::BITA ,5 ,3 ,op::EXT}, {"LDA"  ,op::LDA  ,5 ,3 ,op::EXT}, {"STA"  ,op::STA  ,5 ,3 ,op::EXT}, {"EORA"     ,op::EORA ,5 ,3 ,op::EXT}, {"ADCA" ,op::ADCA ,5 ,3 ,op::EXT}, {"ORA"  ,op::ORA  ,5 ,3 ,op::EXT}, {"ADDA" ,op::ADDA ,5 ,3 ,op::EXT}, {"CMPX" ,op::CMPX ,7 ,3 ,op::EXT}, {"JSR"  ,op::JSR  ,8 ,3 ,op::EXT}, {"LDX"  ,op::LDX  ,6 ,3 ,op::EXT}, {"STX"  ,op::STX  ,6 ,3 ,op::EXT},
-		{"SUBB" ,op::SUBB ,2 ,2 ,op::IMM}, {"CMPB" ,op::CMPB ,2 ,2 ,op::IMM}, {"SBCB" ,op::SBCB ,2 ,2 ,op::IMM}, {"ADDD" ,op::ADDD ,4 ,3 ,op::IMM}, {"ANDB"     ,op::ANDB ,2 ,2 ,op::IMM}, {"BITB"     ,op::BITB ,2 ,2 ,op::IMM}, {"LDB"  ,op::LDB  ,2 ,2 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"EORB"     ,op::EORB ,2 ,2 ,op::IMM}, {"ADCB" ,op::ADCB ,2 ,2 ,op::IMM}, {"ORB"  ,op::ORB  ,2 ,2 ,op::IMM}, {"ADDB" ,op::ADDB ,2 ,2 ,op::IMM}, {"LDD"  ,op::LDD  ,3 ,3 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDU"  ,op::LDU  ,3 ,3 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"SUBB" ,op::SUBB ,4 ,2 ,op::DIR}, {"CMPB" ,op::CMPB ,4 ,2 ,op::DIR}, {"SBCB" ,op::SBCB ,4 ,2 ,op::DIR}, {"ADDD" ,op::ADDD ,6 ,2 ,op::DIR}, {"ANDB"     ,op::ANDB ,4 ,2 ,op::DIR}, {"BITB"     ,op::BITB ,4 ,2 ,op::DIR}, {"LDB"  ,op::LDB  ,4 ,2 ,op::DIR}, {"STB"  ,op::STB  ,4 ,2 ,op::DIR}, {"EORB"     ,op::EORB ,4 ,2 ,op::DIR}, {"ADCB" ,op::ADCB ,4 ,2 ,op::DIR}, {"ORB"  ,op::ORB  ,4 ,2 ,op::DIR}, {"ADDB" ,op::ADDB ,4 ,2 ,op::DIR}, {"LDD"  ,op::LDD  ,5 ,2 ,op::DIR}, {"STD"  ,op::STD  ,5 ,2 ,op::DIR}, {"LDU"  ,op::LDU  ,5 ,2 ,op::DIR}, {"STU"  ,op::STU  ,5 ,2 ,op::DIR},
-		{"SUBB" ,op::SUBB ,4 ,2 ,op::IDX}, {"CMPB" ,op::CMPB ,4 ,2 ,op::IDX}, {"SBCB" ,op::SBCB ,4 ,2 ,op::IDX}, {"ADDD" ,op::ADDD ,6 ,2 ,op::IDX}, {"ANDB"     ,op::ANDB ,4 ,2 ,op::IDX}, {"BITB"     ,op::BITB ,4 ,2 ,op::IDX}, {"LDB"  ,op::LDB  ,4 ,2 ,op::IDX}, {"STB"  ,op::STB  ,4 ,2 ,op::IDX}, {"EORB"     ,op::EORB ,4 ,2 ,op::IDX}, {"ADCB" ,op::ADCB ,4 ,2 ,op::IDX}, {"ORB"  ,op::ORB  ,4 ,2 ,op::IDX}, {"ADDB" ,op::ADDB ,4 ,2 ,op::IDX}, {"LDD"  ,op::LDD  ,5 ,2 ,op::IDX}, {"STD"  ,op::STD  ,5 ,2 ,op::IDX}, {"LDU"  ,op::LDU  ,5 ,2 ,op::IDX}, {"STU"  ,op::STU  ,5 ,2 ,op::IDX},
-		{"SUBB" ,op::SUBB ,5 ,3 ,op::EXT}, {"CMPB" ,op::CMPB ,5 ,3 ,op::EXT}, {"SBCB" ,op::SBCB ,5 ,3 ,op::EXT}, {"ADDD" ,op::ADDD ,7 ,3 ,op::EXT}, {"ANDB"     ,op::ANDB ,5 ,3 ,op::EXT}, {"BITB"     ,op::BITB ,5 ,3 ,op::EXT}, {"LDB"  ,op::LDB  ,5 ,3 ,op::EXT}, {"STB"  ,op::STB  ,5 ,3 ,op::EXT}, {"EORB"     ,op::EORB ,5 ,3 ,op::EXT}, {"ADCB" ,op::ADCB ,5 ,3 ,op::EXT}, {"ORB"  ,op::ORB  ,5 ,3 ,op::EXT}, {"ADDB" ,op::ADDB ,5 ,3 ,op::EXT}, {"LDD"  ,op::LDD  ,6 ,3 ,op::EXT}, {"STD"  ,op::STD  ,6 ,3 ,op::EXT}, {"LDU"  ,op::LDU  ,6 ,3 ,op::EXT}, {"STU"  ,op::STU  ,6 ,3 ,op::EXT}
+		{"NEG"  ,&op::NEG  ,6 ,2 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COM"  ,&op::COM  ,6 ,2 ,&op::DIR}, {"LSR"      ,&op::LSR  ,6 ,2 ,&op::DIR}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"ROR"  ,&op::ROR  ,6 ,2 ,&op::DIR}, {"ASR"  ,&op::ASR  ,6 ,2 ,&op::DIR}, {"ASL/LSL"  ,&op::LSL  ,6 ,2 ,&op::DIR}, {"ROL"  ,&op::ROL  ,6 ,2 ,&op::DIR}, {"DEC"  ,&op::DEC  ,6 ,2 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INC"  ,&op::INC  ,6 ,2 ,&op::DIR}, {"TST"  ,&op::TST  ,6 ,2 ,&op::DIR}, {"JMP"  ,&op::JMP  ,3 ,2 ,&op::DIR}, {"CLR"  ,&op::CLR  ,6 ,2 ,&op::DIR},
+		{"***"  ,nullptr   ,0 ,0 ,nullptr }, {"***"  ,nullptr   ,0 ,0 ,nullptr }, {"NOP"  ,&op::NOP  ,2 ,1 ,&op::INH}, {"SYNC" ,&op::SYNC ,4 ,1 ,&op::INH}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"LBRA" ,&op::LBRA ,5 ,3 ,&op::REL}, {"LBSR" ,&op::LBSR ,9 ,3 ,&op::REL}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"DAA"  ,&op::DAA  ,2 ,1 ,&op::INH}, {"ORCC" ,&op::ORCC ,3 ,2 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"ANDCC",&op::ANDCC,3 ,2 ,&op::IMM}, {"SEX"  ,&op::SEX  ,2 ,1 ,&op::INH}, {"EXG"  ,&op::EXG  ,8 ,2 ,&op::IMM}, {"TFR"  ,&op::TFR  ,6 ,2 ,&op::IMM},
+		{"BRA"  ,&op::BRA  ,3 ,2 ,&op::REL}, {"BRN"  ,&op::BRN  ,3 ,2 ,&op::REL}, {"BHI"  ,&op::BHI  ,3 ,2 ,&op::REL}, {"BLS"  ,&op::BLS  ,3 ,2 ,&op::REL}, {"BHS/BCC"  ,&op::BCC  ,3 ,2 ,&op::REL}, {"BLO/BCS"  ,&op::BCS  ,3 ,2 ,&op::REL}, {"BNE"  ,&op::BNE  ,3 ,2 ,&op::REL}, {"BEQ"  ,&op::BEQ  ,3 ,2 ,&op::REL}, {"BVC"      ,&op::BVC  ,3 ,2 ,&op::REL}, {"BVS"  ,&op::BVS  ,3 ,2 ,&op::REL}, {"BPL"  ,&op::BPL  ,3 ,2 ,&op::REL}, {"BMI"  ,&op::BMI  ,3 ,2 ,&op::REL}, {"BGE"  ,&op::BGE  ,3 ,2 ,&op::REL}, {"BLT"  ,&op::BLT  ,3 ,2 ,&op::REL}, {"BGT"  ,&op::BGT  ,3 ,2 ,&op::REL}, {"BLE"  ,&op::BLE  ,3 ,2 ,&op::REL},
+		{"LEAX" ,&op::LEAX ,4 ,2 ,&op::IDX}, {"LEAY" ,&op::LEAY ,4 ,2 ,&op::IDX}, {"LEAS" ,&op::LEAS ,4 ,2 ,&op::IDX}, {"LEAU" ,&op::LEAU ,4 ,2 ,&op::IDX}, {"PSHS"     ,&op::PSHS ,5 ,2 ,&op::IMM}, {"PULS"     ,&op::PULS ,5 ,2 ,&op::IMM}, {"PSHU" ,&op::PSHU ,5 ,2 ,&op::IMM}, {"PULU" ,&op::PULU ,5 ,2 ,&op::IMM}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"RTS"  ,&op::RTS  ,5 ,1 ,&op::INH}, {"ABX"  ,&op::ABX  ,3 ,1 ,&op::INH}, {"RTI"  ,&op::RTI  ,6 ,1 ,&op::INH}, {"CWAI" ,&op::CWAI ,20,2 ,&op::INH}, {"MUL"  ,&op::MUL  ,11,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"SWI"  ,&op::SWI  ,19,1 ,&op::INH},
+		{"NEGA" ,&op::NEGA ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COMA" ,&op::COMA ,2 ,1 ,&op::INH}, {"LSRA"     ,&op::LSRA ,2 ,1 ,&op::INH}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"RORA" ,&op::RORA ,2 ,1 ,&op::INH}, {"ASRA" ,&op::ASRA ,2 ,1 ,&op::INH}, {"ASLA/LSLA",&op::LSLA ,2 ,1 ,&op::INH}, {"ROLA" ,&op::ROLA ,2 ,1 ,&op::INH}, {"DECA" ,&op::DECA ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INCA" ,&op::INCA ,2 ,1 ,&op::INH}, {"TSTA" ,&op::TSTA ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CLRA" ,&op::CLRA ,2 ,1 ,&op::INH},
+		{"NEGB" ,&op::NEGB ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COMB" ,&op::COMB ,2 ,1 ,&op::INH}, {"LSRB"     ,&op::LSRB ,2 ,1 ,&op::INH}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"RORB" ,&op::RORB ,2 ,1 ,&op::INH}, {"ASRB" ,&op::ASRB ,2 ,1 ,&op::INH}, {"ASLB/LSLB",&op::LSLB ,2 ,1 ,&op::INH}, {"ROLB" ,&op::ROLB ,2 ,1 ,&op::INH}, {"DECB" ,&op::DECB ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INCB" ,&op::INCB ,2 ,1 ,&op::INH}, {"TSTB" ,&op::TSTB ,2 ,1 ,&op::INH}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CLRB" ,&op::CLRB ,2 ,1 ,&op::INH},
+		{"NEG"  ,&op::NEG  ,6 ,2 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COM"  ,&op::COM  ,6 ,2 ,&op::IDX}, {"LSR"      ,&op::LSR  ,6 ,2 ,&op::IDX}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"ROR"  ,&op::ROR  ,6 ,2 ,&op::IDX}, {"ASR"  ,&op::ASR  ,6 ,2 ,&op::IDX}, {"ASL/LSL"  ,&op::LSL  ,6 ,2 ,&op::IDX}, {"ROL"  ,&op::ROL  ,6 ,2 ,&op::IDX}, {"DEC"  ,&op::DEC  ,6 ,2 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INC"  ,&op::INC  ,6 ,2 ,&op::IDX}, {"TST"  ,&op::TST  ,6 ,2 ,&op::IDX}, {"JMP"  ,&op::JMP  ,3 ,2 ,&op::IDX}, {"CLR"  ,&op::CLR  ,6 ,2 ,&op::IDX},
+		{"NEG"  ,&op::NEG  ,7 ,3 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"COM"  ,&op::COM  ,7 ,3 ,&op::EXT}, {"LSR"      ,&op::LSR  ,7 ,3 ,&op::EXT}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"ROR"  ,&op::ROR  ,7 ,3 ,&op::EXT}, {"ASR"  ,&op::ASR  ,7 ,3 ,&op::EXT}, {"ASL/LSL"  ,&op::LSL  ,7 ,3 ,&op::EXT}, {"ROL"  ,&op::ROL  ,7 ,3 ,&op::EXT}, {"DEC"  ,&op::DEC  ,7 ,3 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"INC"  ,&op::INC  ,7 ,3 ,&op::EXT}, {"TST"  ,&op::TST  ,7 ,3 ,&op::EXT}, {"JMP"  ,&op::JMP  ,4 ,3 ,&op::EXT}, {"CLR"  ,&op::CLR  ,7 ,3 ,&op::EXT},
+		{"SUBA" ,&op::SUBA ,2 ,2 ,&op::IMM}, {"CMPA" ,&op::CMPA ,2 ,2 ,&op::IMM}, {"SBCA" ,&op::SBCA ,2 ,2 ,&op::IMM}, {"SUBD" ,&op::SUBD ,4 ,3 ,&op::IMM}, {"ANDA"     ,&op::ANDA ,2 ,2 ,&op::IMM}, {"BITA"     ,&op::BITA ,2 ,2 ,&op::IMM}, {"LDA"  ,&op::LDA  ,2 ,2 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"EORA"     ,&op::EORA ,2 ,2 ,&op::IMM}, {"ADCA" ,&op::ADCA ,2 ,2 ,&op::IMM}, {"ORA"  ,&op::ORA  ,2 ,2 ,&op::IMM}, {"ADDA" ,&op::ADDA ,2 ,2 ,&op::IMM}, {"CMPX" ,&op::CMPX ,4 ,3 ,&op::IMM}, {"BSR"  ,&op::BSR  ,7 ,2 ,&op::REL}, {"LDX"  ,&op::LDX  ,3 ,3 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"SUBA" ,&op::SUBA ,4 ,2 ,&op::DIR}, {"CMPA" ,&op::CMPA ,4 ,2 ,&op::DIR}, {"SBCA" ,&op::SBCA ,4 ,2 ,&op::DIR}, {"SUBD" ,&op::SUBD ,6 ,2 ,&op::DIR}, {"ANDA"     ,&op::ANDA ,4 ,2 ,&op::DIR}, {"BITA"     ,&op::BITA ,4 ,2 ,&op::DIR}, {"LDA"  ,&op::LDA  ,4 ,2 ,&op::DIR}, {"STA"  ,&op::STA  ,4 ,2 ,&op::DIR}, {"EORA"     ,&op::EORA ,4 ,2 ,&op::DIR}, {"ADCA" ,&op::ADCA ,4 ,2 ,&op::DIR}, {"ORA"  ,&op::ORA  ,4 ,2 ,&op::DIR}, {"ADDA" ,&op::ADDA ,4 ,2 ,&op::DIR}, {"CMPX" ,&op::CMPX ,6 ,2 ,&op::DIR}, {"JSR"  ,&op::JSR  ,7 ,2 ,&op::DIR}, {"LDX"  ,&op::LDX  ,5 ,2 ,&op::DIR}, {"STX"  ,&op::STX  ,5 ,2 ,&op::DIR},
+		{"SUBA" ,&op::SUBA ,4 ,2 ,&op::IDX}, {"CMPA" ,&op::CMPA ,4 ,2 ,&op::IDX}, {"SBCA" ,&op::SBCA ,4 ,2 ,&op::IDX}, {"SUBD" ,&op::SUBD ,4 ,2 ,&op::IDX}, {"ANDA"     ,&op::ANDA ,4 ,2 ,&op::IDX}, {"BITA"     ,&op::BITA ,4 ,2 ,&op::IDX}, {"LDA"  ,&op::LDA  ,4 ,2 ,&op::IDX}, {"STA"  ,&op::STA  ,4 ,2 ,&op::IDX}, {"EORA"     ,&op::EORA ,4 ,2 ,&op::IDX}, {"ADCA" ,&op::ADCA ,4 ,2 ,&op::IDX}, {"ORA"  ,&op::ORA  ,4 ,2 ,&op::IDX}, {"ADDA" ,&op::ADDA ,4 ,2 ,&op::IDX}, {"CMPX" ,&op::CMPX ,6 ,2 ,&op::IDX}, {"JSR"  ,&op::JSR  ,7 ,2 ,&op::IDX}, {"LDX"  ,&op::LDX  ,5 ,2 ,&op::IDX}, {"STX"  ,&op::STX  ,5 ,2 ,&op::IDX},
+		{"SUBA" ,&op::SUBA ,5 ,3 ,&op::EXT}, {"CMPA" ,&op::CMPA ,5 ,3 ,&op::EXT}, {"SBCA" ,&op::SBCA ,5 ,3 ,&op::EXT}, {"SUBD" ,&op::SUBD ,7 ,3 ,&op::EXT}, {"ANDA"     ,&op::ANDA ,5 ,3 ,&op::EXT}, {"BITA"     ,&op::BITA ,5 ,3 ,&op::EXT}, {"LDA"  ,&op::LDA  ,5 ,3 ,&op::EXT}, {"STA"  ,&op::STA  ,5 ,3 ,&op::EXT}, {"EORA"     ,&op::EORA ,5 ,3 ,&op::EXT}, {"ADCA" ,&op::ADCA ,5 ,3 ,&op::EXT}, {"ORA"  ,&op::ORA  ,5 ,3 ,&op::EXT}, {"ADDA" ,&op::ADDA ,5 ,3 ,&op::EXT}, {"CMPX" ,&op::CMPX ,7 ,3 ,&op::EXT}, {"JSR"  ,&op::JSR  ,8 ,3 ,&op::EXT}, {"LDX"  ,&op::LDX  ,6 ,3 ,&op::EXT}, {"STX"  ,&op::STX  ,6 ,3 ,&op::EXT},
+		{"SUBB" ,&op::SUBB ,2 ,2 ,&op::IMM}, {"CMPB" ,&op::CMPB ,2 ,2 ,&op::IMM}, {"SBCB" ,&op::SBCB ,2 ,2 ,&op::IMM}, {"ADDD" ,&op::ADDD ,4 ,3 ,&op::IMM}, {"ANDB"     ,&op::ANDB ,2 ,2 ,&op::IMM}, {"BITB"     ,&op::BITB ,2 ,2 ,&op::IMM}, {"LDB"  ,&op::LDB  ,2 ,2 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"EORB"     ,&op::EORB ,2 ,2 ,&op::IMM}, {"ADCB" ,&op::ADCB ,2 ,2 ,&op::IMM}, {"ORB"  ,&op::ORB  ,2 ,2 ,&op::IMM}, {"ADDB" ,&op::ADDB ,2 ,2 ,&op::IMM}, {"LDD"  ,&op::LDD  ,3 ,3 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDU"  ,&op::LDU  ,3 ,3 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"SUBB" ,&op::SUBB ,4 ,2 ,&op::DIR}, {"CMPB" ,&op::CMPB ,4 ,2 ,&op::DIR}, {"SBCB" ,&op::SBCB ,4 ,2 ,&op::DIR}, {"ADDD" ,&op::ADDD ,6 ,2 ,&op::DIR}, {"ANDB"     ,&op::ANDB ,4 ,2 ,&op::DIR}, {"BITB"     ,&op::BITB ,4 ,2 ,&op::DIR}, {"LDB"  ,&op::LDB  ,4 ,2 ,&op::DIR}, {"STB"  ,&op::STB  ,4 ,2 ,&op::DIR}, {"EORB"     ,&op::EORB ,4 ,2 ,&op::DIR}, {"ADCB" ,&op::ADCB ,4 ,2 ,&op::DIR}, {"ORB"  ,&op::ORB  ,4 ,2 ,&op::DIR}, {"ADDB" ,&op::ADDB ,4 ,2 ,&op::DIR}, {"LDD"  ,&op::LDD  ,5 ,2 ,&op::DIR}, {"STD"  ,&op::STD  ,5 ,2 ,&op::DIR}, {"LDU"  ,&op::LDU  ,5 ,2 ,&op::DIR}, {"STU"  ,&op::STU  ,5 ,2 ,&op::DIR},
+		{"SUBB" ,&op::SUBB ,4 ,2 ,&op::IDX}, {"CMPB" ,&op::CMPB ,4 ,2 ,&op::IDX}, {"SBCB" ,&op::SBCB ,4 ,2 ,&op::IDX}, {"ADDD" ,&op::ADDD ,6 ,2 ,&op::IDX}, {"ANDB"     ,&op::ANDB ,4 ,2 ,&op::IDX}, {"BITB"     ,&op::BITB ,4 ,2 ,&op::IDX}, {"LDB"  ,&op::LDB  ,4 ,2 ,&op::IDX}, {"STB"  ,&op::STB  ,4 ,2 ,&op::IDX}, {"EORB"     ,&op::EORB ,4 ,2 ,&op::IDX}, {"ADCB" ,&op::ADCB ,4 ,2 ,&op::IDX}, {"ORB"  ,&op::ORB  ,4 ,2 ,&op::IDX}, {"ADDB" ,&op::ADDB ,4 ,2 ,&op::IDX}, {"LDD"  ,&op::LDD  ,5 ,2 ,&op::IDX}, {"STD"  ,&op::STD  ,5 ,2 ,&op::IDX}, {"LDU"  ,&op::LDU  ,5 ,2 ,&op::IDX}, {"STU"  ,&op::STU  ,5 ,2 ,&op::IDX},
+		{"SUBB" ,&op::SUBB ,5 ,3 ,&op::EXT}, {"CMPB" ,&op::CMPB ,5 ,3 ,&op::EXT}, {"SBCB" ,&op::SBCB ,5 ,3 ,&op::EXT}, {"ADDD" ,&op::ADDD ,7 ,3 ,&op::EXT}, {"ANDB"     ,&op::ANDB ,5 ,3 ,&op::EXT}, {"BITB"     ,&op::BITB ,5 ,3 ,&op::EXT}, {"LDB"  ,&op::LDB  ,5 ,3 ,&op::EXT}, {"STB"  ,&op::STB  ,5 ,3 ,&op::EXT}, {"EORB"     ,&op::EORB ,5 ,3 ,&op::EXT}, {"ADCB" ,&op::ADCB ,5 ,3 ,&op::EXT}, {"ORB"  ,&op::ORB  ,5 ,3 ,&op::EXT}, {"ADDB" ,&op::ADDB ,5 ,3 ,&op::EXT}, {"LDD"  ,&op::LDD  ,6 ,3 ,&op::EXT}, {"STD"  ,&op::STD  ,6 ,3 ,&op::EXT}, {"LDU"  ,&op::LDU  ,6 ,3 ,&op::EXT}, {"STU"  ,&op::STU  ,6 ,3 ,&op::EXT}
 #endif
 	};
 	OpCodeP2 =
 	{
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"***"  ,nullptr  ,0 ,0 ,nullptr}, {"***"  ,nullptr  ,0 ,0 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LBRN" ,op::LBRN ,5 ,4 ,op::REL}, {"LBHI" ,op::LBHI ,5 ,4 ,op::REL}, {"LBLS" ,op::LBLS ,5 ,4 ,op::REL}, {"LBHS/LBCC",op::LBCC ,5 ,4 ,op::REL}, {"LBCS/LBLO",op::LBCS ,5 ,4 ,op::REL}, {"LBNE" ,op::LBNE ,5 ,4 ,op::REL}, {"LBEQ" ,op::LBEQ ,5 ,4 ,op::REL}, {"LBVC" ,op::LBVC ,5 ,4 ,op::REL}, {"LBVS" ,op::LBVS ,5 ,4 ,op::REL}, {"LBPL" ,op::LBPL ,5 ,4 ,op::REL}, {"LBMI" ,op::LBMI ,5 ,4 ,op::REL}, {"LBGE" ,op::LBGE ,5 ,4 ,op::REL}, {"LBLT" ,op::LBLT ,5 ,4 ,op::REL}, {"LBGT" ,op::LBGT ,5 ,4 ,op::REL}, {"LBLE" ,op::LBLE ,5 ,4 ,op::REL},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"SWI2" ,op::SWI2 ,20,2 ,op::INH},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPD" ,op::CMPD ,5 ,4 ,op::IMM}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPY" ,op::CMPY ,5 ,4 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDY"  ,op::LDY  ,4 ,4 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPD" ,op::CMPD ,7 ,3 ,op::DIR}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPY" ,op::CMPY ,7 ,3 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDY"  ,op::LDY  ,6 ,3 ,op::DIR}, {"STY"  ,op::STY  ,6 ,3 ,op::DIR},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPD" ,op::CMPD ,7 ,3 ,op::IDX}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPY" ,op::CMPY ,7 ,3 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDY"  ,op::LDY  ,6 ,3 ,op::IDX}, {"STY"  ,op::STY  ,6 ,3 ,op::IDX},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPD" ,op::CMPD ,8 ,4 ,op::EXT}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPY" ,op::CMPY ,8 ,4 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDY"  ,op::LDY  ,7 ,4 ,op::EXT}, {"STY"  ,op::STY  ,7 ,4 ,op::EXT},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDS"  ,op::LDS  ,4 ,4 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDS"  ,op::LDS  ,6 ,4 ,op::DIR}, {"STS"  ,op::STS  ,6 ,3 ,op::DIR},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDS"  ,op::LDS  ,6 ,3 ,op::IDX}, {"STS"  ,op::STS  ,6 ,3 ,op::IDX},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"      ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"LDS"  ,op::LDS  ,7 ,4 ,op::EXT}, {"STS"  ,op::STS  ,7 ,4 ,op::EXT},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"***"  ,nullptr   ,0 ,0 ,nullptr }, {"***"  ,nullptr   ,0 ,0 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LBRN" ,&op::LBRN ,5 ,4 ,&op::REL}, {"LBHI" ,&op::LBHI ,5 ,4 ,&op::REL}, {"LBLS" ,&op::LBLS ,5 ,4 ,&op::REL}, {"LBHS/LBCC",&op::LBCC ,5 ,4 ,&op::REL}, {"LBCS/LBLO",&op::LBCS ,5 ,4 ,&op::REL}, {"LBNE" ,&op::LBNE ,5 ,4 ,&op::REL}, {"LBEQ" ,&op::LBEQ ,5 ,4 ,&op::REL}, {"LBVC" ,&op::LBVC ,5 ,4 ,&op::REL}, {"LBVS" ,&op::LBVS ,5 ,4 ,&op::REL}, {"LBPL" ,&op::LBPL ,5 ,4 ,&op::REL}, {"LBMI" ,&op::LBMI ,5 ,4 ,&op::REL}, {"LBGE" ,&op::LBGE ,5 ,4 ,&op::REL}, {"LBLT" ,&op::LBLT ,5 ,4 ,&op::REL}, {"LBGT" ,&op::LBGT ,5 ,4 ,&op::REL}, {"LBLE" ,&op::LBLE ,5 ,4 ,&op::REL},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"SWI2" ,&op::SWI2 ,20,2 ,&op::INH},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPD" ,&op::CMPD ,5 ,4 ,&op::IMM}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPY" ,&op::CMPY ,5 ,4 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDY"  ,&op::LDY  ,4 ,4 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPD" ,&op::CMPD ,7 ,3 ,&op::DIR}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPY" ,&op::CMPY ,7 ,3 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDY"  ,&op::LDY  ,6 ,3 ,&op::DIR}, {"STY"  ,&op::STY  ,6 ,3 ,&op::DIR},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPD" ,&op::CMPD ,7 ,3 ,&op::IDX}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPY" ,&op::CMPY ,7 ,3 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDY"  ,&op::LDY  ,6 ,3 ,&op::IDX}, {"STY"  ,&op::STY  ,6 ,3 ,&op::IDX},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPD" ,&op::CMPD ,8 ,4 ,&op::EXT}, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPY" ,&op::CMPY ,8 ,4 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDY"  ,&op::LDY  ,7 ,4 ,&op::EXT}, {"STY"  ,&op::STY  ,7 ,4 ,&op::EXT},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDS"  ,&op::LDS  ,4 ,4 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDS"  ,&op::LDS  ,6 ,4 ,&op::DIR}, {"STS"  ,&op::STS  ,6 ,3 ,&op::DIR},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDS"  ,&op::LDS  ,6 ,3 ,&op::IDX}, {"STS"  ,&op::STS  ,6 ,3 ,&op::IDX},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"      ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"LDS"  ,&op::LDS  ,7 ,4 ,&op::EXT}, {"STS"  ,&op::STS  ,7 ,4 ,&op::EXT},
 	};
 	OpCodeP3 =
 	{
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"***"  ,nullptr  ,0 ,0 ,nullptr}, {"***"  ,nullptr  ,0 ,0 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"SWI3" ,op::SWI3 ,20,2 ,op::INH},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPU" ,op::CMPU ,5 ,4 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPS" ,op::CMPS ,5 ,4 ,op::IMM}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPU" ,op::CMPU ,7 ,3 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPS" ,op::CMPS ,7 ,3 ,op::DIR}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPU" ,op::CMPU ,7 ,3 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPS" ,op::CMPS ,7 ,3 ,op::IDX}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPU" ,op::CMPU ,8 ,4 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"CMPS" ,op::CMPS ,8, 4 ,op::EXT}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr},
-		{"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}, {"???"  ,op::XXX  ,1 ,1 ,nullptr}
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"***"  ,nullptr   ,0 ,0 ,nullptr }, {"***"  ,nullptr   ,0 ,0 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"SWI3" ,&op::SWI3 ,20,2 ,&op::INH},
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPU" ,&op::CMPU ,5 ,4 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPS" ,&op::CMPS ,5 ,4 ,&op::IMM}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPU" ,&op::CMPU ,7 ,3 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPS" ,&op::CMPS ,7 ,3 ,&op::DIR}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPU" ,&op::CMPU ,7 ,3 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPS" ,&op::CMPS ,7 ,3 ,&op::IDX}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPU" ,&op::CMPU ,8 ,4 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"CMPS" ,&op::CMPS ,8, 4 ,&op::EXT}, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr },
+		{"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }, {"???"  ,&op::XXX  ,1 ,1 ,nullptr }
 	};
 }
 
@@ -257,14 +257,14 @@ void Cpu6809::Write(const uint16_t address, const uint8_t byte)
 //*****************************************************************************
 void Cpu6809::Clock()
 {
-	if (exec != nullptr)
+	if (exec != nullptr )
 	{
 		//(obj->*fp)(m, n)
 		if (uint8_t result = (this->*exec)() == 255)
 		{
-			exec = nullptr;
+			exec = nullptr ;
 			clocksUsed = 0;
-			clocksLeft = 0;
+//			clocksLeft = 0;
 		}
 		else if (haltTriggered)
 		{
@@ -1067,7 +1067,8 @@ uint8_t Cpu6809::RTI()
 //*****************************************************************************
 uint8_t Cpu6809::SYNC()
 {
-	// TODO
+	static int8_t intCount = 0;
+
 	switch (++clocksUsed)
 	{
 	case 1:		// R	Opcode Fetch		PC
@@ -1076,8 +1077,44 @@ uint8_t Cpu6809::SYNC()
 		++reg_PC;
 		break;
 	case 3:		// R	Don't Care			Z
+		if ((reg_CC & CC::I) || (reg_CC & CC::F))
+			clocksUsed = 255;
+		else if (!nmiTriggered || !firqTriggered || !irqTriggered)
+			--clocksUsed;
 		break;
 	case 4:		// R	Don't Care			Z
+		if (nmiTriggered || firqTriggered || irqTriggered)
+		{
+			++intCount;
+			if (intCount >= 3)
+			{
+				if (nmiTriggered)
+				{
+					clocksUsed = 1;
+					intCount = 0;
+					exec = &Cpu6809::NMI;
+				}
+				else if (firqTriggered)
+				{
+					clocksUsed = 1;
+					intCount = 0;
+					exec = &Cpu6809::FIRQ;
+				}
+				else if (irqTriggered)
+				{
+					clocksUsed = 1;
+					intCount = 0;
+					exec = &Cpu6809::IRQ;
+				}
+			}
+		}
+		else if (intCount < 3)
+		{
+			intCount = 0;
+			clocksUsed = 255;
+		}
+		else
+			--clocksUsed;
 		break;
 	}
 	return(clocksUsed);
@@ -1108,15 +1145,13 @@ uint8_t Cpu6809::CWAI()
 	case 1:		// R	Opcode Fetch		PC
 		break;
 	case 2:		// R	CC Mask				PC+1
-		scratch_lo = Read(++reg_PC);
+		scratch_lo = Read(reg_PC);
 		++reg_PC;
 		break;
 	case 3:		// R	Don't Care			PC+2
-		reg_CC &= scratch_lo;
 		++reg_PC;
 		break;
 	case 4:		// R	Don't care			$ffff
-		reg_CC |= CC::E;
 		break;
 	case 5:		// W	PC Low				SP-1	--SP
 		Write(--reg_S, PC_lo);
@@ -1153,21 +1188,31 @@ uint8_t Cpu6809::CWAI()
 		break;
 	case 16:	// W	CC Register			SP-12	--SP
 		Write(--reg_S, reg_CC);
+		reg_CC &= scratch_lo;
+		reg_CC |= CC::E;
 		break;
-
-		// TODO
 
 	case 17:	// R	Don't Care			$ffff
 		// wait for interrupt signal
+		if (!nmiTriggered && !firqTriggered && !irqTriggered)
+			--clocksUsed;
 		break;
 
 	case 18:	// R	Int Vector High		$fffx
-		// act on signal by grabbing the interrupt's vector
-
-		PC_hi = Read(0xfff4);
+		if (nmiTriggered)
+			PC_hi = Read(0xfffc);
+		else if (firqTriggered && (reg_CC & CC::F) != CC::F)
+			PC_hi = Read(0xfff6);
+		else if (irqTriggered && (reg_CC & CC::I) != CC::I)
+			PC_hi = Read(0xfff8);
 		break;
 	case 19:	// R	Int Vector Low		$fffx
-		PC_lo = Read(0xfff5);
+		if (nmiTriggered)
+			PC_lo = Read(0xfffd);
+		else if (firqTriggered && (reg_CC & CC::F) != CC::F)
+			PC_lo = Read(0xfff7);
+		else if (irqTriggered && (reg_CC & CC::I) != CC::I)
+			PC_lo = Read(0xfff9);
 		break;
 	case 20:	// R	Don't Care			$ffff
 		clocksUsed = 0xff;
@@ -2969,6 +3014,32 @@ uint8_t Cpu6809::LBVS()
 //*****************************************************************************
 uint8_t Cpu6809::LEAS()
 {
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		addressMode = (this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addressMode)
+	{
+	case ADDR_MODE::IdxZeroOffset:
+		exec = this->LeaS_None;
+	case ADDR_MODE::IdxConstantOffset:
+		exec = this->LeaS_Const;
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+		exec = this->LeaS_Accumulator;
+		break;
+	case ADDR_MODE::IdxAutoIncDec:
+		exec = this->LeaS_AutoIncDec;
+		break;
+	case ADDR_MODE::IdxIndirect:
+		exec = this->LeaS_Indirect;
+		break;
+	}
 	return(clocksUsed);
 }
 
@@ -4725,10 +4796,9 @@ uint8_t Cpu6809::ANDB()         // And B
 
 
 //*****************************************************************************
-//	()
+//	ANDCC()
 //*****************************************************************************
-//	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
-// reset.
+//	AND the Condition Codes with the specified value
 //*****************************************************************************
 // MODIFIES:
 //		  Registers:
@@ -4741,7 +4811,20 @@ uint8_t Cpu6809::ANDB()         // And B
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::ANDCC()        // And Condition Codes (clear one or more flags)
-{ return(255); }
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Data				PC+1
+		(this->*mode)(1);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		reg_CC &= offset_lo;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -5285,10 +5368,9 @@ uint8_t Cpu6809::ORB()          // Logical OR register B
 
 
 //*****************************************************************************
-//	()
+//	ORCC()
 //*****************************************************************************
-//	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
-// reset.
+//	OR the condition code register with the given value
 //*****************************************************************************
 // MODIFIES:
 //		  Registers:
@@ -5301,7 +5383,20 @@ uint8_t Cpu6809::ORB()          // Logical OR register B
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::ORCC()         // Logical OR Condition Codes (set one or more flags)
-{ return(255); }
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Data				PC+1
+		(this->*mode)(1);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		reg_CC |= offset_lo;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -5665,7 +5760,7 @@ uint8_t Cpu6809::SUBD()         // Subtract from register D     (A << 8 | B)
 
 
 //*****************************************************************************
-//	()
+//	TST()
 //*****************************************************************************
 //	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
 // reset.
@@ -5681,7 +5776,29 @@ uint8_t Cpu6809::SUBD()         // Subtract from register D     (A << 8 | B)
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::TST()          // Test memory location, adjust N and Z Condition codes based on content
-{ return(255); }
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+	case 2:		// R	..					PC+1
+		addressMode = (ADDR_MODE)(this->*mode)(1);
+		++reg_PC;
+		break;
+		if (addressMode == ADDR_MODE::Direct)
+		{
+			exec = &Cpu6809::TST_DIR;
+		}
+		else if (addressMode == ADDR_MODE::Extended)
+		{
+			offset_hi = offset_lo;
+			exec = &Cpu6809::TST_EXT;
+		}
+		else if (clocksUsed > 2 && addressMode == ADDR_MODE::Indexed)
+		{
+		}
+	}
+	return(255); 
+}
 
 
 //*********************************************************************************************************************************
@@ -5696,9 +5813,13 @@ uint8_t Cpu6809::TST()          // Test memory location, adjust N and Z Conditio
 // On the 6309, this would trigger the invalid operation exception vector.
 //
 // On the 6809, this is undefined behavior and does not trigger any such
-// exceptions, as the invalid instruction exception trap does not exist. (we
-// try to define undefined opcodes for the CPU, but not all have any known
-// "hidden" functionality, so we wind up here instead.
+// exceptions, as the invalid instruction exception trap does not exist.
+// Instead, we usually wind up with an instruction that is close in function
+// to a nearby instruction, some depend on whether the CC::?  is clear or set
+// as to exactly what is carried out. AS invalid instructions are undefined,
+// including the Halt And Catch Fire opcode(s), these are ignored and funneled
+// through this function. (Depending on build configuration, this includes the
+// RESET "interrupt" opcode $3E)
 //*****************************************************************************
 // MODIFIES:
 //		  Registers:
@@ -5712,75 +5833,9 @@ uint8_t Cpu6809::TST()          // Test memory location, adjust N and Z Conditio
 //*****************************************************************************
 uint8_t Cpu6809::XXX()
 {
-	if (true == false)
-	{
-		switch (++clocksUsed)
-		{
-		case 1:		// R	Opcode Fetch		PC
-			break;
-		case 2:		// R	Opcode 2nd byte		PC+1	++PC
-			++reg_PC;
-			break;
-		case 3:		// R	Don't care			PC+2	++PC
-			++reg_PC;
-			break;
-		case 4:		// R	Don't care			$ffff
-			reg_CC |= CC::E;
-			break;
-		case 5:		// W	PC Low				SP-1	--SP
-			Write(--reg_S, PC_lo);
-			break;
-		case 6:		// W	PC High				SP-2	--SP
-			Write(--reg_S, PC_hi);
-			break;
-		case 7:		// W	User Stack Low		SP-3	--SP
-			Write(--reg_S, U_lo);
-			break;
-		case 8:		// W	User Stack High		SP-4	--SP
-			Write(--reg_S, U_hi);
-			break;
-		case 9:		// W	Y  Register Low		SP-5	--SP
-			Write(--reg_S, Y_lo);
-			break;
-		case 10:	// W	Y  Register High	SP-6	--SP
-			Write(--reg_S, Y_hi);
-			break;
-		case 11:	// W	X  Register Low		SP-7	--SP
-			Write(--reg_S, X_lo);
-			break;
-		case 12:	// W	X  Register High	SP-8	--SP
-			Write(--reg_S, X_hi);
-			break;
-		case 13:	// W	DP Register			SP-9	--SP
-			Write(--reg_S, reg_DP);
-			break;
-		case 14:	// W	B  Register			SP-10	--SP
-			Write(--reg_S, reg_B);
-			break;
-		case 15:	// W	A  Register			SP-11	--SP
-			Write(--reg_S, reg_A);
-			break;
-		case 16:	// W	CC Register			SP-12	--SP
-			Write(--reg_S, reg_CC);
-			break;
-		case 17:	// R	Don't Care			$ffff
-			break;
-		case 18:	// R	Int Vector High		$fff2
-			PC_hi = Read(0xfff2);
-			break;
-		case 19:	// R	Int Vector Low		$fff3
-			PC_lo = Read(0xfff3);
-			break;
-		case 20:	// R	Don't Care			$ffff
-			clocksUsed = 0xff;
-			break;
-		}
-	}
-	return(clocksUsed);
+
+	return(255);
 }
-
-
-//*********************************************************************************************************************************
 
 
 //*********************************************************************************************************************************
@@ -5805,7 +5860,7 @@ uint8_t Cpu6809::XXX()
 // Returns:
 //	ADDR_MODE - Address Mode ID  for this address mode(enum)-
 //*****************************************************************************
-uint8_t Cpu6809::INH(uint8_t adjClock)
+Cpu6809::ADDR_MODE Cpu6809::INH(uint8_t adjClock)
 {
 	// don't have to do anything...
 	return(ADDR_MODE::Inherent);
@@ -5827,7 +5882,7 @@ uint8_t Cpu6809::INH(uint8_t adjClock)
 // Returns:
 //	ADDR_MODE - Address Mode ID  for this address mode(enum)
 //*****************************************************************************
-uint8_t Cpu6809::IMM(uint8_t adjClock)
+Cpu6809::ADDR_MODE Cpu6809::IMM(uint8_t adjClock)
 {
 	switch (adjClock)
 	{
@@ -5862,16 +5917,10 @@ uint8_t Cpu6809::IMM(uint8_t adjClock)
 // Returns:
 //	ADDR_MODE - Address Mode ID  for this address mode(enum)
 //*****************************************************************************
-uint8_t Cpu6809::DIR(uint8_t adjClock)
+Cpu6809::ADDR_MODE Cpu6809::DIR(uint8_t adjClock)
 {
-	switch (adjClock)
-	{
-	case 0:
-		offset_hi = reg_DP;
-	case 1:
-		offset_lo = Read(reg_DP);
-		break;
-	}
+	offset = (reg_DP << 8) | Read(reg_DP);
+
 	return(ADDR_MODE::Direct);
 }
 
@@ -5892,12 +5941,13 @@ uint8_t Cpu6809::DIR(uint8_t adjClock)
 // Returns:
 //	ADDR_MODE - Address Mode ID  for this address mode(enum)
 //*****************************************************************************
-uint8_t Cpu6809::EXT(uint8_t adjClock)
+Cpu6809::ADDR_MODE Cpu6809::EXT(uint8_t adjClock)
 {
 	switch (adjClock)
 	{
 	case 0:
 		offset_hi = Read(reg_DP);
+		break;
 	case 1:
 		offset_lo = Read(reg_DP);
 		break;
@@ -5919,44 +5969,72 @@ uint8_t Cpu6809::EXT(uint8_t adjClock)
 // Returns:
 //	ADDR_MODE - Address Mode ID  for this address mode(enum)
 //*****************************************************************************
-uint8_t Cpu6809::IDX(uint8_t adjClock)
+Cpu6809::ADDR_MODE Cpu6809::IDX(uint8_t adjClock)
 {
-	static ADDR_MODE idxMode;
-	static uint8_t regfield;
-	static uint8_t addressingMode;
-	static bool b7;
-	static bool indirectField;
-	switch (adjClock)
+	offset_lo = Read(reg_PC);
+	uint8_t offsetValue = offset_lo & 0x9f;
+
+	if ((offset_lo & 0x80) != 0x80)		// 5-bit constant offset
+		;
+	else
 	{
-	case 0:
-		offset_lo = Read(reg_PC);
-		regfield = ((offset_lo >> 5) & 0x03);
-		addressingMode = offset_lo & 0x0f;
-		switch ((offset_lo >> 5))
+		switch (offsetValue)
 		{
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
+			// Non Indirect
+		case 0x00:						// Auto increment Register by 1
+		case 0x01:						// Auto increment Register by 2
+		case 0x02:						// Auto decrement Register by 1
+		case 0x03:						// Auto decrement Register by 2
+			return(ADDR_MODE::IdxAutoIncDec);
+		case 0x04:						// No constant offset		(2s complement offsets)
+			return(ADDR_MODE::IdxZeroOffset);
+		case 0x05:						// reg_B  Register offset	(2s complement offsets)
+		case 0x06:						// reg_A  Register offset	(2s complement offsets)
+			return(ADDR_MODE::IdxAccumulatorOffset);
+		case 0x08:						// 8-bit constant offset
+		case 0x09:						// 16-bit constant offset
+			return(ADDR_MODE::IdxConstantOffset);
+		case 0x0b:						// reg_D offset
+			return(ADDR_MODE::IdxAccumulatorOffset);
+		case 0x0c:						// 8-bit constant offset from PC
+		case 0x0d:						// 16-bit constanrt offset from PC
+
+			// Indirect
+		case 0x11:						// Indirect increment by 2
+		case 0x13:						// Indirect decrement by 2
+			return(ADDR_MODE::IdxAutoIncDec);
+		case 0x14:						// Indirect no offset
+			return(ADDR_MODE::IdxZeroOffset);
+		case 0x15:						// Indirect reg_B offset
+		case 0x16:						// Indirect reg_A offset
+			return(ADDR_MODE::IdxAccumulatorOffset);
+		case 0x18:						// Indirect 8-bit offset (5-bit defaults to 8-bit)
+		case 0x19:						// Indirect 16-bit offset
+			return(ADDR_MODE::IdxConstantOffset);
+		case 0x1b:						// Indirect reg_D offset
+			return(ADDR_MODE::IdxAccumulatorOffset);
+		case 0x1c:						// Indirect  8-bit constant offset from PC (2s complement offsets)
+		case 0x1d:						// Indirect 16-bit constant offset from PC (2s complement offsets)
+			return(ADDR_MODE::IdxAccumulatorOffset);
+		case 0x1f:						// Extended Indirect
+			return(ADDR_MODE::I)
+			break;
+
+			// Undefined or Not Allowed
+		case 0x07:			// UNDEFINED
+		case 0x0a:			// UNDEFINED
+		case 0x0e:			// UNDEFINED
+		case 0x0f:			// UNDEFINED
+		case 0x17:			// UNDEFINED
+		case 0x1a:			// UNDEFINED
+		case 0x1e:			// UNDEFINED
+		case 0x10:			// NOT ALLOWED
+		case 0x12:			// NOT ALLOWED
+		default:
+			clocksUsed = 0xff;
+			break;
 		}
-	case 1:
-	case 2:
-	case 3:
-		break;
 	}
-	return(ADDR_MODE::Indexed); 
 }
 
 
@@ -5976,7 +6054,7 @@ uint8_t Cpu6809::IDX(uint8_t adjClock)
 // Returns:
 //	ADDR_MODE - Address Mode ID  for this address mode(enum)
 //*****************************************************************************
-uint8_t Cpu6809::REL(uint8_t adjClock)
+Cpu6809::ADDR_MODE Cpu6809::REL(uint8_t adjClock)
 {
 	switch(adjClock)
 	{ 
@@ -6000,19 +6078,457 @@ uint8_t Cpu6809::REL(uint8_t adjClock)
 }
 
 
+//*********************************************************************************************************************************
+//	Address Modes (If Opcode's mnemonic is associated with only one opcode, the function may handle it internally, otherwise it
+// invokes one of thse address mode functions.
+//*********************************************************************************************************************************
+
+
+uint8_t Cpu6809::LeaS_None()
+{
+	uint8_t eaRegister = ((offset_lo & 0x60) >> 5);
+
+	if (((offset_lo & 0x10) == 0x10))
+	{
+		switch (++clocksUsed)
+		{
+		case 3:
+			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10 ? 0xfff0 : 0x0000);
+			clocksUsed = 0xff;
+			switch (eaRegister)
+			{
+			case 0:
+				reg_S = reg_scratch + reg_X;
+				break;
+			case 1:
+				reg_S = reg_scratch + reg_Y;
+				break;
+			case 2:
+				reg_S = reg_scratch + reg_U;
+				break;
+			case 3:
+				reg_S = reg_scratch + reg_S;
+				break;
+			}
+		}
+	}
+	else
+	{
+		switch (++clocksUsed)
+		{
+		case 3:
+			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			switch (eaRegister)
+			{
+			case 0:
+				reg_S = reg_scratch + reg_X;
+				break;
+			case 1:
+				reg_S = reg_scratch + reg_Y;
+				break;
+			case 2:
+				reg_S = reg_scratch + reg_U;
+				break;
+			case 3:
+				reg_S = reg_scratch + reg_S;
+				break;
+			}
+		case 4:
+			reg_S = Read(reg_S);
+			clocksUsed = 0xff;
+		}
+	}
+	return(clocksUsed);
+}
+
+uint8_t Cpu6809::LeaS_Const()
+{}
+
+uint8_t Cpu6809::LeaS_Accumulator()
+{}
+
+uint8_t Cpu6809::LeaS_AutoIncDec()
+{
+
+}
+
+
+uint8_t Cpu6809::LeaS_Indirect()
+{
+	switch (++clocksUsed)
+	{
+	case 3:		// R	Address High		PC+2
+		scratch_hi = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Address Low			PC+3
+		scratch_lo = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 5:		// R	Don't Care			PC+4
+		++reg_PC;
+		break;
+	case 6:		// R	Indirect High		IX
+		S_hi = Read(reg_scratch);
+		++reg_scratch;
+		break;
+	case 7:		// R	Indirect Low		IX+1
+		S_lo = Read(reg_scratch);
+		break;
+	case 8:		// R	Don't Care			$ffff
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Cpu6809::LeaU_None()
+{
+	uint8_t eaRegister = ((offset_lo & 0x60) >> 5);
+
+	if (((offset_lo & 0x10) == 0x10))
+	{
+		switch (++clocksUsed)
+		{
+		case 3:
+			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			clocksUsed = 0xff;
+			switch (eaRegister)
+			{
+			case 0:
+				reg_U = reg_scratch + reg_X;
+				break;
+			case 1:
+				reg_U = reg_scratch + reg_Y;
+				break;
+			case 2:
+				reg_U = reg_scratch + reg_U;
+				break;
+			case 3:
+				reg_U = reg_scratch + reg_U;
+				break;
+			}
+		}
+	}
+	else
+	{
+		switch (++clocksUsed)
+		{
+		case 3:
+			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			switch (eaRegister)
+			{
+			case 0:
+				reg_U = reg_scratch + reg_X;
+				break;
+			case 1:
+				reg_U = reg_scratch + reg_Y;
+				break;
+			case 2:
+				reg_U = reg_scratch + reg_U;
+				break;
+			case 3:
+				reg_U = reg_scratch + reg_U;
+				break;
+			}
+		case 4:
+			reg_U = Read(reg_U);
+			clocksUsed = 0xff;
+		}
+	}
+	return(clocksUsed);
+}
+
+uint8_t Cpu6809::LeaU_Const()
+{
+}
+
+uint8_t Cpu6809::LeaU_Accumulator()
+{}
+
+uint8_t Cpu6809::LeaU_AutoIncDec()
+{}
+
+
+uint8_t Cpu6809::LeaU_Indirect()
+{
+	switch (++clocksUsed)
+	{
+	case 3:		// R	Address High		PC+2
+		scratch_hi = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Address Low			PC+3
+		scratch_lo = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 5:		// R	Don't Care			PC+4
+		++reg_PC;
+		break;
+	case 6:		// R	Indirect High		IX
+		U_hi = Read(reg_scratch);
+		++reg_scratch;
+		break;
+	case 7:		// R	Indirect Low		IX+1
+		U_lo = Read(reg_scratch);
+		break;
+	case 8:		// R	Don't Care			$ffff
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Cpu6809::LeaX_None()
+{
+	uint8_t eaRegister = ((offset_lo & 0x60) >> 5);
+
+	if (((offset_lo & 0x10) == 0x10))
+	{
+		switch (++clocksUsed)
+		{
+		case 3:
+			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			clocksUsed = 0xff;
+			switch (eaRegister)
+			{
+			case 0:
+				reg_X = reg_scratch + reg_X;
+				break;
+			case 1:
+				reg_X = reg_scratch + reg_Y;
+				break;
+			case 2:
+				reg_X = reg_scratch + reg_U;
+				break;
+			case 3:
+				reg_X = reg_scratch + reg_X;
+				break;
+			}
+		}
+	}
+	else
+	{
+		switch (++clocksUsed)
+		{
+		case 3:
+			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			switch (eaRegister)
+			{
+			case 0:
+				reg_X = reg_scratch + reg_X;
+				break;
+			case 1:
+				reg_X = reg_scratch + reg_Y;
+				break;
+			case 2:
+				reg_X = reg_scratch + reg_U;
+				break;
+			case 3:
+				reg_X = reg_scratch + reg_X;
+
+				break;
+			}
+		case 4:
+			reg_X = Read(reg_X);
+			clocksUsed = 0xff;
+		}
+	}
+	return(clocksUsed);
+}
+
+uint8_t Cpu6809::LeaX_Const()
+{}
+
+uint8_t Cpu6809::LeaX_Accumulator()
+{}
+
+uint8_t Cpu6809::LeaX_AutoIncDec()
+{}
+
+
+uint8_t Cpu6809::LeaX_Indirect()
+{
+	switch (++clocksUsed)
+	{
+	case 3:		// R	Address High		PC+2
+		scratch_hi = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Address Low			PC+3
+		scratch_lo = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 5:		// R	Don't Care			PC+4
+		++reg_PC;
+		break;
+	case 6:		// R	Indirect High		IX
+		X_hi = Read(reg_scratch);
+		++reg_scratch;
+		break;
+	case 7:		// R	Indirect Low		IX+1
+		X_lo = Read(reg_scratch);
+		break;
+	case 8:		// R	Don't Care			$ffff
+		reg_CC = (reg_X == 0x0000) ? (reg_CC & ~CC::Z) : (reg_CC | CC::Z);
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Cpu6809::LeaY_None()
+{}
+
+uint8_t Cpu6809::LeaY_Const()
+{}
+
+uint8_t Cpu6809::LeaY_Accumulator()
+{}
+
+uint8_t Cpu6809::LeaY_AutoIncDec()
+{}
+
+
+uint8_t Cpu6809::LeaY_Indirect()
+{
+	switch (++clocksUsed)
+	{
+	case 3:		// R	Address High		PC+2
+		scratch_hi = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Address Low			PC+3
+		scratch_lo = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 5:		// R	Don't Care			PC+4
+		++reg_PC;
+		break;
+	case 6:		// R	Indirect High		IX
+		Y_hi = Read(reg_scratch);
+		++reg_scratch;
+		break;
+	case 7:		// R	Indirect Low		IX+1
+		Y_lo = Read(reg_scratch);
+		break;
+	case 8:		// R	Don't Care			$ffff
+		reg_CC = (reg_Y == 0x0000) ? (reg_CC & ~CC::Z) : (reg_CC | CC::Z);
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
 //*****************************************************************************
-//	Ill()
+//	TST_DIR()
 //*****************************************************************************
-//	Illegal  Address mode - Since this isn't a real address mode, it acts like
-// it was an inherent address mode.
+//	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
+// reset. - Direct [Page] Address Mode
+//*****************************************************************************
+// MODIFIES:
+//		  Registers:
+//	Condition Codes:
 //*****************************************************************************
 // Params:
-//	uint9_t	- adjusted clock... as each opcode mnemonic may represent one or
-//				two bytes of opcode, and therefore different clock cycle pulses
+//	None
 // Returns:
-//	ADDR_MODE - Address Mode ID  for this address mode(enum)
+//	uint8_t	- the number of clock cycles used, or 255 to signify function is
+//				completed.
 //*****************************************************************************
-uint8_t Cpu6809::Ill(uint8_t adjClock)
+uint8_t Cpu6809::TST_DIR()
 {
-	return(ADDR_MODE::Illegal);
+	switch (++clocksUsed)
+	{
+	case 3:		// R	Don't Care			$ffff
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(offset);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		break;
+	case 6:		// R	Don't Care			$ffff
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	TST_EXT()
+//*****************************************************************************
+//	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
+// reset. - Extended Address Mode
+//*****************************************************************************
+// MODIFIES:
+//		  Registers:
+//	Condition Codes:
+//*****************************************************************************
+// Params:
+//	None
+// Returns:
+//	uint8_t	- the number of clock cycles used, or 255 to signify function is
+//				completed.
+//*****************************************************************************
+uint8_t Cpu6809::TST_EXT()
+{
+	switch (++clocksUsed)
+	{
+	case 3:		// R	Address Low			PC+2
+		(this->*mode)(1);
+		++reg_PC;
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(offset);
+		break;
+	case 6:		// R	Don't Care			$ffff
+		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		break;
+	case 7:		// R	Don't Care			$ffff
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	TST()
+//*****************************************************************************
+//	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
+// reset.
+//*****************************************************************************
+// MODIFIES:
+//		  Registers:
+//	Condition Codes:
+//*****************************************************************************
+// Params:
+//	None
+// Returns:
+//	uint8_t	- the number of clock cycles used, or 255 to signify function is
+//				completed.
+//*****************************************************************************
+uint8_t Cpu6809::TST_IDX()
+{
+	switch (++clocksUsed)
+	{
+	case 3:
+	case 4:
+	case 5:
+	case 6:
+		break;
+	}
+	return(clocksUsed);
 }
