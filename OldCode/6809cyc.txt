@@ -55,7 +55,7 @@ ASL, ASR, CLR, COM, DEC, INC, LSL, LSR, NEG, ROL, ROR
                             |  6 W Data             EA    |  6 R Don't Care       $ffff |  ? W Data             EA
                             |                             |  7 W Data             EA    |
 
-TST
+Tst
 ----------------------------|-----------------------------|-----------------------------|----------------------------
                             | Direct Addressing Mode      | Extended Addressing Mode    | Indexed Addressing Mode
 ----------------------------|-----------------------------|-----------------------------|----------------------------
@@ -67,7 +67,7 @@ TST
                             |  6 R Don't Care       $ffff |  6 R Don't Care       $ffff |  ? R Don't Care       $ffff
                             |                             |  7 R Don't Care       $ffff |
 
-ADCA, ADCB, ADDA, ADDB, ANDA, ANDB, BITA, BITB, CMPA, CMPB, EORA, EORB, LDA, LDB, ORA, ORB, SBCA, SBCB, SUBA, SUBB
+Adca, ADCB, ADDA, ADDB, ANDA, ANDB, BITA, BITB, CMPA, CMPB, EORA, EORB, LDA, LDB, ORA, ORB, SBCA, SBCB, SUBA, SUBB
 ----------------------------|-----------------------------|-----------------------------|----------------------------
 Immediate Addressing Mode   | Direct Addressing Mode      | Extended Addressing Mode    | Indexed Addressing Mode
 ----------------------------|-----------------------------|-----------------------------|----------------------------
@@ -77,7 +77,7 @@ Immediate Addressing Mode   | Direct Addressing Mode      | Extended Addressing 
                             |  4 R Data             EA    |  4 R Don't Care       $ffff |  ? R Data             EA
                             |                             |  5 R Data             EA    |
 
-ANDCC, ORCC
+andcc, orcc
 ----------------------------|-----------------------------|-----------------------------|----------------------------
 Immediate Addressing Mode   |                             |                             |
 ----------------------------|-----------------------------|-----------------------------|----------------------------
@@ -234,9 +234,9 @@ bsr                         | lbsr                        | lbra
 Inherent Addressing Modes
 #########################
 
-asla, asra, clra, coma, deca, inca, lsla, lsra, NEGA, ROLA, RORA, TSTA
-aslb, asrb, clrb, comb, decb, incb, lslb, lsrb, NEGB, ROLB, RORB, TSTB
-DAA, nop, SEX
+asla, asra, clra, coma, deca, inca, lsla, lsra, nega, rola, rora, tsta
+aslb, asrb, clrb, comb, decb, incb, lslb, lsrb, negb, rolb, rorb, tstb
+daa, nop, sex
 ---------------------------
  1 R Opcode Fetch     PC
  2 R Don't Care       PC+1
@@ -255,7 +255,7 @@ abx                         | mul
                             | 10 R Don't Care       $ffff
                             | 11 R Don't Care       $ffff
 
-EXG                         | TFR
+exg                         | tfr
 ----------------------------|----------------------------
  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC
  2 R Post Byte        PC+1  |  2 R Post Byte        PC+1
@@ -322,7 +322,7 @@ swi                         | swi2                        | swi3                
 19 R Don't Care       $ffff | 19 R Int. Vector Low  $fff5 | 19 R Int. Vector Low  $fff3 | 19 R Don't Care       $ffff
                             | 20 R Don't Care       $ffff | 20 R Don't Care       $ffff |
 
-CWAI                        | SYNC
+cwai                        | sync
 ----------------------------|----------------------------
  1 R Opcode Fetch     PC    |  1 R Opcode Fetch     PC
  2 R CC Mask          PC+1  |  2 R Don't Care       PC+1

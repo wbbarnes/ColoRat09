@@ -1,7 +1,5 @@
 /******************************************************************************
 *		   File:
-*		Project:
-*	   Solution:
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *		 Author:
 *		Created:
@@ -9,21 +7,6 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Modifications: (Who, whenm, what)
 *
-*******************************************************************************
-* Solution Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Project Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* File Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* NOTES:
-*	Datasheets report opecodes,memory used, and cycles. This can be used for
-* emulation by exec functionality in one cycle padded by the cycle time
-* required, OR, as here, instruction-data balanced with clock cycles, for
-* real-time emulated CPU timing.
 ******************************************************************************/
 #pragma once
 

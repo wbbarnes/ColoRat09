@@ -1,7 +1,5 @@
 /******************************************************************************
 *		   File: ConfigData.h
-*		Project: ColoRat09
-*	   Solution: ColoRat
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 *		 Author: William Barnes
 *		Created: 2020/04/23
@@ -9,16 +7,6 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Modifications: (Who, whenm, what)
 *
-*******************************************************************************
-* Solution Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Project Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* File Summary:
-*	Configuration options for the ColoRat computer
-* (exists as emulation currently)
 ******************************************************************************/
 #pragma once
 

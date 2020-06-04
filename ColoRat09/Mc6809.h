@@ -1,78 +1,34 @@
 /******************************************************************************
-*		   File:
-*		Project:
-*	   Solution:
+*		   File: Mc6809.h
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-*		 Author:
-*		Created:
-*	  Copyright:
+*		 Author: William Barnes
+*		Created: 2020/05/30
+*	  Copyright: 2020 - under Apache 2.0 Licensing
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 * Modifications: (Who, whenm, what)
 *
-*******************************************************************************
-* Solution Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* Project Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* File Summary:
-*
-* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-* NOTES:
-*	Datasheets report opecodes,memory used, and cycles. This can be used for
-* emulation by exec functionality in one cycle padded by the cycle time
-* required, OR, as here, instruction-data balanced with clock cycles, for
-* real-time emulated CPU timing.
-*
-*   All unions that split a WORD (uint16_t) into BYTES (uint8_t) MUST observe
-* the following: On the emulated 6809: in memory, a 16-bit word is stored with
-* the MSB first... On the hardware the emulator runs on (Intel) this is
-* reversed. Motorola chips must observe THIS order as it appears here,
 ******************************************************************************/
 #pragma once
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
 #include "CPU.h"
-#include "SAM6883.h"
-#include "DiscreetMMU.h"
+#include "MMU.h"
 
-class Mc6809 : public CPU
+#define MC6809E
+
+class Mc6809 : 	public CPU
 {
+	// variables
 private:
-    uint8_t (*exec)();
+	MMU* bus;
+	uint8_t(Mc6809::* exec)();						// Mnemonic function from interpreted Opcode
 
-	uint8_t cyclesLeft;
-    bool resetTriggered;
-    bool nmiTriggered;
-    bool firqTriggered;
-    bool irqTriggered;
-    bool haltTriggered;
+	uint8_t clocksUsed;
 
-    // the following three unions are scratch-pads/internal private registers..
-	union 
-	{
-		struct
-		{
-			uint8_t instruction_lo;
-            uint8_t instruction_hi;
-        };
-		uint16_t instruction;
-	};
-	union
-	{
-		struct
-		{
-			uint8_t  data_lo;
-            uint8_t  data_hi;
-        };
-		uint16_t data;
-	};
-    union
-    {
-        uint16_t word;   // byte and word may be the same
-        uint8_t byte;
-    };
-
+protected:
 	enum CC : uint8_t
 	{
 		C = (1 << 0),	// Carry       - indicates that a carry or a borrow was generated from bit seven
@@ -85,288 +41,204 @@ private:
 		E = (1 << 7),	// Entire Flag - indicates All registers are stored on the stack during an interrupt ( 1 for all, 0 for CC and PC only)
 	};
 
-    enum REG : uint8_t
-    {
-        D = 0X00,
-        X,
-        Y,
-        U,
-        S,
-        PC,
-        A = 0x08,
-        B,
-        CC,
-        DP
-    };
+	enum REG : uint8_t
+	{
+		D = 0X00,
+		X,
+		Y,
+		U,
+		S,
+		PC,
+		A = 0x08,
+		B,
+		CC,
+		DP
+	};
 
-	MMU *mmu;
+	// Registers, Program/App accessible and internal to CPU only
+	uint8_t reg_CC;				// Condition Code register		(Program Accessible)	0B
+	uint8_t reg_DP;				// Direct Page register.		(Program Accessible)	0A
 
-    struct Vector
-    {
-        uint16_t RESET_hi = 0xfffe;
-        uint16_t RESET_lo = 0xffff;
-        uint16_t NMI_hi = 0xfffc;
-        uint16_t NMI_lo = 0xfffd;
-        uint16_t SWI_hi = 0xfffa;
-        uint16_t SWI_lo = 0xfffb;
-        uint16_t IRQ_hi = 0xfff8;
-        uint16_t IRQ_lo = 0xfff9;
-        uint16_t FIRQ_hi = 0xfff6;
-        uint16_t FIRQ_lo = 0xfff7;
-        uint16_t SWI2_hi = 0xfff4;
-        uint16_t SWI2_lo = 0xfff5;
-        uint16_t SWI3_hi = 0xfff2;
-        uint16_t SWI3_lo = 0xfff3;
-        uint16_t Reserved_hi = 0xfff0;
-        uint16_t Reserved_lo = 0xfff1;
-    } InterruptVector;
-
-protected:
-    // registers
-	union
+	union		// Registers: Accumulator A, B, and D
 	{
 		struct
 		{
-            uint8_t reg_B;      // 0x09     // lo byte of D
-            uint8_t reg_A;      // 0x08     // hi byte of D
+			uint8_t reg_B;		// register B, low byte of D	(Program Accessible)	09
+			uint8_t reg_A;		// register A, hi byte of D		(Program Accessible)	08
 		};
-		uint16_t reg_D;         // 0x00
+		uint16_t reg_D;			// register D, combo of A and B	(Program Accessible)	00
 	};
-	uint8_t reg_DP;             // 0x0B
-	uint8_t reg_CC;             // 0x0A
-    union
-    {
-        struct
-        {
-            uint8_t reg_X_lo;
-            uint8_t reg_X_hi;
-        };
-        uint16_t reg_X;             // 0x01
-    };
-    union
-    {
-        struct
-        {
-            uint8_t reg_Y_lo;
-            uint8_t reg_Y_hi;
-        };
-        uint16_t reg_Y;             // 0x02
-    };
-    union
-    {
-        struct
-        {
-            uint8_t reg_S_lo;
-            uint8_t reg_S_hi;
-        };
-        uint16_t reg_S;             // 0x04
-    };
-    union
-    {
-        struct
-        {
-            uint8_t reg_U_lo;
-            uint8_t reg_U_hi;
-        };
-        uint16_t reg_U;             // 0x03
-    };
-    union
-    {
-        struct
-        {
-            uint8_t reg_PC_lo;
-            uint8_t reg_PC_hi;
-        };
-        uint16_t reg_PC;            // 0x05
-    };
-public:
 
+	union		// Index Register X
+	{
+		struct
+		{
+			uint8_t X_lo;		// index register X low byte	(INTERNAL CPU USE ONLY)
+			uint8_t X_hi;		// index register X hi byte		(INTERNAL CPU USE ONLY)
+		};
+		uint16_t reg_X;			// index register X				(Program Accessible)	01
+	};
+	union		// Index Register Y
+	{
+		struct
+		{
+			uint8_t Y_lo;		// index register Y low byte	(INTERNAL CPU USE ONLY)
+			uint8_t Y_hi;		// index register Y hi byte		(INTERNAL CPU USE ONLY)
+		};
+		uint16_t reg_Y;			// index register Y				(Program Accessible)	02
+	};
+	union		// User Stack Pointer
+	{
+		struct
+		{
+			uint8_t U_lo;		// User Stack Pointer low byte		(INTERNAL CPU USE ONLY)
+			uint8_t U_hi;		// User Stack Pointer hi byte		(INTERNAL CPU USE ONLY)
+		};
+		uint16_t reg_U;			// register U User Stack Pointer	(Program Accessible)	03
+	};
+	union		// System Stack Pointer
+	{
+		struct
+		{
+			uint8_t S_lo;		// System Stack Pounter low byte	(INTERNAL CPU USE ONLY)
+			uint8_t S_hi;		// System Stack Pounter hi byte		(INTERNAL CPU USE ONLY)
+		};
+		uint16_t reg_S;			// register S, System Stack Pounter	(Program Accessible)	04
+	};
+	union		// Program Counter
+	{
+		struct
+		{
+			uint8_t PC_lo;		// Program Counter low byte			(INTERNAL CPU USE ONLY)
+			uint8_t PC_hi;		// Program Counter hi byte			(INTERNAL CPU USE ONLY)
+		};
+		uint16_t reg_PC;		// Program Counter					(Program Accessible)	05
+	};
+	union		// Scratch Register
+	{
+		struct
+		{
+			uint8_t scratch_lo;		// scratch register low byte	(INTERNAL CPU USE ONLY)
+			uint8_t scratch_hi;		// scratch register hi byte		(INTERNAL CPU USE ONLY)
+		};
+		uint16_t reg_scratch;		// scratch register				(INTERNAL CPU USE ONLY)
+	};
+
+	struct OPCODE
+	{
+		std::string name;
+		uint8_t(Mc6809::* opcode)();						// Mnemonic function from interpreted Opcode
+		uint8_t minCycles;
+		uint8_t maxCycles;
+		uint8_t pgmBytes;
+	};
+
+	std::vector<OPCODE> OpCodeP1;
+	std::vector<OPCODE> OpCodeP2;
+	std::vector<OPCODE> OpCodeP3;
+
+	std::vector<OPCODE> table;
+
+
+public:
+	volatile bool Halt = false;
+	volatile bool Reset = true;
+	volatile bool Nmi = false;
+	volatile bool Firq = false;
+	volatile bool Irq = false;
+
+	// functions
 private:
+
 protected:
-	// undocumented opcodes
-    uint8_t Reset();        // undocumented soft reset interrupt
+	// opcodes and their address modes
+	uint8_t ABX_inh();			uint8_t ADCA_dir();			uint8_t ADCA_ext();			uint8_t ADCA_idx();
+	uint8_t ADCA_imm();			uint8_t ADCB_dir();			uint8_t ADCB_ext();			uint8_t ADCB_idx();
+	uint8_t ADCB_imm();			uint8_t ADDA_dir();			uint8_t ADDA_ext();			uint8_t ADDA_idx();
+	uint8_t ADDA_imm();			uint8_t ADDB_dir();			uint8_t ADDB_ext();			uint8_t ADDB_idx();
+	uint8_t ADDB_imm();			uint8_t ADDD_dir();			uint8_t ADDD_ext();			uint8_t ADDD_idx();
+	uint8_t ADDD_imm();			uint8_t ANDA_dir();			uint8_t ANDA_ext();			uint8_t ANDA_idx();
+	uint8_t ANDA_imm();			uint8_t ANDB_dir();			uint8_t ANDB_ext();			uint8_t ANDB_idx();
+	uint8_t ANDB_imm();			uint8_t ANDCC_imm();		uint8_t ASLA_LSLA_inh();	uint8_t ASLB_LSLB_inh();
+	uint8_t ASL_LSL_dir();		uint8_t ASL_LSL_ext();		uint8_t ASL_LSL_idx();		uint8_t ASRA_inh();
+	uint8_t ASRB_inh();			uint8_t ASR_dir();			uint8_t ASR_ext();			uint8_t ASR_idx();
+	uint8_t BEQ_rel();			uint8_t BGE_rel();			uint8_t BGT_rel();			uint8_t BHI_rel();
+	uint8_t BHS_BCC_rel();		uint8_t BITA_dir();			uint8_t BITA_ext();			uint8_t BITA_idx();
+	uint8_t BITA_imm();			uint8_t BITB_dir();			uint8_t BITB_ext();			uint8_t BITB_idx();
+	uint8_t BITB_imm();			uint8_t BLE_rel();			uint8_t BLO_BCS_rel();		uint8_t BLS_rel();
+	uint8_t BLT_rel();			uint8_t BMI_rel();			uint8_t BNE_rel();			uint8_t BPL_rel();
+	uint8_t BRA_rel();			uint8_t BRN_rel();			uint8_t BSR_rel();			uint8_t BVC_rel();
+	uint8_t BVS_rel();			uint8_t CLRA_inh();			uint8_t CLRB_inh();			uint8_t CLR_dir();
+	uint8_t CLR_ext();			uint8_t CLR_idx();			uint8_t CMPA_dir();			uint8_t CMPA_ext();
+	uint8_t CMPA_idx();			uint8_t CMPA_imm();			uint8_t CMPB_dir();			uint8_t CMPB_ext();
+	uint8_t CMPB_idx();			uint8_t CMPB_imm();			uint8_t CMPD_dir();			uint8_t CMPD_ext();
+	uint8_t CMPD_idx();			uint8_t CMPD_imm();			uint8_t CMPS_dir();			uint8_t CMPS_ext();
+	uint8_t CMPS_idx();			uint8_t CMPS_imm();			uint8_t CMPU_dir();			uint8_t CMPU_ext();
+	uint8_t CMPU_idx();			uint8_t CMPU_imm();			uint8_t CMPX_dir();			uint8_t CMPX_ext();
+	uint8_t CMPX_idx();			uint8_t CMPX_imm();			uint8_t CMPY_dir();			uint8_t CMPY_ext();
+	uint8_t CMPY_idx();			uint8_t CMPY_imm();			uint8_t COMA_inh();			uint8_t COMB_inh();
+	uint8_t COM_dir();			uint8_t COM_ext();			uint8_t COM_idx();			uint8_t CWAI_inh();
+	uint8_t DAA_inh();			uint8_t DECA_inh();			uint8_t DECB_inh();			uint8_t DEC_dir();
+	uint8_t DEC_ext();			uint8_t DEC_idx();			uint8_t EORA_dir();			uint8_t EORA_ext();
+	uint8_t EORA_idx();			uint8_t EORA_imm();			uint8_t EORB_dir();			uint8_t EORB_ext();
+	uint8_t EORB_idx();			uint8_t EORB_imm();			uint8_t EXG_imm();			uint8_t INCA_inh();
+	uint8_t INCB_inh();			uint8_t INC_dir();			uint8_t INC_idx();			uint8_t INC_ext();
+	uint8_t JMP_dir();			uint8_t JMP_ext();			uint8_t JMP_idx();			uint8_t JSR_dir();
+	uint8_t JSR_ext();			uint8_t JSR_idx();			uint8_t LBCS_LBLO_rel();	uint8_t LBEQ_rel();
+	uint8_t LBGE_rel();			uint8_t LBGT_rel();			uint8_t LBHI_rel();			uint8_t LBHS_LBCC_rel();
+	uint8_t LBLE_rel();			uint8_t LBLS_rel();			uint8_t LBLT_rel();			uint8_t LBMI_rel();
+	uint8_t LBNE_rel();			uint8_t LBPL_rel();			uint8_t LBRA_rel();			uint8_t LBRN_rel();
+	uint8_t LBSR_rel();			uint8_t LBVC_rel();			uint8_t LBVS_rel();			uint8_t LDA_dir();
+	uint8_t LDA_ext();			uint8_t LDA_idx();			uint8_t LDA_imm();			uint8_t LDB_dir();
+	uint8_t LDB_ext();			uint8_t LDB_idx();			uint8_t LDB_imm();			uint8_t LDD_dir();
+	uint8_t LDD_ext();			uint8_t LDD_idx();			uint8_t LDD_imm();			uint8_t LDS_dir();
+	uint8_t LDS_ext();			uint8_t LDS_idx();			uint8_t LDS_imm();			uint8_t LDU_dir();
+	uint8_t LDU_ext();			uint8_t LDU_idx();			uint8_t LDU_imm();			uint8_t LDX_dir();
+	uint8_t LDX_ext();			uint8_t LDX_idx();			uint8_t LDX_imm();			uint8_t LDY_dir();
+	uint8_t LDY_ext();			uint8_t LDY_idx();			uint8_t LDY_imm();			uint8_t LEAS_idx();
+	uint8_t LEAU_idx();			uint8_t LEAX_idx();			uint8_t LEAY_idx();			uint8_t LSRA_inh();
+	uint8_t LSRB_inh();			uint8_t LSR_dir();			uint8_t LSR_ext();			uint8_t LSR_idx();
+	uint8_t MUL_inh();			uint8_t NEGA_inh();			uint8_t NEGB_inh();			uint8_t NEG_dir();
+	uint8_t NEG_ext();			uint8_t NEG_idx();			uint8_t NOP_inh();			uint8_t ORA_dir();
+	uint8_t ORA_ext();			uint8_t ORA_idx();			uint8_t ORA_imm();			uint8_t ORB_dir();
+	uint8_t ORB_ext();			uint8_t ORB_idx();			uint8_t ORB_imm();			uint8_t ORCC_imm();
+	uint8_t PSHS_imm();			uint8_t PSHU_imm();			uint8_t PULS_imm();			uint8_t PULU_imm();
+	uint8_t ROLA_inh();			uint8_t ROLB_inh();			uint8_t ROL_dir();			uint8_t ROL_ext();
+	uint8_t ROL_idx();			uint8_t RORA_inh();			uint8_t RORB_inh();			uint8_t ROR_dir();
+	uint8_t ROR_ext();			uint8_t ROR_idx();			uint8_t RTI_inh();			uint8_t RTS_inh();
+	uint8_t SBCA_dir();			uint8_t SBCA_ext();			uint8_t SBCA_idx();			uint8_t SBCA_imm();
+	uint8_t SBCB_dir();			uint8_t SBCB_ext();			uint8_t SBCB_idx();			uint8_t SBCB_imm();
+	uint8_t SEX_inh();			uint8_t STA_dir();			uint8_t STA_ext();			uint8_t STA_idx();
+	uint8_t STB_dir();			uint8_t STB_ext();			uint8_t STB_idx();			uint8_t STD_dir();
+	uint8_t STD_ext();			uint8_t STD_idx();			uint8_t STS_dir();			uint8_t STS_ext();
+	uint8_t STS_idx();			uint8_t STU_dir();			uint8_t STU_ext();			uint8_t STU_idx();
+	uint8_t STX_dir();			uint8_t STX_ext();			uint8_t STX_idx();			uint8_t STY_dir();
+	uint8_t STY_ext();			uint8_t STY_idx();			uint8_t SUBA_dir();			uint8_t SUBA_ext();
+	uint8_t SUBA_idx();			uint8_t SUBA_imm();			uint8_t SUBB_dir();			uint8_t SUBB_ext();
+	uint8_t SUBB_idx();			uint8_t SUBB_imm();			uint8_t SUBD_dir();			uint8_t SUBD_ext();
+	uint8_t SUBD_idx();			uint8_t SUBD_imm();			uint8_t SWI_inh();			uint8_t SWI2_inh();
+	uint8_t SWI3_inh();			uint8_t SYNC_inh();			uint8_t TFR_imm();			uint8_t TSTA_inh();
+	uint8_t TSTB_inh();			uint8_t TST_dir();			uint8_t TST_ext();			uint8_t TST_idx();
 
-    // Externally triggered interrupts
-    uint8_t HardwareRESET();
-    uint8_t NMI();
-    uint8_t IRQ();
-    uint8_t FIRQ();
+	// pseudo-opcode, and implemented undocumented opcodes and their address modes
+	uint8_t XXX();				uint8_t RESET_inh();
 
-	// opcodes - interrupt
-    uint8_t SWI();          // trigger Software Interrupt
-    uint8_t SWI2();         // trigger Software Interrupt 2
-    uint8_t SWI3();         // trigger Software Interrupt 3
+	// hardware functionality
+	uint8_t HALT();			// hardware halt
+	uint8_t RESET();		// hardware Reset
+	uint8_t NMI();			// hardware NMI
+	uint8_t FIRQ();			// hardware FIRQ
+	uint8_t IRQ();			// hardware IRQ
 
-	// opcodes - returns
-    uint8_t RTI();          // Return from Interrupt.
-    uint8_t RTS();          // Return from Subroutine.
-
-    // opcodes - conditional relative branching
-    uint8_t BCC();          // Branch on Carry Clear        (C clear)
-    uint8_t LBCC();         // Long Branch on Carry Clear
-    uint8_t BCS();          // Branch on Carry Set          (C set)
-    uint8_t LBCS();         // Long Branch on Carry Set
-    uint8_t BEQ();          // Branch if Equal              (Z set)
-    uint8_t LBEQ();         // Long Branch if Equal
-    uint8_t BGE();          // Branch if Greater or Equal (signed)
-    uint8_t LBGE();         // Long Branch  if Greater or Equal
-    uint8_t BGT();          // Branch if Greater than (signed)
-    uint8_t LBGT();         // Long Branch if Greater than
-    uint8_t BHI();          // Branch if Higher (unsigned)
-    uint8_t LBHI();         // Long Branch if Higher
-    uint8_t BHS();          // Branch if higher or same (unsigned)
-    uint8_t LBHS();         // Long Branch if higher or same
-    uint8_t BITA();         // Bit Test on A with a specific value (by AND)
-    uint8_t BITB();         // Bit Test on B with a specific value (by AND)
-    uint8_t BLE();          // Branch if Less than or Equal (signed)
-    uint8_t LBLE();         // Long Branch if Less than or Equal (signed)
-    uint8_t BLO();          // Branch if Lower (unsigned)
-    uint8_t LBLO();         // Long Branch if Lower (unsigned)
-    uint8_t BLS();          // Branch if Lower or Same (unsigned)
-    uint8_t LBLS();         // Long Branch if Lower or Same (unsigned)
-    uint8_t BLT();          // Branch if less than (signed)
-    uint8_t LBLT();         // Long Branch if less than (signed)
-    uint8_t BMI();          // Branch on Minus 
-    uint8_t LBMI();         // Long Branch on Minus
-    uint8_t BNE();          // Branch if Not Equal (Z = 0)
-    uint8_t LBNE();         // Long Branch if Not Equal (Z = 0)
-    uint8_t BPL();          // Branch if Plus/Positive
-    uint8_t LBPL();         // Long Branch if Plus/Positive
-    uint8_t BRA();          // Branch Always
-    uint8_t LBRA();         // Long Branch Always
-    uint8_t BRN();          // Branch Never (another NOP)
-    uint8_t LBRN();         // Long Branch Never (another NOP)
-    uint8_t BSR();          // Branch to Subroutine
-    uint8_t LBSR();         // Long Branch to Subroutine
-    uint8_t BVC();          // Branch if no overflow (V is clear)
-    uint8_t LBVC();         // Long Branch if no overflow (V is clear)
-    uint8_t BVS();          // Branch on overflow (V is set)
-    uint8_t LBVS();         // Long Branch on overflow (V is set)
-
-    // opcodes - w/ a single addressing mode
-
-    uint8_t ABX();          // Add B to X
-    uint8_t ASLA();         // Arithmetic Shift Left A (Logical Shift Left fill LSb with 0)
-    uint8_t ASLB();         // Arithmetic Shift Left B (Logical Shift Left fill LSb with 0)
-    uint8_t ASRA();         // Arithmetic Shift Right A (fill MSb with Sign bit)
-    uint8_t ASRB();         // Arithmetic Shift Right B (fill MSb with Sign bit)
-    uint8_t CLRA();         // Clear register A
-    uint8_t CLRB();         // Clear register B
-    uint8_t COMA();         // 1's Compliment A (i.e. XOR A with 0x00 or 0xFF)
-    uint8_t COMB();         // 1's Compliment B (i.e. XOR B with 0x00 or 0xFF) 
-    uint8_t CWAI();         // Wait for Interrupt
-    uint8_t DAA();          // Decimal Adjust A (contents of A -> BCD... BCD operation should be prior)
-    uint8_t DECA();         // Decrement A (A -= A      A = A - 1   --A     A--)
-    uint8_t DECB();         // Decrement B (B -= B      B = B - 1   --B     B--) 
-    uint8_t EXG();          // Exchange any two registers of the same size
-    uint8_t INCA();         // Increment A (A += A      A = A + 1   ++A     A++)
-    uint8_t INCB();         // Increment B (B += B      B = B + 1   ++B     B++)
-    uint8_t LSLA();         // Logical Shift Left register A (LSb is loaded with 0)
-    uint8_t LSLB();         // Logical Shift Left register B (LSb is loaded with 0)
-    uint8_t LSRA();         // Logical Shift Right register A (MSb is loaded with 0)
-    uint8_t LSRB();         // Logical Shift Right register B (MSb is loaded with 0)
-    uint8_t MUL();          // Multiply register A * register B, store in register D (A << 8 | B)
-    uint8_t NEGA();         // 2's Complement (negate) register A
-    uint8_t NEGB();         // 2's Complement (negate) register B
-    uint8_t NOP();          // No Operation, Does nothing, affects PC only.
-    uint8_t ROLA();         // Rotate Register A Left one bit through the Carry flag (9 bit rotate)
-    uint8_t ROLB();         // Rotate Register B Left one bit through the Carry flag (9 bit rotate)
-    uint8_t RORA();         // Rotate Register A Right one bit through the Carry flag (9 bit rotate)
-    uint8_t RORB();         // Rotate Register B Right one bit through the Carry flag (9 bit rotate)
-    uint8_t SEX();          // Sign Extend B into A ( A = Sign bit set on B ? 0xFF : 0x00)
-    uint8_t SYNC();         // Synchronize to interrupt
-    uint8_t TFR();          // Transfer/Copy one register to another (of the same size)
-    uint8_t TSTA();         // Test Register A, adjust N and Z Condition codes based on content
-    uint8_t TSTB();         // Test Register B, adjust N and Z Condition codes based on content
-
-    // exec - multi addressing modes
-
-    uint8_t LEAS();         // Load Effective Address S (increment or decrement S by a given value. Use  an index register to load another)
-    uint8_t LEAU();         // Load Effective Address U (increment or decrement U by a given value. Use  an index register to load another)
-    uint8_t LEAX();         // Load Effective Address X (increment or decrement X by a given value. Use  an index register to load another)
-    uint8_t LEAY();         // Load Effective Address Y (increment or decrement Y by a given value. Use  an index register to load another)
-
-    uint8_t ADCA();         // Add to A + Carry
-    uint8_t ADCB();         // Add to A + Carry
-    uint8_t ADDA();         // Add to A
-    uint8_t ADDB();         // Add to B
-    uint8_t ADDD();         // Add to D (A << 8 | B)
-    uint8_t ANDA();         // And A
-    uint8_t ANDB();         // And B
-    uint8_t ANDCC();        // And Condition Codes (clear one or more flags)
-    uint8_t ASL();          // Arithmetic Shift Left Memory location (Logical Shift Left fill LSb with 0)
-    uint8_t ASR();          // Arithmetic Shift Right Memory location (fill MSb with Sign bit)
-    uint8_t CLR();          // Clear memory location
-    uint8_t CMPA();         // Compare register A to memory location or given value(CC H unaffected)
-    uint8_t CMPB();         // Compare register B to memory location or given value (CC H unaffected)
-    uint8_t CMPD();         // Compare register D ( A <<8 | B) to memory locations or given value (CC H unaffected)
-    uint8_t CMPS();         // Compare register S to memory locations or given value (CC H unaffected)
-    uint8_t CMPU();         // Compare register U to memory locations or given value (CC H unaffected)
-    uint8_t CMPX();         // Compare register X to memory locations or given value (CC H unaffected)
-    uint8_t CMPY();         // Compare register Y to memory locations or given value (CC H unaffected)
-    uint8_t COM();          // 1's Compliment Memory location (i.e. XOR A with 0x00 or 0xFF)
-    uint8_t DEC();          // Decrement Memory location
-    uint8_t EORA();         // Logical Exclusive OR register A
-    uint8_t EORB();         // Logical Exclusive OR register B
-    uint8_t INC();          // Increment Memory location
-    uint8_t JMP();          // Unconditional Jump (non-relative) to a given (direct or indirect) address
-    uint8_t JSR();          // Jump to a subroutine (non-relative) at a given (direct or indirect) address
-    uint8_t LDA();          // Load Register A
-    uint8_t LDB();          // Load Register A
-    uint8_t LDD();          // Load Register D  ( A << 8 | B)
-    uint8_t LDS();          // Load Register S
-    uint8_t LDU();          // Load Register U
-    uint8_t LDX();          // Load Register X
-    uint8_t LDY();          // Load Register Y
-    uint8_t LSL();          // Logical Shift Left memory location (LSb is loaded with 0)
-    uint8_t LSR();          // Logical Shift Right memory location (MSb is loaded with 0)
-    uint8_t NEG();          // 2's Complement (negate) memory location
-    uint8_t ORA();          // Logical OR register A
-    uint8_t ORB();          // Logical OR register B
-    uint8_t ORCC();         // Logical OR Condition Codes (set one or more flags)
-    uint8_t PSHS();         // Push one or more registers onto the System Stack
-    uint8_t PSHU();         // Push one or more registers onto the User Stack
-    uint8_t PULS();         // Pull one or more registers from the System Stack
-    uint8_t PULU();         // Pull one or more registers from the User Stack
-    uint8_t ROL();          // Rotate memory location Left one bit through the Carry flag (9 bit rotate)
-    uint8_t ROR();          // Rotate memory location Right one bit through the Carry flag (9 bit rotate)
-    uint8_t SBCA();         // Subtract with carry (borrow) - register A
-    uint8_t SBCB();         // Subtract with carry (borrow) - register B
-    uint8_t STA();          // Store Register A
-    uint8_t STB();          // Store Register B 
-    uint8_t STD();          // Store Register D     (A << 8 | B)
-    uint8_t STS();          // Store Register S
-    uint8_t STU();          // Store Register U
-    uint8_t STX();          // Store Register x
-    uint8_t STY();          // Store Register Y
-    uint8_t SUBA();         // Subtract from register A
-    uint8_t SUBB();         // Subtract from register A
-    uint8_t SUBD();         // Subtract from register D     (A << 8 | B)
-    uint8_t TST();          // Test memory location, adjust N and Z Condition codes based on content
-
-    // Handle undefined opcodes (this would be the 6309 bad exec / div zero trap)
-    uint8_t XXX();          // INVALID INSTRUCTION! on 6309, this would trigger the invalid operation exception vector
-
-public:
-	Mc6809();
-	~Mc6809();
-
-	void Clock();
-	void SetMMU(MMU* device);
-
-	// interrupts
-    void TriggerHalt();
-    void ReleaseHalt();
-    void TriggerReset();
-    void TriggerNMI();
-    void TriggerIRQ();
-    void TriggerFIRQ();
-
-
-	uint8_t Fetch(const uint16_t address);
-
+	// internal functionality
 	uint8_t Read(const uint16_t address, const bool readOnly = false);
 	void Write(const uint16_t address, const uint8_t byte);
+	uint8_t Fetch(const uint16_t address);
 
+public:
+	Mc6809(MMU* device = nullptr);
+	~Mc6809();
+
+	void SetMMU(MMU* device);
+	void Clock();
 };
-

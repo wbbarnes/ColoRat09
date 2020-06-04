@@ -36,10 +36,10 @@
     <ClCompile Include="Cpu6809.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Motorola6809.cpp">
+    <ClCompile Include="VDP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VDP.cpp">
+    <ClCompile Include="Mc6809.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,10 +65,10 @@
     <ClInclude Include="Cpu6809.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Motorola6809.h">
+    <ClInclude Include="VDP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VDP.h">
+    <ClInclude Include="Mc6809.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

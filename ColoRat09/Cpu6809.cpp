@@ -264,7 +264,6 @@ void Cpu6809::Clock()
 		{
 			exec = nullptr ;
 			clocksUsed = 0;
-//			clocksLeft = 0;
 		}
 		else if (haltTriggered)
 		{
@@ -960,7 +959,7 @@ uint8_t Cpu6809::SWI3()
 // we've returned to where we left off when the interrupt was made.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: CC and PC.
+//		  Registers: S, CC and PC.
 //					 If CC's E is set, then A, B, DP, X, Y, and U as well.
 //	Condition Codes: All
 //*****************************************************************************
@@ -1056,7 +1055,7 @@ uint8_t Cpu6809::RTI()
 // next instruction.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
+//		  Registers: 
 //	Condition Codes: May be affected by unmasked interrupt.
 //*****************************************************************************
 // Params:
@@ -1129,7 +1128,7 @@ uint8_t Cpu6809::SYNC()
 // Mask reg_CC. Push all registers onto System Stack. Wait for interrupt.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
+//		  Registers: S
 //	Condition Codes: All may be affected
 //*****************************************************************************
 // Params:
@@ -1233,8 +1232,8 @@ uint8_t Cpu6809::CWAI()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: S
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1279,8 +1278,8 @@ uint8_t Cpu6809::BSR()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: S
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1330,8 +1329,8 @@ uint8_t Cpu6809::LBSR()
 //	Jump to Subroutine
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:	None
-//	Condition Codes:	None
+//		  Registers: S
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1388,8 +1387,8 @@ uint8_t Cpu6809::JSR()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: S
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1431,8 +1430,8 @@ uint8_t Cpu6809::RTS()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1466,8 +1465,8 @@ uint8_t Cpu6809::BRA()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1506,8 +1505,8 @@ uint8_t Cpu6809::LBRA()
 //	Jump to location in memory
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:	None
-//	Condition Codes:	None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1541,8 +1540,8 @@ uint8_t Cpu6809::JMP()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1575,8 +1574,8 @@ uint8_t Cpu6809::BRN()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1618,8 +1617,8 @@ uint8_t Cpu6809::LBRN()
 // Uses Memory space and Clock cycles only. 
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1654,8 +1653,8 @@ uint8_t Cpu6809::NOP()
 // CC::C is not set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1690,8 +1689,8 @@ uint8_t Cpu6809::BCC()
 // CC::C is not set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1737,8 +1736,8 @@ uint8_t Cpu6809::LBCC()
 // CC::C is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1774,8 +1773,8 @@ uint8_t Cpu6809::BCS()
 // CC::C is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1821,8 +1820,8 @@ uint8_t Cpu6809::LBCS()
 // CC::Z is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1858,8 +1857,8 @@ uint8_t Cpu6809::BEQ()
 // Reg_CC CC::Z is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1905,8 +1904,8 @@ uint8_t Cpu6809::LBEQ()
 // CC::N and CC::V are either both set or both clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1942,8 +1941,8 @@ uint8_t Cpu6809::BGE()
 // CC::N and CC::V are either both set or both clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -1989,8 +1988,8 @@ uint8_t Cpu6809::LBGE()
 // CC::Z is clear  AND  CC::N and CC::V are either both set or both clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2026,8 +2025,8 @@ uint8_t Cpu6809::BGT()
 // CC::Z is clear  AND  CC::N and CC::V are either both set or clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2073,8 +2072,8 @@ uint8_t Cpu6809::LBGT()
 // both CC::C and CC::Z are clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2110,8 +2109,8 @@ uint8_t Cpu6809::BHI()
 // reg_CC both CC::C and CC::Z are clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2157,8 +2156,8 @@ uint8_t Cpu6809::LBHI()
 // CC::C is clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2194,8 +2193,8 @@ uint8_t Cpu6809::BHS()
 // CC::C is clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2241,8 +2240,8 @@ uint8_t Cpu6809::LBHS()
 // CC::Z is set  OR  either CC::N or CC::V (not both) is set.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2280,8 +2279,8 @@ uint8_t Cpu6809::BLE()
 // CC::Z is set  OR  either CC::N or CC::V (not both) is set.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2329,8 +2328,8 @@ uint8_t Cpu6809::LBLE()
 // CC::C is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2366,8 +2365,8 @@ uint8_t Cpu6809::BLO()
 // CC::C is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2413,8 +2412,8 @@ uint8_t Cpu6809::LBLO()
 // CC::C is set or CC::Z is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2450,8 +2449,8 @@ uint8_t Cpu6809::BLS()
 // CC::C is set or CC::Z is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2497,8 +2496,8 @@ uint8_t Cpu6809::LBLS()
 // either CC::N or CC::V is set, not both
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2534,8 +2533,8 @@ uint8_t Cpu6809::BLT()
 // either CC::N or CC::V is set, not both
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2581,8 +2580,8 @@ uint8_t Cpu6809::LBLT()
 // CC::N is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2618,8 +2617,8 @@ uint8_t Cpu6809::BMI()
 // CC::N is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2665,8 +2664,8 @@ uint8_t Cpu6809::LBMI()
 //  CC::Z is not set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2702,8 +2701,8 @@ uint8_t Cpu6809::BNE()
 //  CC::Z is not set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2749,8 +2748,8 @@ uint8_t Cpu6809::LBNE()
 // CC::N is clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2786,8 +2785,8 @@ uint8_t Cpu6809::BPL()
 // CC::N is clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2833,8 +2832,8 @@ uint8_t Cpu6809::LBPL()
 // CC::V is clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2870,8 +2869,8 @@ uint8_t Cpu6809::BVC()
 // CC::V is clear
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2917,8 +2916,8 @@ uint8_t Cpu6809::LBVC()
 // CC::V is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -2954,8 +2953,8 @@ uint8_t Cpu6809::BVS()
 // CC::V is set
 //*****************************************************************************
 // MODIFIES:
-//		  Registers: potentially PC
-//	Condition Codes: None
+//		  Registers: -
+//	Condition Codes: - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -3003,7 +3002,7 @@ uint8_t Cpu6809::LBVS()
 // Load Effective Address S		(system stack)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
+//		  Registers: S
 //	Condition Codes:
 //*****************************************************************************
 // Params:
@@ -3050,7 +3049,7 @@ uint8_t Cpu6809::LEAS()
 // Load Effective Address U		(user stack)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
+//		  Registers: U
 //	Condition Codes:
 //*****************************************************************************
 // Params:
@@ -3071,7 +3070,7 @@ uint8_t Cpu6809::LEAU()
 // Load Effective Address X		(index register X)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
+//		  Registers: X
 //	Condition Codes:
 //*****************************************************************************
 // Params:
@@ -3092,7 +3091,7 @@ uint8_t Cpu6809::LEAX()
 // Load Effective Address Y		(index register Y)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
+//		  Registers: Y
 //	Condition Codes:
 //*****************************************************************************
 // Params:
@@ -3117,8 +3116,8 @@ uint8_t Cpu6809::LEAY()
 //	Add B to X
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: X
+//	Condition Codes:  - - - - - - - -
 //*****************************************************************************
 // Params:
 //	None
@@ -3150,8 +3149,8 @@ uint8_t Cpu6809::ABX()
 // Arithmetic Shift Left A (Logical Shift Left fill LSb with 0)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: A
+//	Condition Codes: - - ~ - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -3185,8 +3184,8 @@ uint8_t Cpu6809::ASLA()
 // Arithmetic Shift Left B (Logical Shift Left fill LSb with 0)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: B
+//	Condition Codes: - - ~ - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -3220,8 +3219,8 @@ uint8_t Cpu6809::ASLB()
 // Arithmetic Shift Right A (fill MSb with Sign bit)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: A
+//	Condition Codes: - - ~ - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -3255,8 +3254,8 @@ uint8_t Cpu6809::ASRA()
 // Arithmetic Shift Right B (fill MSb with Sign bit)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: B
+//	Condition Codes: - - ~ - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -3291,8 +3290,8 @@ uint8_t Cpu6809::ASRB()
 // Bit Test on A with a specific value (by AND)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: A
+//	Condition Codes: - - - - N Z V -
 //*****************************************************************************
 // Params:
 //	None
@@ -3312,8 +3311,8 @@ uint8_t Cpu6809::BITA()
 // Bit Test on B with a specific value (by AND)
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: B
+//	Condition Codes: - - - - N Z V -
 //*****************************************************************************
 // Params:
 //	None
@@ -3333,8 +3332,8 @@ uint8_t Cpu6809::BITB()
 // Clear register/accumulator A
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: A
+//	Condition Codes: - - ~ - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -3365,8 +3364,8 @@ uint8_t Cpu6809::CLRA()
 // Clear register/accumulator B
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: B
+//	Condition Codes: - - ~ - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -3414,6 +3413,10 @@ uint8_t Cpu6809::COMA()
 		break;
 	case 2:		// R	Don't Care			PC+1
 		reg_A ^= 0xff;
+		reg_CC |= (CC::C);
+		reg_CC &= ~(CC::V | CC::N | CC::Z);
+		reg_CC |= (reg_A == 0) ? CC::Z : 0x00;
+		reg_CC |= ((reg_A & 0x80) == 0x80) ? CC::N : 0x00;
 		++reg_PC;
 		clocksUsed = 255;
 		break;
@@ -3446,6 +3449,10 @@ uint8_t Cpu6809::COMB()
 	case 2:		// R	Don't Care			PC+1
 		reg_B ^= 0xff;
 		++reg_PC;
+		reg_CC |= (CC::C);
+		reg_CC &= ~(CC::V | CC::N | CC::Z);
+		reg_CC |= (reg_B == 0) ? CC::Z : 0x00;
+		reg_CC |= ((reg_B & 0x80) == 0x80) ? CC::N : 0x00;
 		clocksUsed = 255;
 		break;
 	}
@@ -3522,7 +3529,10 @@ uint8_t Cpu6809::DECA()
 	case 1:		// R Opcode Fetch			PC
 		break;
 	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_A & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--reg_A;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
 		clocksUsed = 255;
 		break;
@@ -3553,7 +3563,10 @@ uint8_t Cpu6809::DECB()
 	case 1:		// R Opcode Fetch			PC
 		break;
 	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_B & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--reg_B;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
 		clocksUsed = 255;
 		break;
@@ -3874,7 +3887,10 @@ uint8_t Cpu6809::INCA()
 	case 1:		// R Opcode Fetch			PC
 		break;
 	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_A & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_A;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
 		clocksUsed = 255;
 		break;
@@ -3905,7 +3921,10 @@ uint8_t Cpu6809::INCB()
 	case 1:		// R Opcode Fetch			PC
 		break;
 	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_B & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_B;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
 		clocksUsed = 255;
 		break;
@@ -4662,8 +4681,8 @@ uint8_t Cpu6809::TSTB()
 // reset.
 //*****************************************************************************
 // MODIFIES:
-//		  Registers:
-//	Condition Codes:
+//		  Registers: A
+//	Condition Codes: - - H - N Z V C
 //*****************************************************************************
 // Params:
 //	None
@@ -4844,7 +4863,74 @@ uint8_t Cpu6809::ANDCC()        // And Condition Codes (clear one or more flags)
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::ASL()          // Arithmetic Shift Left Memory location (Logical Shift Left fill LSb with 0)
-{ return(255); }
+{
+	static ADDR_MODE addrMode;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		++reg_PC;
+	case 2:		// R	Address Low/High / Post Byte		PC+1
+		addrMode = (ADDR_MODE)(this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addrMode)
+	{
+	case ADDR_MODE::Direct:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Don't Care	$ffff
+			break;
+		case 4:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 5:		// R  Don't Care	$ffff
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+			scratch_lo = scratch_lo << 1;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			reg_CC = (((scratch_lo >> 6) & 1) != ((scratch_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+			break;
+		case 6:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::Extended:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Address Low	PC+2
+			(ADDR_MODE)(this->*mode)(1);
+			++reg_PC;
+			break;
+		case 4:		// R  Don't Care	$ffff
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+			scratch_lo = scratch_lo << 1;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			reg_CC = (((scratch_lo >> 6) & 1) != ((scratch_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+			break;
+		case 5:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 6:		// R  Don't Care	$ffff
+			break;
+		case 7:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+	case ADDR_MODE::IdxAutoIncDec:
+	case ADDR_MODE::IdxConstantOffset:
+	case ADDR_MODE::IdxIndirect:
+	case ADDR_MODE::IdxZeroOffset:
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -4864,7 +4950,74 @@ uint8_t Cpu6809::ASL()          // Arithmetic Shift Left Memory location (Logica
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::ASR()          // Arithmetic Shift Right Memory location (fill MSb with Sign bit)
-{ return(255); }
+{
+	static ADDR_MODE addrMode;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		++reg_PC;
+	case 2:		// R	Address Low/High / Post Byte		PC+1
+		addrMode = (ADDR_MODE)(this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addrMode)
+	{
+	case ADDR_MODE::Direct:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Don't Care	$ffff
+			break;
+		case 4:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 5:		// R  Don't Care	$ffff
+			scratch_hi &= scratch_lo & 0x80;
+			reg_CC = ((scratch_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+			scratch_lo = ((scratch_lo >> 1) & 0x7f) | scratch_hi;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			break;
+		case 6:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::Extended:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Address Low	PC+2
+			(ADDR_MODE)(this->*mode)(1);
+			++reg_PC;
+			break;
+		case 4:		// R  Don't Care	$ffff
+			scratch_hi &= scratch_lo & 0x80;
+			reg_CC = ((scratch_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+			scratch_lo = ((scratch_lo >> 1) & 0x7f) | scratch_hi;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			break;
+		case 5:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 6:		// R  Don't Care	$ffff
+			break;
+		case 7:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+	case ADDR_MODE::IdxAutoIncDec:
+	case ADDR_MODE::IdxConstantOffset:
+	case ADDR_MODE::IdxIndirect:
+	case ADDR_MODE::IdxZeroOffset:
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -4884,7 +5037,66 @@ uint8_t Cpu6809::ASR()          // Arithmetic Shift Right Memory location (fill 
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::CLR()          // Clear memory location
-{ return(255); }
+{
+	static ADDR_MODE addrMode;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		++reg_PC;
+	case 2:		// R	Address Low/High / Post Byte		PC+1
+		addrMode = (ADDR_MODE)(this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addrMode)
+	{
+	case ADDR_MODE::Direct:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Don't Care	$ffff
+			break;
+		case 4:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 5:		// R  Don't Care	$ffff
+			reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+			break;
+		case 6:		// W  Data			EA
+			Write(offset, 0x00);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::Extended:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Address Low	PC+2
+			(ADDR_MODE)(this->*mode)(1);
+			++reg_PC;
+			break;
+		case 4:		// R  Don't Care	$ffff
+			break;
+		case 5:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 6:		// R  Don't Care	$ffff
+			reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+			break;
+		case 7:		// W  Data			EA
+			Write(offset, 0x00);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+	case ADDR_MODE::IdxAutoIncDec:
+	case ADDR_MODE::IdxConstantOffset:
+	case ADDR_MODE::IdxIndirect:
+	case ADDR_MODE::IdxZeroOffset:
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -5044,7 +5256,75 @@ uint8_t Cpu6809::CMPY()         // Compare register Y to memory locations or giv
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::COM()          // 1's Compliment Memory location (i.e. XOR A with 0x00 or 0xFF)
-{ return(255); }
+{
+	static ADDR_MODE addrMode;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		++reg_PC;
+	case 2:		// R	Address Low/High / Post Byte		PC+1
+		addrMode = (ADDR_MODE)(this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addrMode)
+	{
+	case ADDR_MODE::Direct:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Don't Care	$ffff
+			break;
+		case 4:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 5:		// R  Don't Care	$ffff
+			scratch_lo ^= 0xff;
+			reg_CC |= (CC::C);
+			reg_CC &= ~(CC::V | CC::N | CC::Z);
+			reg_CC |= (scratch_lo == 0) ? CC::Z : 0x00;
+			reg_CC |= ((scratch_lo & 0x80) == 0x80) ? CC::N : 0x00;
+			break;
+		case 6:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::Extended:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Address Low	PC+2
+			(ADDR_MODE)(this->*mode)(1);
+			++reg_PC;
+			break;
+		case 4:		// R  Don't Care	$ffff
+			scratch_lo ^= 0xff;
+			break;
+		case 5:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 6:		// R  Don't Care	$ffff
+			scratch_lo ^= 0xff;
+			reg_CC |= (CC::C);
+			reg_CC &= ~(CC::V | CC::N | CC::Z);
+			reg_CC |= (scratch_lo == 0) ? CC::Z : 0x00;
+			reg_CC |= ((scratch_lo & 0x80) == 0x80) ? CC::N : 0x00;
+			break;
+		case 7:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+	case ADDR_MODE::IdxAutoIncDec:
+	case ADDR_MODE::IdxConstantOffset:
+	case ADDR_MODE::IdxIndirect:
+	case ADDR_MODE::IdxZeroOffset:
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -5064,7 +5344,73 @@ uint8_t Cpu6809::COM()          // 1's Compliment Memory location (i.e. XOR A wi
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::DEC()          // Decrement Memory location
-{ return(255); }
+{
+	static ADDR_MODE addrMode;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		++reg_PC;
+	case 2:		// R	Address Low/High / Post Byte		PC+1
+		addrMode = (ADDR_MODE)(this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addrMode)
+	{
+	case ADDR_MODE::Direct:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Don't Care	$ffff
+			break;
+		case 4:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 5:		// R  Don't Care	$ffff
+			reg_CC = ((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+			--scratch_lo;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			break;
+		case 6:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::Extended:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Address Low	PC+2
+			(ADDR_MODE)(this->*mode)(1);
+			++reg_PC;
+			break;
+		case 4:		// R  Don't Care	$ffff
+			scratch_lo ^= 0xff;
+			break;
+		case 5:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 6:		// R  Don't Care	$ffff
+			reg_CC = ((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+			--scratch_lo;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			break;
+		case 7:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+	case ADDR_MODE::IdxAutoIncDec:
+	case ADDR_MODE::IdxConstantOffset:
+	case ADDR_MODE::IdxIndirect:
+	case ADDR_MODE::IdxZeroOffset:
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -5124,7 +5470,73 @@ uint8_t Cpu6809::EORB()         // Logical Exclusive OR register B
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::INC()          // Increment Memory location
-{ return(255); }
+{
+	static ADDR_MODE addrMode;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		++reg_PC;
+	case 2:		// R	Address Low/High / Post Byte		PC+1
+		addrMode = (ADDR_MODE)(this->*mode)(0);
+		++reg_PC;
+		break;
+	}
+	switch (addrMode)
+	{
+	case ADDR_MODE::Direct:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Don't Care	$ffff
+			break;
+		case 4:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 5:		// R  Don't Care	$ffff
+			reg_CC = ((scratch_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+			++scratch_lo;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			break;
+		case 6:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::Extended:
+		switch (++clocksUsed)
+		{
+		case 3:		// R  Address Low	PC+2
+			(ADDR_MODE)(this->*mode)(1);
+			++reg_PC;
+			break;
+		case 4:		// R  Don't Care	$ffff
+			scratch_lo ^= 0xff;
+			break;
+		case 5:		// R  Data			EA
+			scratch_lo = Read(offset);
+			break;
+		case 6:		// R  Don't Care	$ffff
+			reg_CC = ((scratch_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+			++scratch_lo;
+			reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+			reg_CC = ((scratch_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+			break;
+		case 7:		// W  Data			EA
+			Write(offset, scratch_lo);
+			clocksUsed = 0xff;
+			break;
+		}
+		break;
+	case ADDR_MODE::IdxAccumulatorOffset:
+	case ADDR_MODE::IdxAutoIncDec:
+	case ADDR_MODE::IdxConstantOffset:
+	case ADDR_MODE::IdxIndirect:
+	case ADDR_MODE::IdxZeroOffset:
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -5284,7 +5696,7 @@ uint8_t Cpu6809::LDY()          // Load Register Y
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::LSL()          // Logical Shift Left memory location (LSb is loaded with 0)
-{ return(255); }
+{sd}
 
 
 //*****************************************************************************
@@ -5304,7 +5716,7 @@ uint8_t Cpu6809::LSL()          // Logical Shift Left memory location (LSb is lo
 //				completed.
 //*****************************************************************************
 uint8_t Cpu6809::LSR()          // Logical Shift Right memory location (MSb is loaded with 0)
-{ return(255); }
+{as}
 
 
 //*****************************************************************************
@@ -6017,7 +6429,7 @@ Cpu6809::ADDR_MODE Cpu6809::IDX(uint8_t adjClock)
 		case 0x1d:						// Indirect 16-bit constant offset from PC (2s complement offsets)
 			return(ADDR_MODE::IdxAccumulatorOffset);
 		case 0x1f:						// Extended Indirect
-			return(ADDR_MODE::I)
+			return(ADDR_MODE::I);
 			break;
 
 			// Undefined or Not Allowed
@@ -6117,7 +6529,7 @@ uint8_t Cpu6809::LeaS_None()
 		switch (++clocksUsed)
 		{
 		case 3:
-			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			reg_scratch = (offset_lo & 0x1f) | (((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
 			switch (eaRegister)
 			{
 			case 0:
@@ -6192,7 +6604,7 @@ uint8_t Cpu6809::LeaU_None()
 		switch (++clocksUsed)
 		{
 		case 3:
-			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			reg_scratch = (offset_lo & 0x1f) | (((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
 			clocksUsed = 0xff;
 			switch (eaRegister)
 			{
@@ -6216,7 +6628,7 @@ uint8_t Cpu6809::LeaU_None()
 		switch (++clocksUsed)
 		{
 		case 3:
-			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			reg_scratch = (offset_lo & 0x1f) | (((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
 			switch (eaRegister)
 			{
 			case 0:
@@ -6290,7 +6702,7 @@ uint8_t Cpu6809::LeaX_None()
 		switch (++clocksUsed)
 		{
 		case 3:
-			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			reg_scratch = (offset_lo & 0x1f) | (((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
 			clocksUsed = 0xff;
 			switch (eaRegister)
 			{
@@ -6314,7 +6726,7 @@ uint8_t Cpu6809::LeaX_None()
 		switch (++clocksUsed)
 		{
 		case 3:
-			reg_scratch = (offset_lo & 0x1f) | ((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+			reg_scratch = (offset_lo & 0x1f) | (((offset_lo & 0x10) == 0x10) ? 0xfff0 : 0x0000);
 			switch (eaRegister)
 			{
 			case 0:

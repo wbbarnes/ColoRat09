@@ -1,1284 +1,2271 @@
+/******************************************************************************
+*		   File: Mc6809.cpp
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*		 Author: William Barnes
+*		Created: 2020/05/30
+*	  Copyright: 2020 - under Apache 2.0 Licensing
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+* Modifications: (Who, whenm, what)
+*
+******************************************************************************/
 #include "Mc6809.h"
 
-Mc6809::Mc6809()
+#define USE_RESET_3E
+
+//*********************************************************************************************************************************
+// Constructors, destructors, and any sets and/or gets for data.
+//*********************************************************************************************************************************
+
+
+//*****************************************************************************
+//	Mc6809()
+//*****************************************************************************
+//	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
+// reset. Also sets the memory bus (aka MMU since the MMU handles memory
+// mapping)
+//*****************************************************************************
+Mc6809::Mc6809(MMU* device)
 {
-	reg_A = 0x00;
-	reg_B = 0x00;
-	reg_D = 0x0000;
-	reg_X = 0x0000;
-	reg_Y = 0x0000;
-	reg_S = 0x0000;
-	reg_U = 0x0000;
-	reg_PC = 0xfffe;
-	reg_DP = 0x00;
-	reg_CC = 0x00;
-
-	data_hi = 0;
-	data_lo = 0;
-	data = 0x0000;
-
-	instruction_hi = 0xff;
-	instruction_lo = 0xff;
-	instruction = 0xffff;
-
-	cyclesLeft = 0;
-	mmu = nullptr;
-
+	bus = device;
 	exec = nullptr;
 
-	haltTriggered = true;
-	resetTriggered = true;
-	nmiTriggered = false;
-	firqTriggered = false;
-	irqTriggered = false;
+	clocksUsed = 0;
+
+	// set all registers to a clear state.
+	reg_CC = 0x00;			// Condition Code Register
+
+	reg_DP = 0x00;			// Direct Page Registe
+
+	reg_A = 0x00;			// (GP)	Accumulator A
+	reg_B = 0x00;			// (GP)	Accumulator B
+	reg_D = 0x0000;			// (GP)	Accumulator D
+
+	X_hi = 0x00;			// (internal only)
+	X_lo = 0x00;			// (internal only)
+	reg_X = 0x0000;			// Index Register X
+
+	Y_hi = 0x00;			// (internal only)
+	Y_lo = 0x00;			// (internal only)
+	reg_Y = 0x0000;			// Index Register Y
+
+	U_hi = 0x00;			// (internal only)
+	U_lo = 0x00;			// (internal only)
+	reg_U = 0x0000;			// User Stack Pointer
+
+	S_hi = 0x00;			// (internal only)
+	S_lo = 0x00;			// (internal only)
+	reg_S = 0x0000;			// System Stack Pointer
+
+	PC_hi = 0x00;			// (internal only)
+	PC_lo = 0x00;			// (internal only)
+	reg_PC = 0x0000;		// Program Counter
+
+	scratch_hi = 0x00;		// (internal only)
+	scratch_lo = 0x00;		// (internal only)
+	reg_scratch = 0x0000;	// (internal only)
+
+	using op = Mc6809;
+
+	OpCodeP1 =
+	{
+#ifdef USE_RESET_3E
+		{"NEG"  ,&op::NEG_dir  ,6 ,6, 2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_dir  ,6 ,6 ,2 }, {"LSR"      ,&op::LSR_dir     ,6 ,6 ,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_dir  ,6 ,6 ,2 }, {"ASR"  ,&op::ASR_dir  ,6 ,6 ,2 }, {"ASL/LSL"  ,&op::ASL_LSL_dir   ,6 ,6 ,2 }, {"ROL"  ,&op::ROL_dir  ,6 ,6 ,2 }, {"DEC"  ,&op::DEC_dir  ,6 ,6 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_dir  ,6 ,6 ,2 }, {"TST"  ,&op::TST_dir  ,6 ,6 ,2 }, {"JMP"  ,&op::JMP_dir  ,3 ,3 ,2 }, {"CLR"  ,&op::CLR_dir  ,6 ,6 ,2 },
+		{"***"  ,nullptr       ,1 ,1 ,1 }, {"***"  ,nullptr       ,1 ,1 ,1 }, {"NOP"  ,&op::NOP_inh  ,2 ,2 ,1 }, {"SYNC" ,&op::SYNC_inh ,4 ,00,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"LBRA" ,&op::LBRA_rel ,5 ,5 ,3 }, {"LBSR" ,&op::LBSR_rel ,9 ,9 ,3 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"DAA"  ,&op::DAA_inh  ,2 ,2 ,1 }, {"ORCC" ,&op::ORCC_imm ,3 ,3 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"ANDCC",&op::ANDCC_imm,3 ,3 ,2 }, {"SEX"  ,&op::SEX_inh  ,2 ,2 ,1 }, {"EXG"  ,&op::EXG_imm  ,8 ,8 ,2 }, {"TFR"  ,&op::TFR_imm  ,6 ,6 ,2 },
+		{"BRA"  ,&op::BRA_rel  ,3 ,3 ,2 }, {"BRN"  ,&op::BRN_rel  ,3 ,3 ,2 }, {"BHI"  ,&op::BHI_rel  ,3 ,3 ,2 }, {"BLS"  ,&op::BLS_rel  ,3 ,3 ,2 }, {"BHS/BCC"  ,&op::BHS_BCC_rel ,3 ,3 ,2 }, {"BLO/BCS"  ,&op::BLO_BCS_rel ,3 ,3 ,2 }, {"BNE"  ,&op::BNE_rel  ,3 ,3 ,2 }, {"BEQ"  ,&op::BEQ_rel  ,3 ,3 ,2 }, {"BVC"      ,&op::BVC_rel       ,3 ,3 ,2 }, {"BVS"  ,&op::BVS_rel  ,3 ,3 ,2 }, {"BPL"  ,&op::BPL_rel  ,3 ,3 ,2 }, {"BMI"  ,&op::BMI_rel  ,3 ,3 ,2 }, {"BGE"  ,&op::BGE_rel  ,3 ,3 ,2 }, {"BLT"  ,&op::BLT_rel  ,3 ,3 ,2 }, {"BGT"  ,&op::BGT_rel  ,3 ,3 ,2 }, {"BLE"  ,&op::BLE_rel  ,3 ,3 ,2 },
+		{"LEAX" ,&op::LEAX_idx ,4 ,99,2 }, {"LEAY" ,&op::LEAY_idx ,4 ,99,2 }, {"LEAS" ,&op::LEAS_idx ,4 ,99,2 }, {"LEAU" ,&op::LEAU_idx ,4 ,99,2 }, {"PSHS"     ,&op::PSHS_imm    ,5 ,99,2 }, {"PULS"     ,&op::PULS_imm    ,5 ,99,2 }, {"PSHU" ,&op::PSHU_imm ,5 ,99,2 }, {"PULU" ,&op::PULU_imm ,5 ,99,2 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"RTS"  ,&op::RTS_inh  ,5 ,5 ,1 }, {"ABX"  ,&op::ABX_inh  ,3 ,3 ,1 }, {"RTI"  ,&op::RTI_inh  ,6 ,15,1 }, {"CWAI" ,&op::CWAI_inh ,20,00,2 }, {"MUL"  ,&op::MUL_inh  ,11,11,1 }, {"RESET",&op::RESET_inh,19,19,1 }, {"SWI"  ,&op::SWI_inh  ,19,19,1 },
+		{"NEGA" ,&op::NEGA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMA" ,&op::COMA_inh ,2 ,2 ,1 }, {"LSRA"     ,&op::LSRA_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORA" ,&op::RORA_inh ,2 ,2 ,1 }, {"ASRA" ,&op::ASRA_inh ,2 ,2 ,1 }, {"ASLA/LSLA",&op::ASLA_LSLA_inh ,2 ,2 ,1 }, {"ROLA" ,&op::ROLA_inh ,2 ,2 ,1 }, {"DECA" ,&op::DECA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCA" ,&op::INCA_inh ,2 ,2 ,1 }, {"TSTA" ,&op::TSTA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRA" ,&op::CLRA_inh ,2 ,2 ,1 },
+		{"NEGB" ,&op::NEGB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMB" ,&op::COMB_inh ,2 ,2 ,1 }, {"LSRB"     ,&op::LSRB_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORB" ,&op::RORB_inh ,2 ,2 ,1 }, {"ASRB" ,&op::ASRB_inh ,2 ,2 ,1 }, {"ASLB/LSLB",&op::ASLB_LSLB_inh ,2 ,2 ,1 }, {"ROLB" ,&op::ROLB_inh ,2 ,2 ,1 }, {"DECB" ,&op::DECB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCB" ,&op::INCB_inh ,2 ,2 ,1 }, {"TSTB" ,&op::TSTB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRB" ,&op::CLRB_inh ,2 ,2 ,1 },
+		{"NEG"  ,&op::NEG_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_idx  ,6 ,99,2 }, {"LSR"      ,&op::LSR_idx     ,6 ,99,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_idx  ,6 ,99,2 }, {"ASR"  ,&op::ASR_idx  ,6 ,99,2 }, {"ASL/LSL"  ,&op::ASL_LSL_idx   ,6 ,99,2 }, {"ROL"  ,&op::ROL_idx  ,6 ,99,2 }, {"DEC"  ,&op::DEC_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_idx  ,6 ,99,2 }, {"TST"  ,&op::TST_idx  ,6 ,99,2 }, {"JMP"  ,&op::JMP_idx  ,3 ,99,2 }, {"CLR"  ,&op::CLR_idx  ,6 ,99,2 },
+		{"NEG"  ,&op::NEG_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_ext  ,7 ,7 ,3 }, {"LSR"      ,&op::LSR_ext     ,7 ,7 ,3 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_ext  ,7 ,7 ,3 }, {"ASR"  ,&op::ASR_ext  ,7 ,7 ,3 }, {"ASL/LSL"  ,&op::ASL_LSL_ext   ,7 ,7 ,3 }, {"ROL"  ,&op::ROL_ext  ,7 ,7 ,3 }, {"DEC"  ,&op::DEC_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_ext  ,7 ,7 ,3 }, {"TST"  ,&op::TST_ext  ,7 ,7 ,3 }, {"JMP"  ,&op::JMP_ext  ,4 ,4 ,3 }, {"CLR"  ,&op::CLR_ext  ,7 ,7 ,3 },
+		{"SUBA" ,&op::SUBA_imm ,2 ,2 ,2 }, {"CMPA" ,&op::CMPA_imm ,2 ,2 ,2 }, {"SBCA" ,&op::SBCA_imm ,2 ,2 ,2 }, {"SUBD" ,&op::SUBD_imm ,4 ,4 ,3 }, {"ANDA"     ,&op::ANDA_imm    ,2 ,2 ,2 }, {"BITA"     ,&op::BITA_imm    ,2 ,2 ,2 }, {"LDA"  ,&op::LDA_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORA"     ,&op::EORA_imm      ,2 ,2 ,2 }, {"ADCA" ,&op::ADCA_imm ,2 ,2 ,2 }, {"ORA"  ,&op::ORA_imm  ,2 ,2 ,2 }, {"ADDA" ,&op::ADDA_imm ,2 ,2 ,2 }, {"CMPX" ,&op::CMPX_imm ,4 ,2 ,3 }, {"BSR"  ,&op::BSR_rel  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"SUBA" ,&op::SUBA_dir ,4 ,4 ,2 }, {"CMPA" ,&op::CMPA_dir ,4 ,4 ,2 }, {"SBCA" ,&op::SBCA_dir ,4 ,4 ,2 }, {"SUBD" ,&op::SUBD_dir ,6 ,6 ,2 }, {"ANDA"     ,&op::ANDA_dir    ,4 ,4 ,2 }, {"BITA"     ,&op::BITA_dir    ,4 ,4 ,2 }, {"LDA"  ,&op::LDA_dir  ,4 ,4 ,2 }, {"STA"  ,&op::STA_dir  ,4 ,4 ,2 }, {"EORA"     ,&op::EORA_dir      ,4 ,4 ,2 }, {"ADCA" ,&op::ADCA_dir ,4 ,4 ,2 }, {"ORA"  ,&op::ORA_dir  ,4 ,4 ,2 }, {"ADDA" ,&op::ADDA_dir ,4 ,4 ,2 }, {"CMPX" ,&op::CMPX_dir ,6 ,6 ,2 }, {"JSR"  ,&op::JSR_dir  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_dir  ,5 ,5 ,2 }, {"STX"  ,&op::STX_dir  ,5 ,5 ,2 },
+		{"SUBA" ,&op::SUBA_idx ,4 ,99,2 }, {"CMPA" ,&op::CMPA_idx ,4 ,99,2 }, {"SBCA" ,&op::SBCA_idx ,4 ,99,2 }, {"SUBD" ,&op::SUBD_idx ,4 ,99,2 }, {"ANDA"     ,&op::ANDA_idx    ,4 ,99,2 }, {"BITA"     ,&op::BITA_idx    ,4 ,99,2 }, {"LDA"  ,&op::LDA_idx  ,4 ,99,2 }, {"STA"  ,&op::STA_idx  ,4 ,99,2 }, {"EORA"     ,&op::EORA_idx      ,4 ,99,2 }, {"ADCA" ,&op::ADCA_idx ,4 ,99,2 }, {"ORA"  ,&op::ORA_idx  ,4 ,99,2 }, {"ADDA" ,&op::ADDA_idx ,4 ,99,2 }, {"CMPX" ,&op::CMPX_idx ,6 ,99,2 }, {"JSR"  ,&op::JSR_idx  ,7 ,99,2 }, {"LDX"  ,&op::LDX_idx  ,5 ,99,2 }, {"STX"  ,&op::STX_idx  ,5 ,99,2 },
+		{"SUBA" ,&op::SUBA_ext ,5 ,5 ,3 }, {"CMPA" ,&op::CMPA_ext ,5 ,5 ,3 }, {"SBCA" ,&op::SBCA_ext ,5 ,5 ,3 }, {"SUBD" ,&op::SUBD_ext ,7 ,7 ,3 }, {"ANDA"     ,&op::ANDA_ext    ,5 ,5 ,3 }, {"BITA"     ,&op::BITA_ext    ,5 ,5 ,3 }, {"LDA"  ,&op::LDA_ext  ,5 ,5 ,3 }, {"STA"  ,&op::STA_ext  ,5 ,5 ,3 }, {"EORA"     ,&op::EORA_ext      ,5 ,5 ,3 }, {"ADCA" ,&op::ADCA_ext ,5 ,5 ,3 }, {"ORA"  ,&op::ORA_ext  ,5 ,5 ,3 }, {"ADDA" ,&op::ADDA_ext ,5 ,5 ,3 }, {"CMPX" ,&op::CMPX_ext ,7 ,7 ,3 }, {"JSR"  ,&op::JSR_ext  ,8 ,8 ,3 }, {"LDX"  ,&op::LDX_ext  ,6 ,6 ,3 }, {"STX"  ,&op::STX_ext  ,6 ,6 ,3 },
+		{"SUBB" ,&op::SUBB_imm ,2 ,2 ,2 }, {"CMPB" ,&op::CMPB_imm ,2 ,2 ,2 }, {"SBCB" ,&op::SBCB_imm ,2 ,2 ,2 }, {"ADDD" ,&op::ADDD_imm ,4 ,4 ,3 }, {"ANDB"     ,&op::ANDB_imm    ,2 ,2, 2 }, {"BITB"     ,&op::BITB_imm    ,2 ,2 ,2 }, {"LDB"  ,&op::LDB_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORB"     ,&op::EORB_imm      ,2 ,2 ,2 }, {"ADCB" ,&op::ADCB_imm ,2 ,2 ,2 }, {"ORB"  ,&op::ORB_imm  ,2 ,2 ,2 }, {"ADDB" ,&op::ADDB_imm ,2 ,2 ,2 }, {"LDD"  ,&op::LDD_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDU"  ,&op::LDU_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"SUBB" ,&op::SUBB_dir ,4 ,4 ,2 }, {"CMPB" ,&op::CMPB_dir ,4 ,4 ,2 }, {"SBCB" ,&op::SBCB_dir ,4 ,4 ,2 }, {"ADDD" ,&op::ADDD_dir ,6 ,6 ,2 }, {"ANDB"     ,&op::ANDB_dir    ,4 ,4 ,2 }, {"BITB"     ,&op::BITB_dir    ,4 ,4 ,2 }, {"LDB"  ,&op::LDB_dir  ,4 ,4 ,2 }, {"STB"  ,&op::STB_dir  ,4 ,4 ,2 }, {"EORB"     ,&op::EORB_dir      ,4 ,4 ,2 }, {"ADCB" ,&op::ADCB_dir ,4 ,4 ,2 }, {"ORB"  ,&op::ORB_dir  ,4 ,4 ,2 }, {"ADDB" ,&op::ADDB_dir ,4 ,4 ,2 }, {"LDD"  ,&op::LDD_dir  ,5 ,5 ,2 }, {"STD"  ,&op::STD_dir  ,5 ,5 ,2 }, {"LDU"  ,&op::LDU_dir  ,5 ,5 ,2 }, {"STU"  ,&op::STU_dir  ,5 ,5 ,2 },
+		{"SUBB" ,&op::SUBB_idx ,4 ,99,2 }, {"CMPB" ,&op::CMPB_idx ,4 ,99,2 }, {"SBCB" ,&op::SBCB_idx ,4 ,99,2 }, {"ADDD" ,&op::ADDD_idx ,6 ,99,2 }, {"ANDB"     ,&op::ANDB_idx    ,4 ,99,2 }, {"BITB"     ,&op::BITB_idx    ,4 ,99,2 }, {"LDB"  ,&op::LDB_idx  ,4 ,99,2 }, {"STB"  ,&op::STB_idx  ,4 ,99,2 }, {"EORB"     ,&op::EORB_idx      ,4 ,99,2 }, {"ADCB" ,&op::ADCB_idx ,4 ,99,2 }, {"ORB"  ,&op::ORB_idx  ,4 ,99,2 }, {"ADDB" ,&op::ADDB_idx ,4 ,99,2 }, {"LDD"  ,&op::LDD_idx  ,5 ,99,2 }, {"STD"  ,&op::STD_idx  ,5 ,99,2 }, {"LDU"  ,&op::LDU_idx  ,5 ,99,2 }, {"STU"  ,&op::STU_idx  ,5 ,99,2 },
+		{"SUBB" ,&op::SUBB_ext ,5 ,5 ,3 }, {"CMPB" ,&op::CMPB_ext ,5 ,5 ,3 }, {"SBCB" ,&op::SBCB_ext ,5 ,5 ,3 }, {"ADDD" ,&op::ADDD_ext ,7 ,7 ,3 }, {"ANDB"     ,&op::ANDB_ext    ,5 ,5 ,3 }, {"BITB"     ,&op::BITB_ext    ,5 ,5 ,3 }, {"LDB"  ,&op::LDB_ext  ,5 ,5 ,3 }, {"STB"  ,&op::STB_ext  ,5 ,5 ,3 }, {"EORB"     ,&op::EORB_ext      ,5 ,5 ,3 }, {"ADCB" ,&op::ADCB_ext ,5 ,5 ,3 }, {"ORB"  ,&op::ORB_ext  ,5 ,5 ,3 }, {"ADDB" ,&op::ADDB_ext ,5 ,5 ,3 }, {"LDD"  ,&op::LDD_ext  ,6 ,6 ,3 }, {"STD"  ,&op::STD_ext  ,6 ,6 ,3 }, {"LDU"  ,&op::LDU_ext  ,6 ,6 ,3 }, {"STU"  ,&op::STU_ext  ,6 ,6 ,3 }
+#else
+		{"NEG"  ,&op::NEG_dir  ,6 ,6, 2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_dir  ,6 ,6 ,2 }, {"LSR"      ,&op::LSR_dir     ,6 ,6 ,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_dir  ,6 ,6 ,2 }, {"ASR"  ,&op::ASR_dir  ,6 ,6 ,2 }, {"ASL/LSL"  ,&op::ASL_LSL_dir   ,6 ,6 ,2 }, {"ROL"  ,&op::ROL_dir  ,6 ,6 ,2 }, {"DEC"  ,&op::DEC_dir  ,6 ,6 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_dir  ,6 ,6 ,2 }, {"TST"  ,&op::TST_dir  ,6 ,6 ,2 }, {"JMP"  ,&op::JMP_dir  ,3 ,3 ,2 }, {"CLR"  ,&op::CLR_dir  ,6 ,6 ,2 },
+		{"***"  ,nullptr       ,1 ,1 ,1 }, {"***"  ,nullptr       ,1 ,1 ,1 }, {"NOP"  ,&op::NOP_inh  ,2 ,2 ,1 }, {"SYNC" ,&op::SYNC_inh ,4 ,00,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"LBRA" ,&op::LBRA_rel ,5 ,5 ,3 }, {"LBSR" ,&op::LBSR_rel ,9 ,9 ,3 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"DAA"  ,&op::DAA_inh  ,2 ,2 ,1 }, {"ORCC" ,&op::ORCC_imm ,3 ,3 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"ANDCC",&op::ANDCC_imm,3 ,3 ,2 }, {"SEX"  ,&op::SEX_inh  ,2 ,2 ,1 }, {"EXG"  ,&op::EXG_imm  ,8 ,8 ,2 }, {"TFR"  ,&op::TFR_imm  ,6 ,6 ,2 },
+		{"BRA"  ,&op::BRA_rel  ,3 ,3 ,2 }, {"BRN"  ,&op::BRN_rel  ,3 ,3 ,2 }, {"BHI"  ,&op::BHI_rel  ,3 ,3 ,2 }, {"BLS"  ,&op::BLS_rel  ,3 ,3 ,2 }, {"BHS/BCC"  ,&op::BHS_BCC_rel ,3 ,3 ,2 }, {"BLO/BCS"  ,&op::BLO_BCS_rel ,3 ,3 ,2 }, {"BNE"  ,&op::BNE_rel  ,3 ,3 ,2 }, {"BEQ"  ,&op::BEQ_rel  ,3 ,3 ,2 }, {"BVC"      ,&op::BVC_rel       ,3 ,3 ,2 }, {"BVS"  ,&op::BVS_rel  ,3 ,3 ,2 }, {"BPL"  ,&op::BPL_rel  ,3 ,3 ,2 }, {"BMI"  ,&op::BMI_rel  ,3 ,3 ,2 }, {"BGE"  ,&op::BGE_rel  ,3 ,3 ,2 }, {"BLT"  ,&op::BLT_rel  ,3 ,3 ,2 }, {"BGT"  ,&op::BGT_rel  ,3 ,3 ,2 }, {"BLE"  ,&op::BLE_rel  ,3 ,3 ,2 },
+		{"LEAX" ,&op::LEAX_idx ,4 ,99,2 }, {"LEAY" ,&op::LEAY_idx ,4 ,99,2 }, {"LEAS" ,&op::LEAS_idx ,4 ,99,2 }, {"LEAU" ,&op::LEAU_idx ,4 ,99,2 }, {"PSHS"     ,&op::PSHS_imm    ,5 ,4 ,2 }, {"PULS"     ,&op::PULS_imm    ,5 ,5 ,2 }, {"PSHU" ,&op::PSHU_imm ,5 ,5 ,2 }, {"PULU" ,&op::PULU_imm ,5 ,5 ,2 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"RTS"  ,&op::RTS_inh  ,5 ,5 ,1 }, {"ABX"  ,&op::ABX_inh  ,3 ,3 ,1 }, {"RTI"  ,&op::RTI_inh  ,6 ,15,1 }, {"CWAI" ,&op::CWAI_inh ,20,00,2 }, {"MUL"  ,&op::MUL_inh  ,11,11,1 }, {"RESET",&op::RESET_inh,20,20,1 }, {"SWI"  ,&op::SWI_inh  ,19,19,1 },
+		{"NEGA" ,&op::NEGA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMA" ,&op::COMA_inh ,2 ,2 ,1 }, {"LSRA"     ,&op::LSRA_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORA" ,&op::RORA_inh ,2 ,2 ,1 }, {"ASRA" ,&op::ASRA_inh ,2 ,2 ,1 }, {"ASLA/LSLA",&op::ASLA_LSLA_inh ,2 ,2 ,1 }, {"ROLA" ,&op::ROLA_inh ,2 ,2 ,1 }, {"DECA" ,&op::DECA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCA" ,&op::INCA_inh ,2 ,2 ,1 }, {"TSTA" ,&op::TSTA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRA" ,&op::CLRA_inh ,2 ,2 ,1 },
+		{"NEGB" ,&op::NEGB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMB" ,&op::COMB_inh ,2 ,2 ,1 }, {"LSRB"     ,&op::LSRB_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORB" ,&op::RORB_inh ,2 ,2 ,1 }, {"ASRB" ,&op::ASRB_inh ,2 ,2 ,1 }, {"ASLB/LSLB",&op::ASLB_LSLB_inh ,2 ,2 ,1 }, {"ROLB" ,&op::ROLB_inh ,2 ,2 ,1 }, {"DECB" ,&op::DECB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCB" ,&op::INCB_inh ,2 ,2 ,1 }, {"TSTB" ,&op::TSTB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRB" ,&op::CLRB_inh ,2 ,2 ,1 },
+		{"NEG"  ,&op::NEG_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_idx  ,6 ,99,2 }, {"LSR"      ,&op::LSR_idx     ,6 ,99,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_idx  ,6 ,99,2 }, {"ASR"  ,&op::ASR_idx  ,6 ,99,2 }, {"ASL/LSL"  ,&op::ASL_LSL_idx   ,6 ,99,2 }, {"ROL"  ,&op::ROL_idx  ,6 ,99,2 }, {"DEC"  ,&op::DEC_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_idx  ,6 ,99,2 }, {"TST"  ,&op::TST_idx  ,6 ,99,2 }, {"JMP"  ,&op::JMP_idx  ,3 ,99,2 }, {"CLR"  ,&op::CLR_idx  ,6 ,99,2 },
+		{"NEG"  ,&op::NEG_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_ext  ,7 ,7 ,3 }, {"LSR"      ,&op::LSR_ext     ,7 ,7 ,3 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_ext  ,7 ,7 ,3 }, {"ASR"  ,&op::ASR_ext  ,7 ,7 ,3 }, {"ASL/LSL"  ,&op::ASL_LSL_ext   ,7 ,7 ,3 }, {"ROL"  ,&op::ROL_ext  ,7 ,7 ,3 }, {"DEC"  ,&op::DEC_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_ext  ,7 ,7 ,3 }, {"TST"  ,&op::TST_ext  ,7 ,7 ,3 }, {"JMP"  ,&op::JMP_ext  ,4 ,4 ,3 }, {"CLR"  ,&op::CLR_ext  ,7 ,7 ,3 },
+		{"SUBA" ,&op::SUBA_imm ,2 ,2 ,2 }, {"CMPA" ,&op::CMPA_imm ,2 ,2 ,2 }, {"SBCA" ,&op::SBCA_imm ,2 ,2 ,2 }, {"SUBD" ,&op::SUBD_imm ,4 ,4 ,3 }, {"ANDA"     ,&op::ANDA_imm    ,2 ,2 ,2 }, {"BITA"     ,&op::BITA_imm    ,2 ,2 ,2 }, {"LDA"  ,&op::LDA_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORA"     ,&op::EORA_imm      ,2 ,2 ,2 }, {"ADCA" ,&op::ADCA_imm ,2 ,2 ,2 }, {"ORA"  ,&op::ORA_imm  ,2 ,2 ,2 }, {"ADDA" ,&op::ADDA_imm ,2 ,2 ,2 }, {"CMPX" ,&op::CMPX_imm ,4 ,2 ,3 }, {"BSR"  ,&op::BSR_rel  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"SUBA" ,&op::SUBA_dir ,4 ,4 ,2 }, {"CMPA" ,&op::CMPA_dir ,4 ,4 ,2 }, {"SBCA" ,&op::SBCA_dir ,4 ,4 ,2 }, {"SUBD" ,&op::SUBD_dir ,6 ,6 ,2 }, {"ANDA"     ,&op::ANDA_dir    ,4 ,4 ,2 }, {"BITA"     ,&op::BITA_dir    ,4 ,4 ,2 }, {"LDA"  ,&op::LDA_dir  ,4 ,4 ,2 }, {"STA"  ,&op::STA_dir  ,4 ,4 ,2 }, {"EORA"     ,&op::EORA_dir      ,4 ,4 ,2 }, {"ADCA" ,&op::ADCA_dir ,4 ,4 ,2 }, {"ORA"  ,&op::ORA_dir  ,4 ,4 ,2 }, {"ADDA" ,&op::ADDA_dir ,4 ,4 ,2 }, {"CMPX" ,&op::CMPX_dir ,6 ,6 ,2 }, {"JSR"  ,&op::JSR_dir  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_dir  ,5 ,5 ,2 }, {"STX"  ,&op::STX_dir  ,5 ,5 ,2 },
+		{"SUBA" ,&op::SUBA_idx ,4 ,99,2 }, {"CMPA" ,&op::CMPA_idx ,4 ,99,2 }, {"SBCA" ,&op::SBCA_idx ,4 ,99,2 }, {"SUBD" ,&op::SUBD_idx ,4 ,99,2 }, {"ANDA"     ,&op::ANDA_idx    ,4 ,99,2 }, {"BITA"     ,&op::BITA_idx    ,4 ,99,2 }, {"LDA"  ,&op::LDA_idx  ,4 ,99,2 }, {"STA"  ,&op::STA_idx  ,4 ,99,2 }, {"EORA"     ,&op::EORA_idx      ,4 ,99,2 }, {"ADCA" ,&op::ADCA_idx ,4 ,99,2 }, {"ORA"  ,&op::ORA_idx  ,4 ,99,2 }, {"ADDA" ,&op::ADDA_idx ,4 ,99,2 }, {"CMPX" ,&op::CMPX_idx ,6 ,99,2 }, {"JSR"  ,&op::JSR_idx  ,7 ,99,2 }, {"LDX"  ,&op::LDX_idx  ,5 ,99,2 }, {"STX"  ,&op::STX_idx  ,5 ,99,2 },
+		{"SUBA" ,&op::SUBA_ext ,5 ,5 ,3 }, {"CMPA" ,&op::CMPA_ext ,5 ,5 ,3 }, {"SBCA" ,&op::SBCA_ext ,5 ,5 ,3 }, {"SUBD" ,&op::SUBD_ext ,7 ,7 ,3 }, {"ANDA"     ,&op::ANDA_ext    ,5 ,5 ,3 }, {"BITA"     ,&op::BITA_ext    ,5 ,5 ,3 }, {"LDA"  ,&op::LDA_ext  ,5 ,5 ,3 }, {"STA"  ,&op::STA_ext  ,5 ,5 ,3 }, {"EORA"     ,&op::EORA_ext      ,5 ,5 ,3 }, {"ADCA" ,&op::ADCA_ext ,5 ,5 ,3 }, {"ORA"  ,&op::ORA_ext  ,5 ,5 ,3 }, {"ADDA" ,&op::ADDA_ext ,5 ,5 ,3 }, {"CMPX" ,&op::CMPX_ext ,7 ,7 ,3 }, {"JSR"  ,&op::JSR_ext  ,8 ,8 ,3 }, {"LDX"  ,&op::LDX_ext  ,6 ,6 ,3 }, {"STX"  ,&op::STX_ext  ,6 ,6 ,3 },
+		{"SUBB" ,&op::SUBB_imm ,2 ,2 ,2 }, {"CMPB" ,&op::CMPB_imm ,2 ,2 ,2 }, {"SBCB" ,&op::SBCB_imm ,2 ,2 ,2 }, {"ADDD" ,&op::ADDD_imm ,4 ,4 ,3 }, {"ANDB"     ,&op::ANDB_imm    ,2 ,2, 2 }, {"BITB"     ,&op::BITB_imm    ,2 ,2 ,2 }, {"LDB"  ,&op::LDB_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORB"     ,&op::EORB_imm      ,2 ,2 ,2 }, {"ADCB" ,&op::ADCB_imm ,2 ,2 ,2 }, {"ORB"  ,&op::ORB_imm  ,2 ,2 ,2 }, {"ADDB" ,&op::ADDB_imm ,2 ,2 ,2 }, {"LDD"  ,&op::LDD_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDU"  ,&op::LDU_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"SUBB" ,&op::SUBB_dir ,4 ,4 ,2 }, {"CMPB" ,&op::CMPB_dir ,4 ,4 ,2 }, {"SBCB" ,&op::SBCB_dir ,4 ,4 ,2 }, {"ADDD" ,&op::ADDD_dir ,6 ,6 ,2 }, {"ANDB"     ,&op::ANDB_dir    ,4 ,4 ,2 }, {"BITB"     ,&op::BITB_dir    ,4 ,4 ,2 }, {"LDB"  ,&op::LDB_dir  ,4 ,4 ,2 }, {"STB"  ,&op::STB_dir  ,4 ,4 ,2 }, {"EORB"     ,&op::EORB_dir      ,4 ,4 ,2 }, {"ADCB" ,&op::ADCB_dir ,4 ,4 ,2 }, {"ORB"  ,&op::ORB_dir  ,4 ,4 ,2 }, {"ADDB" ,&op::ADDB_dir ,4 ,4 ,2 }, {"LDD"  ,&op::LDD_dir  ,5 ,5 ,2 }, {"STD"  ,&op::STD_dir  ,5 ,5 ,2 }, {"LDU"  ,&op::LDU_dir  ,5 ,5 ,2 }, {"STU"  ,&op::STU_dir  ,5 ,5 ,2 },
+		{"SUBB" ,&op::SUBB_idx ,4 ,99,2 }, {"CMPB" ,&op::CMPB_idx ,4 ,99,2 }, {"SBCB" ,&op::SBCB_idx ,4 ,99,2 }, {"ADDD" ,&op::ADDD_idx ,6 ,99,2 }, {"ANDB"     ,&op::ANDB_idx    ,4 ,99,2 }, {"BITB"     ,&op::BITB_idx    ,4 ,99,2 }, {"LDB"  ,&op::LDB_idx  ,4 ,99,2 }, {"STB"  ,&op::STB_idx  ,4 ,99,2 }, {"EORB"     ,&op::EORB_idx      ,4 ,99,2 }, {"ADCB" ,&op::ADCB_idx ,4 ,99,2 }, {"ORB"  ,&op::ORB_idx  ,4 ,99,2 }, {"ADDB" ,&op::ADDB_idx ,4 ,99,2 }, {"LDD"  ,&op::LDD_idx  ,5 ,99,2 }, {"STD"  ,&op::STD_idx  ,5 ,99,2 }, {"LDU"  ,&op::LDU_idx  ,5 ,99,2 }, {"STU"  ,&op::STU_idx  ,5 ,99,2 },
+		{"SUBB" ,&op::SUBB_ext ,5 ,5 ,3 }, {"CMPB" ,&op::CMPB_ext ,5 ,5 ,3 }, {"SBCB" ,&op::SBCB_ext ,5 ,5 ,3 }, {"ADDD" ,&op::ADDD_ext ,7 ,7 ,3 }, {"ANDB"     ,&op::ANDB_ext    ,5 ,5 ,3 }, {"BITB"     ,&op::BITB_ext    ,5 ,5 ,3 }, {"LDB"  ,&op::LDB_ext  ,5 ,5 ,3 }, {"STB"  ,&op::STB_ext  ,5 ,5 ,3 }, {"EORB"     ,&op::EORB_ext      ,5 ,5 ,3 }, {"ADCB" ,&op::ADCB_ext ,5 ,5 ,3 }, {"ORB"  ,&op::ORB_ext  ,5 ,5 ,3 }, {"ADDB" ,&op::ADDB_ext ,5 ,5 ,3 }, {"LDD"  ,&op::LDD_ext  ,6 ,6 ,3 }, {"STD"  ,&op::STD_ext  ,6 ,6 ,3 }, {"LDU"  ,&op::LDU_ext  ,6 ,6 ,3 }, {"STU"  ,&op::STU_ext  ,6 ,6 ,3 }
+#endif
+	};
+	OpCodeP2 =
+	{
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"***"  ,nullptr   ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"LBRN" ,&op::LBRN_rel ,5 ,5 ,4 }, {"LBHI" ,&op::LBHI_rel ,5 ,6 ,4 }, {"LBLS" ,&op::LBLS_rel ,5 ,6 ,4 }, {"LBHS/LBCC",&op::LBHS_LBCC_rel,5 ,6 ,4 }, {"LBCS/LBLO",&op::LBCS_LBLO_rel,5 ,6 ,4 }, {"LBNE" ,&op::LBNE_rel ,5 ,6 ,4 }, {"LBEQ" ,&op::LBEQ_rel ,5 ,6 ,4 }, {"LBVC" ,&op::LBVC_rel ,5 ,6 ,4 }, {"LBVS" ,&op::LBVS_rel ,5 ,6 ,4 }, {"LBPL" ,&op::LBPL_rel ,5 ,6 ,4 }, {"LBMI" ,&op::LBMI_rel ,5 ,6 ,4 }, {"LBGE" ,&op::LBGE_rel ,5 ,6 ,4 }, {"LBLT" ,&op::LBLT_rel ,5 ,6 ,4 }, {"LBGT" ,&op::LBGT_rel ,5 ,6 ,4 }, {"LBLE" ,&op::LBLE_rel ,5 ,6 ,4 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"SWI2" ,&op::SWI2_inh ,20,20,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_imm ,5 ,5 ,4 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_imm  ,4 ,4 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_dir ,7 ,7 ,3 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_dir  ,6 ,6 ,3 }, {"STY"  ,&op::STY_dir  ,6 ,6 ,3 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_idx ,7 ,99,3 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_idx ,7 ,99,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_idx  ,6 ,99,3 }, {"STY"  ,&op::STY_idx  ,6 ,99,3 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_ext ,8 ,8 ,4 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_ext  ,7 ,7 ,4 }, {"STY"  ,&op::STY_ext  ,7 ,7 ,4 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_imm  ,4 ,4 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_dir  ,6 ,6 ,4 }, {"STS"  ,&op::STS_dir  ,6 ,6, 3 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_idx  ,6 ,99,3 }, {"STS"  ,&op::STS_idx  ,6 ,99,3 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_ext  ,7 ,7 ,4 }, {"STS"  ,&op::STS_ext  ,7 ,7, 4 },
+	};
+	OpCodeP3 =
+	{
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"***"  ,nullptr   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"SWI3" ,&op::SWI3_inh ,20,20,2 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_idx ,7 ,99,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_idx ,7 ,99,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
+		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }
+	};
 }
 
+
+//*****************************************************************************
+//	~Mc6809()
+//*****************************************************************************
+//	 Cleans up memory, if owned, on exit.
+//*****************************************************************************
 Mc6809::~Mc6809()
 {}
 
 
-//*********************************************************************************************************************************
-// Hardware requests
-//*********************************************************************************************************************************
-
-
 //*****************************************************************************
-//	Interrupts:		/Reset, /NMI, SWI, /FIRQ, /IRQ, SWI2, SWI3,
-//					<reserved, not implemented>
-// in the order of priority.
-// Reset and NIM, FIRQ, and IRQ interrupts are hardware (pin inputs on 6x09.)
-// SWI, SWI2, SWI3 are software interrupts
+//	SetMMU()
 //*****************************************************************************
-
-
-//*********************************************************************************************************************************
-// "externally generated" reset, halt, and interrupts 
+//	Sets the memory bus (aka, MMU since the MMU handles memory mapping.)
 //*****************************************************************************
-
-//*****************************************************************************
-//	TriggerHalt()
-//*****************************************************************************
-// set trigger flag for halt
-//
-// Condition Codes Affected: None
-//*****************************************************************************
-void Mc6809::TriggerHalt()
+void Mc6809::SetMMU(MMU* device)
 {
-	haltTriggered = true;
-}
-
-
-//*****************************************************************************
-//	ReleaseHalt()
-//*****************************************************************************
-// reset trigger flag for halt
-//
-// Condition Codes Affected: None
-//*****************************************************************************
-void Mc6809::ReleaseHalt()
-{
-	haltTriggered = false;
-}
-
-
-//*****************************************************************************
-//	TriggerReset()
-//*****************************************************************************
-// set trigger flag for reset
-//
-// Condition Codes Affected: None
-//*****************************************************************************
-void Mc6809::TriggerReset()
-{
-	resetTriggered = true;
-}
-
-
-//*****************************************************************************
-//	TriggerNMI()
-//
-// Condition Codes Affected: None
-//*****************************************************************************
-// set trigger flag for NMI
-//*****************************************************************************
-void Mc6809::TriggerNMI()
-{
-	nmiTriggered = true;
-}
-
-
-//*****************************************************************************
-//	TriggerIRQ()
-//
-// Condition Codes Affected: None
-//*****************************************************************************
-// set trigger flag for IRQ
-//*****************************************************************************
-void Mc6809::TriggerIRQ()
-{
-	irqTriggered = true;
-}
-
-
-//*****************************************************************************
-//	TriggerFIRQ()
-//*****************************************************************************
-// set trigger flag for FIRQ
-//
-// Condition Codes Affected: None
-//*****************************************************************************
-void Mc6809::TriggerFIRQ()
-{
-	firqTriggered = true;
+	bus = device;
 }
 
 
 //*********************************************************************************************************************************
-// Actual reset, halt, interrupt hardware routines
-//*****************************************************************************
+// Internal functionality for making this whole thing work
+//*********************************************************************************************************************************
+
 
 //*****************************************************************************
-//	HardwareRESET()
+//	Clock()
 //*****************************************************************************
-//	Resets the CPU to a functional state and starts executing code at a given
-// address via a jump vector table @ $FFFE (MSB) and $FFFF (LSB)
-// Highest priority after /halt signal.
-// Also an undocumented exec: $3E
-//
-// Address Mode: Inherent?
-// Condition Codes Affected: 
-//	
+//	Triggers the cycle the CPU is carrying out
 //*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::HardwareRESET()
+void Mc6809::Clock()
 {
-	// COLD reset - cycle count is not really known.
-	reg_CC = CC::I | CC::F;
-
-	reg_PC_hi = Read(InterruptVector.RESET_hi);
-	reg_PC_lo = Read(InterruptVector.RESET_lo);
-
-	cyclesLeft = 0;
-
-	reg_CC = 0x00;
-
-	return(cyclesLeft);
+	if (exec == nullptr)
+	{
+		if (Halt && (table == OpCodeP1))
+			exec = &Mc6809::HALT;
+		else if (Reset && (table == OpCodeP1))
+			exec = &Mc6809::RESET;
+		else if (Nmi && (table == OpCodeP1))
+			exec = &Mc6809::NMI;
+		else if (Firq && (table == OpCodeP1))
+			exec = &Mc6809::FIRQ;
+		else if (Irq && (table == OpCodeP1))
+			exec = &Mc6809::IRQ;
+		else
+			Fetch(reg_PC);
+	}
+	//						   (obj->*fp)(m, n)
+	else if (uint8_t result = (this->*exec)() == 255)
+	{
+		exec = nullptr;
+		clocksUsed = 0;
+	}
+	return;
 }
 
 
 //*****************************************************************************
-//	NMI()
+//	Read()
 //*****************************************************************************
-//	Non-Maskable Interrupt Request. Stores registers and starts executing code
-// at a given address via a jump vector table @ $FFFC (MSB) and $FFFD (LSB)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	E, I, F
-//	
+//	Reads a byte of data from the address bus.
 //*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
+uint8_t Mc6809::Read(const uint16_t address, const bool readOnly)
+{
+	if (address >= 0x0000 && address <= 0xffff)
+		return (bus->Read(address, readOnly));
+	return(0x00);
+}
+
+
+//*****************************************************************************
+//	Write()
+//*****************************************************************************
+//	Writes a byte of data to the address bus.
+//*****************************************************************************
+void Mc6809::Write(const uint16_t address, const uint8_t byte)
+{
+	if (address >= 0x0000 && address <= 0xffff)
+		bus->Write(address, byte);
+}
+
+
+//*****************************************************************************
+//	Fetch()
+//*****************************************************************************
+//	Retrieve opcodes, and determine addressing and instruction to execute
+//*****************************************************************************
+uint8_t Mc6809::Fetch(const uint16_t address)
+{
+	static uint8_t opcode;
+	opcode = Read(reg_PC);
+
+	if (opcode == 0x10)
+	{
+		table = OpCodeP2;
+		clocksUsed = 1;
+	}
+	else if (opcode == 0x11)
+	{
+		table = OpCodeP3;
+		clocksUsed = 1;
+	}
+	else
+	{
+		exec = table[opcode].opcode;
+		++clocksUsed;
+
+		// ALWAYS revert back to the first opcode table
+		table = OpCodeP1;
+	}
+
+	// process opcode and set it to execute it.
+	return(clocksUsed);
+}
+
+
+//*********************************************************************************************************************************
+// All externally triggered interrupts, halts, and resets
+//*********************************************************************************************************************************
+
+
+//*****************************************************************************
+//	HALT\				Hardware
+//*****************************************************************************
+uint8_t Mc6809::HALT()
+{
+	clocksUsed = Halt ? 1 : 255;
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	RESET\				Hardware
+//*****************************************************************************
+uint8_t Mc6809::RESET()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Don't care			$fffe
+		if (Reset)
+			--clocksUsed;
+		break;
+	case 2:		// R	Don't care			$fffe
+		reg_CC = (CC::I | CC::F);
+		break;
+	case 3:		// R	Don't care			$fffe
+		break;
+	case 4:		// R	Don't care			$fffe
+		break;
+	case 5:		// R	Int Vector High		$fffe
+		PC_hi = Read(0xfffe);
+		break;
+	case 6:		// R	Int Vector Low		$ffff
+		PC_lo = Read(0xffff);
+		break;
+	case 7:		// R	Don't care			$ffff
+		reg_CC = 0x00;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	NMI\				Hardware
 //*****************************************************************************
 uint8_t Mc6809::NMI()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 19:	// R unknown				(PC)
+	case 1:		// R	?					PC
 		break;
-	case 18:	// R unknown				(PC)
+	case 2:		// R	?					PC
 		break;
-	case 17:	// R don't care				($ffff)
+	case 3:		// R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
-	case 16:	// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
+	case 4:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
 		break;
-	case 15:	// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
+	case 5:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
 		break;
-	case 14:	// W push U low		onto S	(SP-3)	- User Stack
-		Write(--reg_S, reg_U_lo);
+	case 6:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
 		break;
-	case 13:	// W push U hi		onto S	(SP-4)
-		Write(--reg_S, reg_U_hi);
+	case 7:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
 		break;
-	case 12:	// W push Y low		onto S	(SP-5)	- Index Register Y
-		Write(--reg_S, reg_Y_lo);
+	case 8:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
 		break;
-	case 11:	// W push Y hi		onto S	(SP-6)
-		Write(--reg_S, reg_Y_hi);
+	case 9:		// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
 		break;
-	case 10:	// W push X low		onto S	(SP-7)	- Index Register X
-		Write(--reg_S, reg_X_lo);
+	case 10:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
 		break;
-	case 9:		// W push X hi		onto S	(SP-8)
-		Write(--reg_S, reg_X_hi);
+	case 11:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
 		break;
-	case 8:		// W push DP		onto S	(SP-9)	- Direct Page register
+	case 12:	// W	DP Register			SP-9	--SP
 		Write(--reg_S, reg_DP);
 		break;
-	case 7:		// W push B			onto S	(SP-10)	- Accumulator B
+	case 13:	// W	B  Register			SP-10	--SP
 		Write(--reg_S, reg_B);
 		break;
-	case 6:		// W push A			onto S	(SP-11)	- Accumulator A
+	case 14:	// W	A  Register			SP-11	--SP
 		Write(--reg_S, reg_A);
 		break;
-	case 5:		// W push CC		onto S	(SP-12)	- Condition Codes register
+	case 15:	// W	CC Register			SP-12	--SP
 		Write(--reg_S, reg_CC);
 		break;
-	case 4:		// R don't care				($ffff)
+	case 16:	// R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 3:		// R NMI Vector hi			($FFFC)
-		reg_PC_hi = Read(InterruptVector.NMI_hi);
+	case 17:	// R	Int Vector High		$fffc
+		PC_hi = Read(0xfffc);
 		break;
-	case 2:		// R NMI Vector lo			($FFFD)
-		reg_PC_lo = Read(InterruptVector.NMI_lo);
+	case 18:	// R	Int Vector Low		$fffd
+		PC_lo = Read(0xfffd);
 		break;
-	case 1:		// R don't care				($ffff)
+	case 19:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	FIRQ()
-//*****************************************************************************
-//	Maskable Fast Interrupt Request. Stores registers  CC and PC and starts
-// executing code at a given address via a jump vector  table @ $FFF6 (MSB) and
-// $FFF7 (LSB)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	E, I, F
-//	
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
+//	FIRQ\				Hardware
 //*****************************************************************************
 uint8_t Mc6809::FIRQ()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 10:	// R unknown				(PC)	- already done by the time we get here
-		if ((reg_CC & CC::F) != 0)
-			cyclesLeft = 1;
+	case 1:		// R	?					PC
 		break;
-	case 9:		// R unknown				(PC+1)
-		++reg_PC;
+	case 2:		// R	?					PC
 		break;
-	case 8:		// R don't care				($ffff)
+	case 3:		// R	Don't care			$ffff
+		reg_CC &= ~CC::E;
 		break;
-	case 7:		// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
+	case 4:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
 		break;
-	case 6:		// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
+	case 5:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
 		break;
-	case 5:		// W push CC		onto S	(SP-3)	- Condition Codes register
+	case 6:		// W	CC Register			SP-12	--SP
 		Write(--reg_S, reg_CC);
 		break;
-	case 4:		// R don't care				($ffff)
+	case 7:		// R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 3:		// R FIRQ Vector hi	($FFF6)
-		reg_PC_hi = Read(InterruptVector.FIRQ_hi);
+	case 8:		// R	Int Vector High		$fff6
+		PC_hi = Read(0xfff6);
 		break;
-	case 2:		// R FIRQ Vector lo	($FFF7)
-		reg_PC_lo = Read(InterruptVector.FIRQ_lo);
+	case 9:		// R	Int Vector Low		$fff7
+		PC_lo = Read(0xfff7);
 		break;
-	case 1:		// R don't care				($ffff)
+	case 10:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	IRQ()
-//*****************************************************************************
-//	Maskable Interrupt Request. Stores registers and starts executing code at a
-// given address via a jump vector table @ $FFF8 (MSB) and $FFF9 (LSB)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	E, I, F
-//	
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
+//	IRQ\				Hardware
 //*****************************************************************************
 uint8_t Mc6809::IRQ()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 19:	// R unknown				(PC)	- already done by the time we get here
-		if ((reg_CC & CC::I) != 0)
-			cyclesLeft = 1;
+	case 1:		// R	?					PC
 		break;
-	case 18:	// R unknown				(PC+1)
-		++reg_PC;
+	case 2:		// R	?					PC
 		break;
-	case 17:	// R don't care				($ffff)
+	case 3:		// R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
-	case 16:	// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
+	case 4:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
 		break;
-	case 15:	// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
+	case 5:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
 		break;
-	case 14:	// W push U low		onto S	(SP-3)	- User Stack
-		Write(--reg_S, reg_U_lo);
+	case 6:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
 		break;
-	case 13:	// W push U hi		onto S	(SP-4)
-		Write(--reg_S, reg_U_hi);
+	case 7:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
 		break;
-	case 12:	// W push Y low		onto S	(SP-5)	- Index Register Y
-		Write(--reg_S, reg_Y_lo);
+	case 8:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
 		break;
-	case 11:	// W push Y hi		onto S	(SP-6)
-		Write(--reg_S, reg_Y_hi);
+	case 9:		// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
 		break;
-	case 10:	// W push X low		onto S	(SP-7)	- Index Register X
-		Write(--reg_S, reg_X_lo);
+	case 10:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
 		break;
-	case 9:		// W push X hi		onto S	(SP-8)
-		Write(--reg_S, reg_X_hi);
+	case 11:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
 		break;
-	case 8:		// W push DP		onto S	(SP-9)	- Direct Page register
+	case 12:	// W	DP Register			SP-9	--SP
 		Write(--reg_S, reg_DP);
 		break;
-	case 7:		// W push B			onto S	(SP-10)	- Accumulator B
+	case 13:	// W	B  Register			SP-10	--SP
 		Write(--reg_S, reg_B);
 		break;
-	case 6:		// W push A			onto S	(SP-11)	- Accumulator A
+	case 14:	// W	A  Register			SP-11	--SP
 		Write(--reg_S, reg_A);
 		break;
-	case 5:		// W push CC		onto S	(SP-12)	- Condition Codes register
+	case 15:	// W	CC Register			SP-12	--SP
 		Write(--reg_S, reg_CC);
 		break;
-	case 4:		// R don't care				($ffff)
+	case 16:	// R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 3:		// R retrv Reset Vector hi	($FFF8)
-		reg_PC_hi = Read(InterruptVector.IRQ_hi);
+	case 17:	// R	Int Vector High		$fff8
+		PC_hi = Read(0xfff8);
 		break;
-	case 2:		// R retrv Reset Vector lo	($FFF9)
-		reg_PC_lo = Read(InterruptVector.IRQ_lo);
+	case 18:	// R	Int Vector Low		$fff9
+		PC_lo = Read(0xfff9);
 		break;
-	case 1:		// R don't care				($ffff)
+	case 19:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*********************************************************************************************************************************
-// instructions
+// All valid Opcodes, in mnemonic alphabetical order. (Mnemonic first, Address mode second)
 //*********************************************************************************************************************************
 
 
-//*********************************************************************************************************************************
-// Software Interrupts - Triggered by software only, not hardware
 //*****************************************************************************
-
+//	ABX					inherent
 //*****************************************************************************
-//	Swi()
-//*****************************************************************************
-//	Software Interrupt (1). Stores registers and starts executing code at a
-// given address via a jump vector table @ $FFFA (MSB) and $FFFB (LSB)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	E, I, F
-//
-// NOTES: This is also a software instruction: 3F
-// 19 clocks, 1 bytes, inherent address mode
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::SWI()
+uint8_t Mc6809::ABX_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 19:	// R Opcode Fetch			(PC) - already done by the time we get here
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 18:	// R don't care				(PC+1)
+	case 2:		// R	don't care			PC+1
 		++reg_PC;
 		break;
-	case 17:	// R don't care				($FFFF)
-		reg_CC |= CC::E;
-		break;
-	case 16:	// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
-		break;
-	case 15:	// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
-		break;
-	case 14:	// W push U low		onto S	(SP-3)	- User Stack
-		Write(--reg_S, reg_U_lo);
-		break;
-	case 13:	// W push U hi		onto S	(SP-4)
-		Write(--reg_S, reg_U_hi);
-		break;
-	case 12:	// W push Y low		onto S	(SP-5)	- Index Register Y
-		Write(--reg_S, reg_Y_lo);
-		break;
-	case 11:	// W push Y hi		onto S	(SP-6)
-		Write(--reg_S, reg_Y_hi);
-		break;
-	case 10:	// W push X low		onto S	(SP-7)	- Index Register X
-		Write(--reg_S, reg_X_lo);
-		break;
-	case 9:		// W push X hi		onto S	(SP-8)
-		Write(--reg_S, reg_X_hi);
-		break;
-	case 8:		// W push DP		onto S	(SP-9)	- Direct Page register
-		Write(--reg_S, reg_DP);
-		break;
-	case 7:		// W push B			onto S	(SP-10)	- Accumulator B
-		Write(--reg_S, reg_B);
-		break;
-	case 6:		// W push A			onto S	(SP-11)	- Accumulator A
-		Write(--reg_S, reg_A);
-		break;
-	case 5:		// W push CC		onto S	(SP-12)	- Condition Codes register
-		Write(--reg_S, reg_CC);
-		break;
-	case 4:		// R don't care				($ffff)
-		reg_CC |= (CC::I | CC::F);
-		break;
-	case 3:		// R retrieve SWI Vector hi ($FFFA)
-		reg_PC_hi = Read(InterruptVector.SWI_hi);
-		break;
-	case 2:		// R retrieve SWI Vector lo	($FFFB)
-		reg_PC_lo = Read(InterruptVector.SWI_lo);
-		break;
-	case 1:		// R don't care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	SWI2()
-//*****************************************************************************
-//	Software Interrupt 2. Stores registers and starts executing code at a
-// given address via a jump vector table @ $FFF4 (MSB) and $FFF5 (LSB)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	E
-//
-// NOTES: This is also a software instruction: 103F
-// 20 clocks, 2 bytes, inherent address mode
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::SWI2()
-{
-	
-	switch (cyclesLeft)
-	{
-	case 20:	// R Opcode Fetch			(PC)	- already done by the time we get here
-		break;
-	case 19:	// R Opcode Fetch 2nd byte	(PC+1)	- already done by the time we get here
-		++reg_PC;
-		break;
-	case 18:	// R don't care				(PC+2)
-		++reg_PC;
-		break;
-	case 17:	// R don't care				($FFFF)
-		reg_CC |= CC::E;
-		break;
-	case 16:	// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
-		break;
-	case 15:	// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
-		break;
-	case 14:	// W push U low		onto S	(SP-3)	- User Stack
-		Write(--reg_S, reg_U_lo);
-		break;
-	case 13:	// W push U hi		onto S	(SP-4)
-		Write(--reg_S, reg_U_hi);
-		break;
-	case 12:	// W push Y low		onto S	(SP-5)	- Index Register Y
-		Write(--reg_S, reg_Y_lo);
-		break;
-	case 11:	// W push Y hi		onto S	(SP-6)
-		Write(--reg_S, reg_Y_hi);
-		break;
-	case 10:	// W push X low		onto S	(SP-7)	- Index Register X
-		Write(--reg_S, reg_X_lo);
-		break;
-	case 9:		// W push X hi		onto S	(SP-8)
-		Write(--reg_S, reg_X_hi);
-		break;
-	case 8:		// W push DP		onto S	(SP-9)	- Direct Page register
-		Write(--reg_S, reg_DP);
-		break;
-	case 7:		// W push B			onto S	(SP-10)	- Accumulator B
-		Write(--reg_S, reg_B);
-		break;
-	case 6:		// W push A			onto S	(SP-11)	- Accumulator A
-		Write(--reg_S, reg_A);
-		break;
-	case 5:		// W push CC		onto S	(SP-12)	- Condition Codes register
-		Write(--reg_S, reg_CC);
-		break;
-	case 4:		// R don't care				($ffff)
-		break;
-	case 3:		// R retrv SWI2 Vector hi	($FFF4)
-		reg_PC_hi = Read(InterruptVector.SWI2_hi);
-		break;
-	case 2:		// R retrv SWI2 Vector lo	($FFF5)
-		reg_PC_lo = Read(InterruptVector.SWI2_lo);
-		break;
-	case 1:		// R don't care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	SWI3()
-//*****************************************************************************
-//	Software Interrupt 3. Stores registers and starts executing code at a
-// given address via a jump vector table @ $FFF2 (MSB) and $FFF3 (LSB)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	E
-//
-// NOTES: This is also a software instruction: 113F
-// 20 clocks, 2 bytes, inherent address mode
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::SWI3()
-{
-	switch (cyclesLeft)
-	{
-	case 20:	// R Opcode Fetch			(PC)	- already done by the time we get here
-		break;
-	case 19:	// R Opcode Fetch 2nd byte	(PC+1)	- already done by the time we get here
-		++reg_PC;
-		break;
-	case 18:	// R don't care				(PC+2)
-		++reg_PC;
-		break;
-	case 17:	// R don't care				($FFFF)
-		reg_CC |= CC::E;
-		break;
-	case 16:	// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
-		break;
-	case 15:	// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
-		break;
-	case 14:	// W push U low		onto S	(SP-3)	- User Stack
-		Write(--reg_S, reg_U_lo);
-		break;
-	case 13:	// W push U hi		onto S	(SP-4)
-		Write(--reg_S, reg_U_hi);
-		break;
-	case 12:	// W push Y low		onto S	(SP-5)	- Index Register Y
-		Write(--reg_S, reg_Y_lo);
-		break;
-	case 11:	// W push Y hi		onto S	(SP-6)
-		Write(--reg_S, reg_Y_hi);
-		break;
-	case 10:	// W push X low		onto S	(SP-7)	- Index Register X
-		Write(--reg_S, reg_X_lo);
-		break;
-	case 9:		// W push X hi		onto S	(SP-8)
-		Write(--reg_S, reg_X_hi);
-		break;
-	case 8:		// W push DP		onto S	(SP-9)	- Direct Page register
-		Write(--reg_S, reg_DP);
-		break;
-	case 7:		// W push B			onto S	(SP-10)	- Accumulator B
-		Write(--reg_S, reg_B);
-		break;
-	case 6:		// W push A			onto S	(SP-11)	- Accumulator A
-		Write(--reg_S, reg_A);
-		break;
-	case 5:		// W push CC		onto S	(SP-12)	- Condition Codes register
-		Write(--reg_S, reg_CC);
-		break;
-	case 4:		// R don't care				($ffff)
-		break;
-	case 3:		// R retrv SWI3 Vector hi	($FFF2)
-		reg_PC_hi = Read(InterruptVector.SWI3_hi);
-		break;
-	case 2:		// R retrv SWI3 Vector lo	($FFF3)
-		reg_PC_lo = Read(InterruptVector.SWI3_lo);
-		break;
-	case 1:		// R don't care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	Reset()
-//*****************************************************************************
-//	Resets the CPU to a functional state and starts executing code at a given
-// address via a jump vector table @ $FFFE (MSB) and $FFFF (LSB)
-// Highest priority after /halt signal.
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	CC
-//
-// NOTES: an UNDOCUMENTED exec: $3E
-//
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::Reset()
-{
-	switch (cyclesLeft)
-	{
-	case 19:	// R Opcode Fetch			(PC) - already done by the time we get here
-		break;
-	case 18:	// R don't care				(PC+1)
-		++reg_PC;
-		break;
-	case 17:	// R don't care				($ffff)
-		reg_CC |= CC::E;
-		break;
-	case 16:	// W push PC low	onto S	(SP-1)	- Program Counter
-		Write(--reg_S, reg_PC_lo);
-		break;
-	case 15:	// W push PC hi		onto S	(SP-2)
-		Write(--reg_S, reg_PC_hi);
-		break;
-	case 14:	// W push U low		onto S	(SP-3)	- User Stack
-		Write(--reg_S, reg_U_lo);
-		break;
-	case 13:	// W push U hi		onto S	(SP-4)
-		Write(--reg_S, reg_U_hi);
-		break;
-	case 12:	// W push Y low		onto S	(SP-5)	- Index Register Y
-		Write(--reg_S, reg_Y_lo);
-		break;
-	case 11:	// W push Y hi		onto S	(SP-6)
-		Write(--reg_S, reg_Y_hi);
-		break;
-	case 10:	// W push X low		onto S	(SP-7)	- Index Register X
-		Write(--reg_S, reg_X_lo);
-		break;
-	case 9:		// W push X hi		onto S	(SP-8)
-		Write(--reg_S, reg_X_hi);
-		break;
-	case 8:		// W push DP		onto S	(SP-9)	- Direct Page register
-		Write(--reg_S, reg_DP);
-		break;
-	case 7:		// W push B			onto S	(SP-10)	- Accumulator B
-		Write(--reg_S, reg_B);
-		break;
-	case 6:		// W push A			onto S	(SP-11)	- Accumulator A
-		Write(--reg_S, reg_A);
-		break;
-	case 5:		// W push CC		onto S	(SP-12)	- Condition Codes register
-		Write(--reg_S, reg_CC);
-		break;
-	case 4:		// R don't care				($ffff)
-		reg_CC |= (CC::I | CC::F);
-		break;
-	case 3:		// R retrv Reset Vector hi	($FFFE)
-		reg_PC_hi = Read(InterruptVector.RESET_hi);
-		break;
-	case 2:		// R retrv Reset Vector lo	($FFFF)
-		reg_PC_lo = Read(InterruptVector.RESET_lo);
-		break;
-	case 1:		// R don't care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*********************************************************************************************************************************
-// Returns: from interrupts or subroutines
-//*****************************************************************************
-
-//*****************************************************************************
-//	RTI()
-//*****************************************************************************
-//	Return from Interrupt. Reloads all saved registers (exact count depends on
-// what the E flag of the retrieved CC register contains)
-//
-// Address Mode: Inherent
-// Condition Codes Affected: Pulled from [System] Stack
-//	
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::RTI()
-{
-	switch (cyclesLeft)
-	{
-	case 15:	// R Opcode Fetch			(PC)		//1
-		break;
-	case 14:	// R Don't Care				(PC+1)		//2
-		++reg_PC;
-		break;
-	case 13:	// R CCR					(SP)		//3
-		reg_CC = Read(reg_S++);
-		break;
-	}
-	if ((reg_CC | CC::E) != CC::E)
-	{
-		switch (cyclesLeft)
-		{
-		case 12:	// R PC hi				(SP+1)		//4
-			break;
-		case 11:	// R PC lo				(SP+2)		//5
-			break;
-		case 10:	// R Don't care			($ffff)		//6
-			cyclesLeft = 1;
-			break;
-		}
-		--cyclesLeft;
-		return(cyclesLeft);
-	}
-	switch (cyclesLeft)
-	{
-	case 12:	// R Register A				(SP+1)		//4
-		reg_A = data_hi;
-		break;
-	case 11:	// R Register B				(SP+2)		//5
-		reg_B = data_lo;
-		break;
-	case 10:	// R Register DP			(SP+3)		//6
-		reg_DP = Read(reg_S++);
-		break;
-	case 9:		// R register X hi			(SP+4)		//7
-		reg_X_hi = Read(reg_S++);
-		break;
-	case 8:		// R register X lo			(SP+5)		//8
-		reg_X_lo = Read(reg_S++);
-		break;
-	case 7:		// R register Y hi			(SP+6)		//9
-		reg_Y_hi = Read(reg_S++);
-		break;
-	case 6:		// R register Y lo			(SP+7)		//10
-		reg_Y_lo = Read(reg_S++);
-		break;
-	case 5:		// R register U Hi			(SP+8)		//11
-		reg_U_hi = Read(reg_S++);
-		break;
-	case 4:		// R register U lo			(SP+9)		//12
-		reg_U_lo = Read(reg_S++);
-		break;
-	case 3:		// R register PC hi			(SP+10)		//13
-		reg_PC_hi = Read(reg_S++);
-		break;
-	case 2:		// R register PC lo			(SP+11)		//14
-		reg_PC_lo = Read(reg_S++);
-		break;
-	case 1:		//R Don't care				($ffff)		//15
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	RTS()
-//*****************************************************************************
-//	Return from Subroutine. Doesn't care if it was BSR, LBSR, or JSR
-//
-// Address Mode: Inherent
-// Condition Codes Affected: None
-//	
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::RTS()
-{
-	switch (cyclesLeft)
-	{
-	case 5:		// R Opcode Fetch			(PC)
-		break;
-	case 4:		// R Don't Care				(PC+1)
-		++reg_PC;
-		break;
-	case 3:		// R register PC hi			(SP)
-		reg_PC_hi = Read(reg_S++);
-		break;
-	case 2:		// R register PC lo			(SP+1)
-		reg_PC_lo = Read(reg_S++);
-		break;
-	case 1:		//R Don't care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*********************************************************************************************************************************
-// opcodes - single addressing mode, simple
-//*****************************************************************************
-
-
-//*****************************************************************************
-// ABX()
-//*****************************************************************************
-// Add B to X
-//
-// Address Mode: Inherent
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ABX()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			(PC)
-		break;
-	case 2:		// R don't care				(PC+1)
-		++reg_PC;
-		break;
-	case 1:
+	case 3:		// R	don't care			$ffff
 		reg_X += reg_B;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// ASLA()
+//	ADCA				direct
 //*****************************************************************************
-// Arithmetic Shift Left A (Logical Shift Left fill LSb with 0)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ASLA()
+uint8_t Mc6809::ADCA_dir()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 1:
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADCA				extended
+//*****************************************************************************
+uint8_t Mc6809::ADCA_ext()	// H N Z V C all modified. reg_A modified
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADCA				immediate
+//*****************************************************************************
+uint8_t Mc6809::ADCA_imm()	// H N Z V C all modified. reg_A modified
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = reg_A;
+		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADCB				direct
+//*****************************************************************************
+uint8_t Mc6809::ADCB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADCB				extended
+//*****************************************************************************
+uint8_t Mc6809::ADCB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADCB				immediate
+//*****************************************************************************
+uint8_t Mc6809::ADCB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = reg_B;
+		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDA				direct
+//*****************************************************************************
+uint8_t Mc6809::ADDA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+		reg_A += scratch_lo;
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDA				extended
+//*****************************************************************************
+uint8_t Mc6809::ADDA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+		reg_A += scratch_lo;
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDA				immediate
+//*****************************************************************************
+uint8_t Mc6809::ADDA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = reg_A;
+		reg_A += scratch_lo;
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDB				direct
+//*****************************************************************************
+uint8_t Mc6809::ADDB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+		reg_B += scratch_lo;
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDB				extended
+//*****************************************************************************
+uint8_t Mc6809::ADDB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+		reg_B += scratch_lo;
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDB				immediate
+//*****************************************************************************
+uint8_t Mc6809::ADDB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = reg_B;
+		reg_B += scratch_lo;
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDD				direct
+//*****************************************************************************
+uint8_t Mc6809::ADDD_dir()
+{
+	static uint8_t data_hi;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data High			$ffff
+		data_hi = Read(reg_scratch);
+		break;
+	case 5:		// R	Data Low			EA+1
+		scratch_lo = Read(++reg_scratch);
+		scratch_hi = data_hi;
+		break;
+	case 6:		// R	Don't Care			$ffff
+		reg_D += reg_scratch;
+
+		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_D & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDD				extended
+//*****************************************************************************
+uint8_t Mc6809::ADDD_ext()
+{
+	static uint8_t data_hi;
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data High			$ffff
+		data_hi = Read(reg_scratch);
+		break;
+	case 6:		// R	Data Low			EA+1
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = data_hi;
+		break;
+	case 7:		// R	Don't Care			$ffff
+		reg_D += reg_scratch;
+
+		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_D & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDD				immediate
+//*****************************************************************************
+uint8_t Mc6809::ADDD_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data High			PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Data Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		reg_D += reg_scratch;
+
+		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_D & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDA				direct
+//*****************************************************************************
+uint8_t Mc6809::ANDA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC &= ~CC::V;
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
+		reg_CC = (((reg_A & 0x80)== 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDA				extended
+//*****************************************************************************
+uint8_t Mc6809::ANDA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC &= ~CC::V;
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDA				immediate
+//*****************************************************************************
+uint8_t Mc6809::ANDA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//R		Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC &= ~CC::V;
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDB				direct
+//*****************************************************************************
+uint8_t Mc6809::ANDB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//R		Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC &= ~CC::V;
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDB				extended
+//*****************************************************************************
+uint8_t Mc6809::ANDB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC &= ~CC::V;
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDB				immediate
+//*****************************************************************************
+uint8_t Mc6809::ANDB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC &= ~CC::V;
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDCC				immediate
+//*****************************************************************************
+uint8_t Mc6809::ANDCC_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		reg_CC &= scratch_lo;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ASLA				inherent
+//	LSLA				inherent
+//*****************************************************************************
+uint8_t Mc6809::ASLA_LSLA_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	don't care			PC+1
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = reg_A << 1;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// ASLB()
+//	ASLB				inherent
+//	LSLB				inherent
 //*****************************************************************************
-// Arithmetic Shift Left B (Logical Shift Left fill LSb with 0)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ASLB()
+uint8_t Mc6809::ASLB_LSLB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 1:
+	case 2:		// R	don't care			PC+1
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = reg_B << 1;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// ASRA()
+//	ASL				direct
+//	LSL				direct
 //*****************************************************************************
-// Arithmetic Shift Right A (fill MSb with Sign bit)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ASRA()
+uint8_t Mc6809::ASL_LSL_dir()
 {
-	switch (cyclesLeft)
+	static uint8_t data_lo;
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		//	R	Opcode Fetch		PC
 		break;
-	case 1:
-		data_lo = reg_A & 0x80;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		//	R	Don't care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't care			$ffff
+		reg_CC = ((data_lo& 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = data_lo << 1;
+		reg_CC = (data_lo== 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo& 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC = (((data_lo>> 6) & 1) != ((data_lo>> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		break;
+	case 6:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	ASL					extended
+//	LSL					extended
+//*****************************************************************************
+uint8_t Mc6809::ASL_LSL_ext()
+{
+	static uint8_t data_lo;
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		//	R	Don't care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't care			$ffff
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = data_lo << 1;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC = (((data_lo >> 6) & 1) != ((data_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		break;
+	case 7:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	ASRA				inherent
+//*****************************************************************************
+uint8_t Mc6809::ASRA_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = reg_A & 0x80;
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = ((reg_A >> 1) & 0x7f) | data_lo;
+		reg_A = ((reg_A >> 1) & 0x7f) | scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// ASRB()
+//	ASRB				inherent
 //*****************************************************************************
-// Arithmetic Shift Right B (fill MSb with Sign bit)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ASRB()
+uint8_t Mc6809::ASRB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		data_lo = reg_B & 0x80;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = reg_B & 0x80;
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_B = ((reg_B >> 1) & 0x7f) | data_lo;
+		reg_B = ((reg_B >> 1) & 0x7f) | scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// CLRA()
+//	ASR					direct
 //*****************************************************************************
-// Clear register A
-//
-// Address Mode: Inherent
-// Condition Codes Affected: All
-//	H - Undefined
-//  N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::CLRA()
+uint8_t Mc6809::ASR_dir()
 {
-	switch (cyclesLeft)
+	static uint8_t data_lo;
+	uint8_t data_ghst;
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		//	R	Opcode Fetch		PC
 		break;
-	case 1:
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		//	R	Don't care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't care			$ffff
+		data_ghst = data_lo & 0x80;
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = ((data_lo >> 1) & 0x7f) | data_ghst;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	ASR					extended
+//*****************************************************************************
+uint8_t Mc6809::ASR_ext()
+{
+	static uint8_t data_lo;
+	uint8_t data_ghst;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		//	R	Don't care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't care			$ffff
+		data_ghst = data_lo & 0x80;
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = ((data_lo >> 1) & 0x7f) | data_ghst;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	BEQ					relative
+//*****************************************************************************
+uint8_t Mc6809::BEQ_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::Z) == CC::Z)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BGE					relative
+//*****************************************************************************
+uint8_t Mc6809::BGE_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if (((reg_CC & CC::C) == CC::C) == ((reg_CC & CC::V) == CC::V))
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BGT					relative
+//*****************************************************************************
+uint8_t Mc6809::BGT_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((((reg_CC & CC::N) == CC::N) && ((reg_CC & CC::V) == CC::V)) && ((reg_CC & CC::Z) == 0))
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BHI					relative
+//*****************************************************************************
+uint8_t Mc6809::BHI_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if (((reg_CC & CC::C) != CC::C) && ((reg_CC & CC::Z) != CC::Z))
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BCC					relative
+//	BHS					relative
+//*****************************************************************************
+uint8_t Mc6809::BHS_BCC_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::C) != CC::C)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITA				direct
+//*****************************************************************************
+uint8_t Mc6809::BITA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITA				extended
+//*****************************************************************************
+uint8_t Mc6809::BITA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Address Low			PC+2	
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITA				immediate
+//*****************************************************************************
+uint8_t Mc6809::BITA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		reg_A &= scratch_lo;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITB				direct
+//*****************************************************************************
+uint8_t Mc6809::BITB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITB				extended
+//*****************************************************************************
+uint8_t Mc6809::BITB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+		scratch_hi = Read(++reg_PC);
+	case 2:		// R	Address High		PC+1
+		break;
+		scratch_lo = Read(++reg_PC);
+	case 3:		// R	Address Low			PC+2
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITB				immediate
+//*****************************************************************************
+uint8_t Mc6809::BITB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		reg_B &= scratch_lo;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BLE					relative
+//*****************************************************************************
+uint8_t Mc6809::BLE_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if (((reg_CC & CC::Z) == CC::Z) ||
+			(((reg_CC & CC::N) == CC::N) && (reg_CC & CC::V) != CC::V) ||
+			(((reg_CC & CC::N) != CC::N) && (reg_CC & CC::V) == CC::V))
+				reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BCS					relative
+//	BLO					relative
+//*****************************************************************************
+uint8_t Mc6809::BLO_BCS_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::C) == CC::C)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BLS					relative
+//*****************************************************************************
+uint8_t Mc6809::BLS_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if (((reg_CC & CC::C) == CC::C) || ((reg_CC & CC::Z) == CC::Z))
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BLT					relative
+//*****************************************************************************
+uint8_t Mc6809::BLT_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if (((reg_CC & CC::C) == CC::C) != ((reg_CC & CC::N) == CC::N))
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BMI					relative
+//*****************************************************************************
+uint8_t Mc6809::BMI_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::N) == CC::N)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BNE					relative
+//*****************************************************************************
+uint8_t Mc6809::BNE_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::Z) != CC::Z)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BPL					relative
+//*****************************************************************************
+uint8_t Mc6809::BPL_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::N) != CC::N)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BRA					relative
+//*****************************************************************************
+uint8_t Mc6809::BRA_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BRN					relative
+//*****************************************************************************
+uint8_t Mc6809::BRN_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BSR					relative
+//*****************************************************************************
+uint8_t Mc6809::BSR_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		break;
+	case 4:		// R	Don't Care			Effective Address
+
+		break;
+	case 5:		// R	Don't Care			$ffff
+		break;
+	case 6:		// W	Retern Address Low	SP-1
+		Write(--reg_S, PC_lo);
+		break;
+	case 7:		// W	Return Address High	SP-2
+		Write(--reg_S, PC_hi);
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BVC					relative
+//*****************************************************************************
+uint8_t Mc6809::BVC_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::V) != CC::V)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BVS					relative
+//*****************************************************************************
+uint8_t Mc6809::BVS_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset				PC+1
+		scratch_lo = Read(++reg_PC);
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::V) == CC::V)
+			reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CLRA				inherent
+//*****************************************************************************
+uint8_t Mc6809::CLRA_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
 		reg_A = 0;
 		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// CLRB()
+//	CLRB				inherent
 //*****************************************************************************
-// Clear register B
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::CLRB()
+uint8_t Mc6809::CLRB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care			PC+1
 		reg_B = 0;
 		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::CLR_dir()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		// R	OpCode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+
+		break;
+	case 5:		// R	Don't Care			$ffff
+		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+		break;
+	case 6:		// W	Data				EA
+		Write(reg_scratch, 0);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::CLR_ext()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		// R	OpCode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		break;
+	case 6:		// R	Don't Care			$ffff
+		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+		break;
+	case 7:		// W	Data				EA
+		Write(reg_scratch, 0);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::CMPA_dir() {}
+uint8_t Mc6809::CMPA_ext() {}
+uint8_t Mc6809::CMPA_imm() {}
+uint8_t Mc6809::CMPB_dir() {}
+uint8_t Mc6809::CMPB_ext() {}
+uint8_t Mc6809::CMPB_imm() {}
+uint8_t Mc6809::CMPD_dir() {}
+uint8_t Mc6809::CMPD_ext() {}
+uint8_t Mc6809::CMPD_imm() {}
+uint8_t Mc6809::CMPS_dir() {}
+uint8_t Mc6809::CMPS_ext() {}
+uint8_t Mc6809::CMPS_imm() {}
+uint8_t Mc6809::CMPU_dir() {}
+uint8_t Mc6809::CMPU_ext() {}
+uint8_t Mc6809::CMPU_imm() {}
+uint8_t Mc6809::CMPX_dir() {}
+uint8_t Mc6809::CMPX_ext() {}
+uint8_t Mc6809::CMPX_imm() {}
+uint8_t Mc6809::CMPY_dir() {}
+uint8_t Mc6809::CMPY_ext() {}
+uint8_t Mc6809::CMPY_imm() {}
+
+
+//*****************************************************************************
+//	COMA				inherent
+//*****************************************************************************
+uint8_t Mc6809::COMA_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		reg_A ^= 0xff;
+		reg_CC |= (CC::C);
+		reg_CC &= ~(CC::V | CC::N | CC::Z);
+		reg_CC |= (reg_A == 0) ? CC::Z : 0x00;
+		reg_CC |= ((reg_A & 0x80) == 0x80) ? CC::N : 0x00;
+		++reg_PC;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// COMA()
+//	COMB				inherent
 //*****************************************************************************
-// 1's Compliment A (i.e. XOR A with 0x00 or 0xFF)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::COMA()
+uint8_t Mc6809::COMB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		reg_A = ~reg_A;
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC &= ~CC::V;
-		reg_CC |= CC::C;
+	case 2:		// R	Don't Care			PC+1
+		reg_B ^= 0xff;
 		++reg_PC;
+		reg_CC |= (CC::C);
+		reg_CC &= ~(CC::V | CC::N | CC::Z);
+		reg_CC |= (reg_B == 0) ? CC::Z : 0x00;
+		reg_CC |= ((reg_B & 0x80) == 0x80) ? CC::N : 0x00;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
-//*****************************************************************************
-// COMB()
-//*****************************************************************************
-// 1's Compliment B (i.e. XOR B with 0x00 or 0xFF) 
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - Undefined
-//  N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::COMB()
-{
-	switch (cyclesLeft)
-	{
-	case 2:		// R Opcode Fetch			(PC)
-		break;
-	case 1:
-		reg_B = ~reg_B;
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC &= ~CC::V;
-		reg_CC |= CC::C;
-		++reg_PC;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
+uint8_t Mc6809::COM_dir() {}
+uint8_t Mc6809::COM_ext() {}
 
 
-// REVIEW THIS ONE
 //*****************************************************************************
-// CWAI()
+//	CWAI				inherent
 //*****************************************************************************
-// Wait for Interrupt
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H, N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::CWAI()
+uint8_t Mc6809::CWAI_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 20:		// R Opcode Fetch			(PC)		//1
-		--cyclesLeft;
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 19:		// R CC Mask				(PC+1)		//2
-		data_lo = Read(reg_PC++);
-		--cyclesLeft;
-		break;
-	case 18:		// R Don't care				(PC+2)		//3
+	case 2:		// R	CC Mask				PC+1
+		scratch_lo = Read(reg_PC);
 		++reg_PC;
-		--cyclesLeft;
 		break;
-	case 17:		// R Don't care				($ffff)		//4
-		reg_CC = (reg_CC & data_lo) | CC::E;
-		--cyclesLeft;
+	case 3:		// R	Don't Care			PC+2
+		++reg_PC;
 		break;
-	case 16:		// W push PC low	onto S	(SP-1)		//5
-		Write(--reg_S, reg_PC_lo);
+	case 4:		// R	Don't care			$ffff
 		break;
-	case 15:		// W push PC hi		onto S	(SP-2)		/6
-		Write(--reg_S, reg_PC_hi);
+	case 5:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
 		break;
-	case 14:		// W U Low					(SP-3)		//7
-		Write(--reg_S, reg_U_lo);
-		--cyclesLeft;
+	case 6:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
 		break;
-	case 13:		// W U high					(SP-4)		//8
-		Write(--reg_S, reg_U_hi);
-		--cyclesLeft;
+	case 7:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
 		break;
-	case 12:			// W Y Low					(SP-5)		//9
-		Write(--reg_S, reg_Y_lo);
-		--cyclesLeft;
+	case 8:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
 		break;
-	case 11:			// W Y high					(SP-6)		//10
-		Write(--reg_S, reg_Y_hi);
-		--cyclesLeft;
+	case 9:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
 		break;
-	case 10:			// W X Low					(SP-7)		//11
-		Write(--reg_S, reg_X_lo);
-		--cyclesLeft;
+	case 10:	// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
 		break;
-	case 9:			// W X High					(SP-8)		//12
-		Write(--reg_S, reg_PC_hi);
-		--cyclesLeft;
+	case 11:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
 		break;
-	case 8:			// W DP						(SP-9)		//13
+	case 12:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
+		break;
+	case 13:	// W	DP Register			SP-9	--SP
 		Write(--reg_S, reg_DP);
-		--cyclesLeft;
 		break;
-	case 7:		// W push B			onto S		(SP-10)		//14
+	case 14:	// W	B  Register			SP-10	--SP
 		Write(--reg_S, reg_B);
-		--cyclesLeft;
 		break;
-	case 6:		// W push A			onto S		(SP-11)		//15
+	case 15:	// W	A  Register			SP-11	--SP
 		Write(--reg_S, reg_A);
-		--cyclesLeft;
 		break;
-	case 5:		// W push CC		onto S		(SP-12)		//16
+	case 16:	// W	CC Register			SP-12	--SP
 		Write(--reg_S, reg_CC);
-		--cyclesLeft;
+		reg_CC &= scratch_lo;
+		reg_CC |= CC::E;
 		break;
-	case 4:
-		// wait for interrupt to take place
-		if (resetTriggered || nmiTriggered || firqTriggered || irqTriggered)
-			--cyclesLeft;
+
+	case 17:	// R	Don't Care			$ffff
+		// wait for interrupt signal
+		if (!Nmi && !Firq && !Irq)
+			--clocksUsed;
 		break;
-	case 3:
-		if (resetTriggered)			// external RESET was triggered
-			reg_PC_hi = Read(InterruptVector.RESET_hi);
-		else if (nmiTriggered)			// external NMI was triggered
-			reg_PC_hi = Read(InterruptVector.NMI_hi);
-		else if (firqTriggered)			// external FIRQ was triggered
-			reg_PC_hi = Read(InterruptVector.FIRQ_hi);
-		else if (irqTriggered)			// external IRQ was triggered
-			reg_PC_hi = Read(InterruptVector.IRQ_hi);
-		--cyclesLeft;
-	case 2:
-		if (resetTriggered)			// external RESET was triggered
-			reg_PC_lo = Read(InterruptVector.RESET_lo);
-		else if (nmiTriggered)			// external NMI was triggered
-			reg_PC_lo = Read(InterruptVector.NMI_lo);
-		else if (firqTriggered)			// external FIRQ was triggered
-			reg_PC_lo = Read(InterruptVector.FIRQ_lo);
-		else if (irqTriggered)			// external IRQ was triggered
-			reg_PC_lo = Read(InterruptVector.IRQ_lo);
-		--cyclesLeft;
+
+	case 18:	// R	Int Vector High		$fffx
+		if (Nmi)
+			PC_hi = Read(0xfffc);
+		else if (Firq && (reg_CC & CC::F) != CC::F)
+			PC_hi = Read(0xfff6);
+		else if (Irq && (reg_CC & CC::I) != CC::I)
+			PC_hi = Read(0xfff8);
 		break;
-	case 1:
-		--cyclesLeft;
+	case 19:	// R	Int Vector Low		$fffx
+		if (Nmi)
+			PC_lo = Read(0xfffd);
+		else if (Firq && (reg_CC & CC::F) != CC::F)
+			PC_lo = Read(0xfff7);
+		else if (Irq && (reg_CC & CC::I) != CC::I)
+			PC_lo = Read(0xfff9);
+		break;
+	case 20:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
 		break;
 	}
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
-// REVIEW THIS ONE
 //*****************************************************************************
-// DAA()
+//	DAA					inherent
 //*****************************************************************************
-// Decimal Adjust A (contents of A -> BCD... BCD operation should be prior)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	V - undefined
-//	N, Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::DAA()
+uint8_t Mc6809::DAA_inh()
 {
-	uint8_t cfLsn = 0;
-	uint8_t cfMsn = 0;
-	uint8_t carry;
-	switch (cyclesLeft)
-	{
-	case 2:		// R Opcode Fetch			(PC)
-		++reg_PC;
-		break;
-	case 1:
+	static uint8_t carry = 0;
+	static uint8_t cfLsn = 0;
+	static uint8_t cfMsn = 0;
 
-		data_lo = reg_A & 0x0f;
-		data_hi = (reg_A & 0xf0) >> 4;
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = reg_A & 0x0f;
+		scratch_hi = (reg_A & 0xf0) >> 4;
 		carry = reg_CC & CC::C;
-		if (((reg_CC & CC::H) == CC::H) || (data_lo > 9))
-			 cfLsn= 6;
-		if ((carry == CC::C) || (data_hi > 9) || ((data_hi > 8) && (data_lo > 9)))
+		if (((reg_CC & CC::H) == CC::H) || (scratch_lo > 9))
+			cfLsn = 6;
+		if ((carry == CC::C) || (scratch_hi > 9) || ((scratch_hi > 8) && (scratch_lo > 9)))
 			cfMsn = 6;
 
 		reg_A += cfLsn;			// fixes lsn
@@ -1286,881 +2273,1387 @@ uint8_t Mc6809::DAA()
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (cfMsn == 6 || carry) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// DECA()
+//	DECA				inherent
 //*****************************************************************************
-// Decrement A (A -= A      A = A - 1   --A     A--)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::DECA()
+uint8_t Mc6809::DECA_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		if (reg_A == 0)
-		{
-			reg_A = 0xff;
-			reg_CC |= CC::V;
-		}
-		else
-		{
-			--reg_A;
-			reg_CC &= ~CC::V;
-		}
+	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_A & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		--reg_A;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// DECB()
+//	DECB				inherent
 //*****************************************************************************
-// Decrement B (B -= B      B = B - 1   --B     B--)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	V - undefined
-//	N, Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::DECB()
+uint8_t Mc6809::DECB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		if (reg_B == 0)
-		{
-			reg_B = 0xff;
-			reg_CC |= CC::V;
-		}
-		else
-		{
-			--reg_B;
-			reg_CC &= ~CC::V;
-		}
+	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_B & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		--reg_B;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
+uint8_t Mc6809::DEC_dir() {}
+uint8_t Mc6809::DEC_ext() {}
+uint8_t Mc6809::EORA_dir() {}
+uint8_t Mc6809::EORA_ext() {}
+uint8_t Mc6809::EORA_imm() {}
+uint8_t Mc6809::EORB_dir() {}
+uint8_t Mc6809::EORB_ext() {}
+uint8_t Mc6809::EORB_imm() {}
+
+
 //*****************************************************************************
-// EXG()
+//	EXG					immediate
 //*****************************************************************************
-// Exchange any two registers of the same size
-//
-// Address Mode: Immediate
-// Condition Codes Affected: dependent on if CC is part of the exchange
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::EXG()
+uint8_t Mc6809::EXG_imm()
 {
-	switch (cyclesLeft)
+	static uint8_t data_hi = 0;
+	static uint8_t data_lo = 0;
+	switch (++clocksUsed)
 	{
-	case 8:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 7:
-		data_lo = Read(reg_PC);
+	case 2:		// R	Post scratch_lo			PC+1
+		scratch_lo = Read(reg_PC);
 		++reg_PC;
 		break;
-	case 6:
-		data_hi = data_lo & 0xf0;
-		data_lo = data_lo & 0x0f;
-		if ((data_lo & 0x80) != (data_hi & 0x80))
-			;	// error in match-up
-		break;
-
-	case 5:
-		switch (data_hi)
-		{
-		case REG::A:
-			byte = reg_A;
-			switch (data_lo)
-			{
-			case REG::B:
-				reg_A = reg_B;
-				reg_B = byte;
-				break;
-			case REG::CC:
-				reg_A = reg_CC;
-				reg_CC = byte;
-				break;
-			case REG::DP:
-				reg_A = reg_DP;
-				reg_DP = byte;
-				break;
-			}
-			break;
-		case REG::B:
-			byte = reg_A;
-			switch (data_lo)
-			{
-			case REG::A:
-				reg_B = reg_A;
-				reg_A = byte;
-				break;
-			case REG::CC:
-				reg_B = reg_CC;
-				reg_CC = byte;
-				break;
-			case REG::DP:
-				reg_B = reg_DP;
-				reg_DP = byte;
-				break;
-			}
-			break;
-		}
+	case 3:		// R	Don't Care			$ffff
+		data_hi = scratch_lo & 0xf0;
+		data_lo = scratch_lo & 0x0f;
 		break;
 	case 4:
 		switch (data_hi)
 		{
+		case REG::A:
+			scratch_lo = reg_A;
+			switch (data_lo)
+			{
+			case REG::B:
+				reg_A = reg_B;
+				reg_B = scratch_lo;
+				break;
+			case REG::CC:
+				reg_A = reg_CC;
+				reg_CC = scratch_lo;
+				break;
+			case REG::DP:
+				reg_A = reg_DP;
+				reg_DP = scratch_lo;
+				break;
+			}
+			break;
+		case REG::B:
+			scratch_lo = reg_A;
+			switch (data_lo)
+			{
+			case REG::A:
+				reg_B = reg_A;
+				reg_A = scratch_lo;
+				break;
+			case REG::CC:
+				reg_B = reg_CC;
+				reg_CC = scratch_lo;
+				break;
+			case REG::DP:
+				reg_B = reg_DP;
+				reg_DP = scratch_lo;
+				break;
+			}
+			break;
+		}
+		break;
+	case 5:
+		switch (data_hi)
+		{
 		case REG::CC:
-			byte = reg_CC;
+			scratch_lo = reg_CC;
 			switch (data_lo)
 			{
 			case REG::A:
 				reg_CC = reg_A;
-				reg_A = byte;
+				reg_A = scratch_lo;
 				break;
 			case REG::B:
 				reg_CC = reg_B;
-				reg_B = byte;
+				reg_B = scratch_lo;
 				break;
 			case REG::DP:
 				reg_CC = reg_DP;
-				reg_DP = byte;
+				reg_DP = scratch_lo;
 				break;
 			}
 			break;
 		case REG::DP:
-			byte = reg_DP;
+			scratch_lo = reg_DP;
 			switch (data_lo)
 			{
 			case REG::A:
 				reg_DP = reg_A;
-				reg_A = byte;
+				reg_A = scratch_lo;
 				break;
 			case REG::B:
 				reg_DP = reg_B;
-				reg_B = byte;
+				reg_B = scratch_lo;
 				break;
 			case REG::CC:
 				reg_DP = reg_CC;
-				reg_CC = byte;
+				reg_CC = scratch_lo;
 				break;
 			}
 			break;
 		}
 		break;
-
-	case 3:
+	case 6:
 		switch (data_hi)
 		{
 		case REG::X:
-			word = reg_X;
+			reg_scratch = reg_X;
 			switch (data_lo)
 			{
 			case REG::Y:
 				reg_X = reg_Y;
-				reg_Y = word;
+				reg_Y = reg_scratch;
 				break;
 			case REG::U:
 				reg_X = reg_U;
-				reg_U = word;
+				reg_U = reg_scratch;
 				break;
 			case REG::S:
 				reg_X = reg_S;
-				reg_S = word;
+				reg_S = reg_scratch;
 				break;
 			case REG::D:
 				reg_X = reg_D;
-				reg_D = word;
+				reg_D = reg_scratch;
 				break;
 			case REG::PC:
 				reg_X = reg_PC;
-				reg_PC = word;
+				reg_PC = reg_scratch;
 				break;
 			}
 			break;
 		case REG::Y:
-			word = reg_Y;
+			reg_scratch = reg_Y;
 			switch (data_lo)
 			{
 			case REG::X:
 				reg_Y = reg_X;
-				reg_X = word;
+				reg_X = reg_scratch;
 				break;
 			case REG::U:
 				reg_Y = reg_U;
-				reg_U = word;
+				reg_U = reg_scratch;
 				break;
 			case REG::S:
 				reg_Y = reg_S;
-				reg_S = word;
+				reg_S = reg_scratch;
 				break;
 			case REG::D:
 				reg_Y = reg_D;
-				reg_D = word;
+				reg_D = reg_scratch;
 				break;
 			case REG::PC:
 				reg_Y = reg_PC;
-				reg_PC = word;
+				reg_PC = reg_scratch;
 				break;
 			}
 			break;
 		}
 		break;
-	case 2:
+	case 7:
 		switch (data_hi)
 		{
 		case REG::U:
-			word = reg_U;
+			reg_scratch = reg_U;
 			switch (data_lo)
 			{
 			case REG::X:
 				reg_U = reg_X;
-				reg_X = word;
+				reg_X = reg_scratch;
 				break;
 			case REG::Y:
 				reg_U = reg_Y;
-				reg_Y = word;
+				reg_Y = reg_scratch;
 				break;
 			case REG::S:
 				reg_U = reg_S;
-				reg_S = word;
+				reg_S = reg_scratch;
 				break;
 			case REG::D:
 				reg_U = reg_D;
-				reg_D = word;
+				reg_D = reg_scratch;
 				break;
 			case REG::PC:
 				reg_U = reg_PC;
-				reg_PC = word;
+				reg_PC = reg_scratch;
 				break;
 			}
 			break;
 		case REG::S:
-			word = reg_S;
+			reg_scratch = reg_S;
 			switch (data_lo)
 			{
 			case REG::X:
 				reg_S = reg_X;
-				reg_X = word;
+				reg_X = reg_scratch;
 				break;
 			case REG::Y:
 				reg_S = reg_Y;
-				reg_Y = word;
+				reg_Y = reg_scratch;
 				break;
 			case REG::U:
 				reg_S = reg_U;
-				reg_U = word;
+				reg_U = reg_scratch;
 				break;
 			case REG::D:
 				reg_S = reg_D;
-				reg_D = word;
+				reg_D = reg_scratch;
 				break;
 			case REG::PC:
 				reg_S = reg_PC;
-				reg_PC = word;
+				reg_PC = reg_scratch;
 				break;
 			}
 			break;
 		}
 		break;
-	case 1:
+	case 8:
 		switch (data_hi)
 		{
 		case REG::D:
-			word = reg_D;
+			reg_scratch = reg_D;
 			switch (data_lo)
 			{
 			case REG::X:
 				reg_D = reg_PC;
-				reg_PC = word;
+				reg_PC = reg_scratch;
 				break;
 			case REG::Y:
 				reg_D = reg_Y;
-				reg_Y = word;
+				reg_Y = reg_scratch;
 				break;
 			case REG::U:
 				reg_D = reg_U;
-				reg_U = word;
+				reg_U = reg_scratch;
 				break;
 			case REG::S:
 				reg_D = reg_S;
-				reg_S = word;
+				reg_S = reg_scratch;
 				break;
 			case REG::PC:
 				reg_D = reg_PC;
-				reg_PC = word;
+				reg_PC = reg_scratch;
 				break;
 			}
 			break;
 		case REG::PC:
-			word = reg_PC;
+			reg_scratch = reg_PC;
 			switch (data_lo)
 			{
 			case REG::X:
 				reg_PC = reg_X;
-				reg_X = word;
+				reg_X = reg_scratch;
 				break;
 			case REG::Y:
 				reg_PC = reg_Y;
-				reg_Y = word;
+				reg_Y = reg_scratch;
 				break;
 			case REG::U:
 				reg_PC = reg_U;
-				reg_U = word;
+				reg_U = reg_scratch;
 				break;
 			case REG::S:
 				reg_PC = reg_S;
-				reg_S = word;
+				reg_S = reg_scratch;
 				break;
 			case REG::D:
 				reg_PC = reg_D;
-				reg_D = word;
+				reg_D = reg_scratch;
 				break;
 			}
 			break;
 		}
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// INCA()
+//	INCA				inherent
 //*****************************************************************************
-// Increment A (A += A      A = A + 1   ++A     A++)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::INCA()
+uint8_t Mc6809::INCA_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		if (reg_A == 0xff)
-		{
-			reg_A = 0x00;
-			reg_CC |= CC::V;
-		}
-		else
-		{
-			++reg_A;
-			reg_CC &= ~CC::V;
-		}
+	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_A & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		++reg_A;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// INCB()
+//	INCB				inherent
 //*****************************************************************************
-// Increment B (B += B      B = B + 1   ++B     B++)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::INCB()
+uint8_t Mc6809::INCB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		if (reg_B == 0xff)
-		{
-			reg_B = 0x00;
-			reg_CC |= CC::V;
-		}
-		else
-		{
-			++reg_B;
-			reg_CC &= ~CC::V;
-		}
+	case 2:		// R	Don't Care			PC+1
+		reg_CC = ((reg_B & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		++reg_B;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
-//*****************************************************************************************
-// LSLA()
-//*****************************************************************************
-// Logical Shift Left register A (LSb is loaded with 0)
-// Functionally ALSA(), might never be called.
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - undefined
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LSLA()
-{
-	switch (cyclesLeft)
-	{
-	case 2:		// R Opcode Fetch			(PC)
-		break;
-	case 1:
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		reg_A = reg_A << 1;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
+uint8_t Mc6809::INC_dir() {}
+uint8_t Mc6809::INC_ext() {}
+
+uint8_t Mc6809::JMP_dir() {}
+uint8_t Mc6809::JMP_ext() {}
+
+uint8_t Mc6809::JSR_dir() {}
+uint8_t Mc6809::JSR_ext() {}
 
 
-//*****************************************************************************************
-// LSLB()
 //*****************************************************************************
-// Logical Shift Left register B (LSb is loaded with 0)
-// Functionally ALSB(), might never be called.
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - undefined
-//	N, Z, V, C
+//	LBCS				relative
+//	LBLO				relative
 //*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LSLB()
+uint8_t Mc6809::LBCS_LBLO_rel()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 1:
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		reg_B = reg_B << 1;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+	case 2:		// R	Opcode 2nd Byte		PC+1
 		++reg_PC;
 		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::C) != CC::C)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// LSRA()
+//	LBEQ				relative
 //*****************************************************************************
-// Logical Shift Right register A (MSb is loaded with 0)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LSRA()
+uint8_t Mc6809::LBEQ_rel()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
 		++reg_PC;
 		break;
-	case 1:
-		data_lo = reg_A & 0x80;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::Z) != CC::Z)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBGE				relative
+//*****************************************************************************
+uint8_t Mc6809::LBGE_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if (!(((reg_CC & CC::C) == CC::C) == ((reg_CC & CC::V) == CC::V)))
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBGT				relative
+//*****************************************************************************
+uint8_t Mc6809::LBGT_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if (!((((reg_CC & CC::N) == CC::N) && ((reg_CC & CC::V) == CC::V)) && ((reg_CC & CC::Z) == 0)))
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBHI				relative
+//*****************************************************************************
+uint8_t Mc6809::LBHI_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if (!(((reg_CC & CC::C) != CC::C) && ((reg_CC & CC::Z) != CC::Z)))
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBCC				relative
+//	LBHS				relative
+//*****************************************************************************
+uint8_t Mc6809::LBHS_LBCC_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::C) == CC::C)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBLE				relative
+//*****************************************************************************
+uint8_t Mc6809::LBLE_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if (!(((reg_CC & CC::Z) == CC::Z) ||
+			(((reg_CC & CC::N) == CC::N) && (reg_CC & CC::V) != CC::V) ||
+			(((reg_CC & CC::N) != CC::N) && (reg_CC & CC::V) == CC::V)))
+				clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBLS				relative
+//*****************************************************************************
+uint8_t Mc6809::LBLS_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if (!(((reg_CC & CC::C) == CC::C) || ((reg_CC & CC::Z) == CC::Z)))
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBLT				relative
+//*****************************************************************************
+uint8_t Mc6809::LBLT_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if (!(((reg_CC & CC::C) == CC::C) != ((reg_CC & CC::N) == CC::N)))
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBMI				relative
+//*****************************************************************************
+uint8_t Mc6809::LBMI_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::N) != CC::N)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBNE				relative
+//*****************************************************************************
+uint8_t Mc6809::LBNE_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::Z) == CC::Z)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBPL				relative
+//*****************************************************************************
+uint8_t Mc6809::LBPL_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::N) == CC::N)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBRA				relative
+//*****************************************************************************
+uint8_t Mc6809::LBRA_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBRN				relative
+//*****************************************************************************
+uint8_t Mc6809::LBRN_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		clocksUsed = 255;
+		break;
+	case 6:
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBSR				relative
+//*****************************************************************************
+uint8_t Mc6809::LBSR_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Offset High			PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Offset Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Don't Care			$ffff
+		break;
+	case 6:		// R	Don't Care			Effective Address
+		reg_scratch += reg_PC;
+		break;
+	case 7:		// R	Don't Care			$ffff
+		break;
+	case 8:		// W	Retern Address Low	SP-1
+		Write(--reg_S, PC_lo);
+		break;
+	case 9:		// W	Return Address High	SP-2
+		Write(--reg_S, PC_hi);
+		reg_PC = reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBVC				relative
+//*****************************************************************************
+uint8_t Mc6809::LBVC_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::V) == CC::V)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LBVS				relative
+//*****************************************************************************
+uint8_t Mc6809::LBVS_rel()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Opcode 2nd Byte		PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Offset High			PC+2
+		scratch_hi = Read(++reg_PC);
+		++reg_PC;
+		break;
+	case 4:		// R	Offset Low			PC+3
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		if ((reg_CC & CC::V) != CC::V)
+			clocksUsed = 255;
+		break;
+	case 6:
+		reg_PC += reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::LDA_dir() {}
+uint8_t Mc6809::LDA_ext() {}
+uint8_t Mc6809::LDA_imm() {}
+uint8_t Mc6809::LDB_dir() {}
+uint8_t Mc6809::LDB_ext() {}
+uint8_t Mc6809::LDB_imm() {}
+uint8_t Mc6809::LDD_dir() {}
+uint8_t Mc6809::LDD_ext() {}
+uint8_t Mc6809::LDD_imm() {}
+uint8_t Mc6809::LDS_dir() {}
+uint8_t Mc6809::LDS_ext() {}
+uint8_t Mc6809::LDS_imm() {}
+uint8_t Mc6809::LDU_dir() {}
+uint8_t Mc6809::LDU_ext() {}
+uint8_t Mc6809::LDU_imm() {}
+uint8_t Mc6809::LDX_dir() {}
+uint8_t Mc6809::LDX_ext() {}
+uint8_t Mc6809::LDX_imm() {}
+uint8_t Mc6809::LDY_dir() {}
+uint8_t Mc6809::LDY_ext() {}
+uint8_t Mc6809::LDY_imm() {}
+
+
+//*****************************************************************************
+//	LSRA				inherent
+//*****************************************************************************
+uint8_t Mc6809::LSRA_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = reg_A & 0x80;
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = ((reg_A >> 1) & 0x7f);
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC &= ~CC::N;
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// LSRB()
+//	LSRB				inherent
 //*****************************************************************************
-// Logical Shift Right register B (MSb is loaded with 0)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LSRB()
+uint8_t Mc6809::LSRB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		data_lo = reg_B & 0x80;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = reg_B & 0x80;
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = ((reg_B >> 1) & 0x7f);
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC &= ~CC::N;
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
+uint8_t Mc6809::LSR_dir() {}
+uint8_t Mc6809::LSR_ext() {}
+
+
 //*****************************************************************************
-// MUL()
+//	MUL					inherent
 //*****************************************************************************
-// Multiply register A * register B, store in register D (A << 8 | B)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	Z, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::MUL()
+uint8_t Mc6809::MUL_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 11:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 10:
-		data = reg_A * reg_B;
+	case 2:		// R	Don't Care			PC+1
+		++reg_PC;
 		break;
-	case 9:
-		reg_D = data;
+	case 3:		// R	Don't Care			$ffff
+		reg_D = reg_A * reg_B;
 		break;
-	case 8:
+	case 4:		// R	Don't Care			$ffff
 		reg_CC = (reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		break;
-	case 7:
+	case 5:		// R	Don't Care			$ffff
 		reg_CC = ((reg_D & 0x0080) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		break;
-	case 6:
+	case 6:		// R	Don't Care			$ffff
 		break;
-	case 5:
+	case 7:		// R	Don't Care			$ffff
 		break;
-	case 4:
+	case 8:		// R	Don't Care			$ffff
 		break;
-	case 3:
+	case 9:		// R	Don't Care			$ffff
 		break;
-	case 2:
+	case 10:	// R	Don't Care			$ffff
 		break;
-	case 1:
+	case 11:	// R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// NEGA()
+//	NEGA				inherent
 //*****************************************************************************
-// 2's Complement (negate) register A
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - undefined
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::NEGA()
+uint8_t Mc6809::NEGA_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care			PC+1
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = (reg_A == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		reg_A = 0 - reg_A;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// NEGA()
+//	NEGB				inherent
 //*****************************************************************************
-// 2's Complement (negate) register B
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	H - undefined
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::NEGB()
+uint8_t Mc6809::NEGB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care			PC+1
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = (reg_B == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		reg_B = 0 - reg_B;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
+uint8_t Mc6809::NEG_dir() {}
+uint8_t Mc6809::NEG_ext() {}
+
+
 //*****************************************************************************
-// NOP()
+//	NOP					inherent
 //*****************************************************************************
-// No Operation, Does nothing, affects PC only.
-//
-// Address Mode: Inherent
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::NOP()
+uint8_t Mc6809::NOP_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch			PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care				PC+1;
+		clocksUsed = 255;
 		++reg_PC;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
+uint8_t Mc6809::ORA_dir() {}
+uint8_t Mc6809::ORA_ext() {}
+uint8_t Mc6809::ORA_imm() {}
+uint8_t Mc6809::ORB_dir() {}
+uint8_t Mc6809::ORB_ext() {}
+uint8_t Mc6809::ORB_imm() {}
+
+
 //*****************************************************************************
-// ROLA()
+//	ORCC				immediate
 //*****************************************************************************
-// Rotate Register A Left one bit through the Carry flag (9 bit rotate)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ROLA()
+uint8_t Mc6809::ORCC_imm()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 1:
-		data_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
+	case 2:		// R	Data				PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		reg_CC |= scratch_lo;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::PSHS_imm() {}
+uint8_t Mc6809::PSHU_imm() {}
+uint8_t Mc6809::PULS_imm() {}
+uint8_t Mc6809::PULU_imm() {}
+
+
+//*****************************************************************************
+//	ROLA				inherent
+//*****************************************************************************
+uint8_t Mc6809::ROLA_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
 		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = (reg_A << 1) | data_lo;
+		reg_A = (reg_A << 1) | scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// ROLB()
+//	ROLB				inherent
 //*****************************************************************************
-// Rotate Register B Left one bit through the Carry flag (9 bit rotate)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::ROLB()
+uint8_t Mc6809::ROLB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		data_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
 		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_B = (reg_B << 1) | data_lo;
+		reg_B = (reg_B << 1) | scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
+uint8_t Mc6809::ROL_dir() {}
+uint8_t Mc6809::ROL_ext() {}
+
+
 //*****************************************************************************
-// RORA()
+//	RORA				inherent
 //*****************************************************************************
-// Rotate Register A Right one bit through the Carry flag (9 bit rotate)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::RORA()
+uint8_t Mc6809::RORA_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		data_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = (reg_A >> 1) | data_lo;
+		reg_A = (reg_A >> 1) | scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-// RORB()
+//	RORB				inherent
 //*****************************************************************************
-// Rotate Register B Right one bit through the Carry flag (9 bit rotate)
-//
-// Address Mode: Inherent
-// Condition Codes Affected:
-//	N, Z, V, C
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::RORB()
+uint8_t Mc6809::RORB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
-		data_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
+	case 2:		// R	Don't Care			PC+1
+		scratch_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_B = (reg_B >> 1) | data_lo;
+		reg_B = (reg_B >> 1) | scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::ROR_dir() {}
+uint8_t Mc6809::ROR_ext() {}
+
+
+//*****************************************************************************
+//	RTI					inherent
+//*****************************************************************************
+uint8_t Mc6809::RTI_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		break;
+	case 3:		// R	CCR					SP
+		reg_CC = Read(reg_S++);
+		break;
+	}
+
+	// if the E flag is clear (E = 0) we do the short version
+	if ((reg_CC & CC::E) != CC::E)
+	{
+		switch (clocksUsed)
+		{
+		case 4:	// R	PC High				SP+1
+			PC_hi = Read(reg_S++);
+			break;
+		case 5:	// R	PC low				SP+2
+			PC_lo = Read(reg_S++);
+			break;
+		case 6:	// R	Don't Care			$ffff
+			clocksUsed = 255;
+			break;
+		}
+		// Don't touch the long version below.
+		return (clocksUsed);
+	}
+
+	// if the E flag is set (E = 1) we do the long version
+	switch (clocksUsed)
+	{
+	case 4:		// R	A Register			SP+1
+		reg_A = Read(reg_S++);
+		break;
+	case 5:		// R	B Register			SP+2
+		reg_B = Read(reg_S++);
+		break;
+	case 6:		// R	DP Register			SP+3
+		reg_DP = Read(reg_S++);
+		break;
+	case 7:		// R	X Register High		SP+4
+		X_hi = Read(reg_S++);
+		break;
+	case 8:		// R	X Register Low		SP+5
+		X_lo = Read(reg_S++);
+		break;
+	case 9:		// R	Y Register High		SP+6
+		Y_hi = Read(reg_S++);
+		break;
+	case 10:	// R	Y Register Low		SP+7
+		Y_lo = Read(reg_S++);
+		break;
+	case 11:	// R	User Stack High		SP+8
+		U_hi = Read(reg_S++);
+		break;
+	case 12:	// R	User Stack Low		SP+9
+		U_lo = Read(reg_S++);
+		break;
+	case 13:	// R	PC High				SP+10
+		PC_hi = Read(reg_S++);
+		break;
+	case 14:	// R	PC Low				SP+11
+		PC_lo = Read(reg_S++);
+		break;
+	case 15:	// R	Don't Care			$ffff
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	SEX()
+//	RTS					inherent
 //*****************************************************************************
-// Sign Extend B into A ( A = Sign bit set on B ? 0xFF : 0x00)
-//
-// Address Mode: Inherent
-// Condition Codes Affected: 
-//	N, Z
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::SEX()
+uint8_t Mc6809::RTS_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care			PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	PC High				SP
+		PC_lo = Read(reg_S++);
+		break;
+	case 4:		// R	PC Low				SP+1
+		PC_hi = Read(reg_S++);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::SBCA_dir() {}
+uint8_t Mc6809::SBCA_ext() {}
+uint8_t Mc6809::SBCA_imm() {}
+uint8_t Mc6809::SBCB_dir() {}
+uint8_t Mc6809::SBCB_ext() {}
+uint8_t Mc6809::SBCB_imm() {}
+
+
+//*****************************************************************************
+//	SEX					inherent
+//*****************************************************************************
+uint8_t Mc6809::SEX_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Don't Care			PC+1
 		if ((reg_B & 0x80) == 0x80)
 		{
 			reg_A = 0xff;
@@ -2174,76 +3667,327 @@ uint8_t Mc6809::SEX()
 			reg_CC |= CC::Z;
 		}
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::STA_dir() {}
+uint8_t Mc6809::STA_ext() {}
+uint8_t Mc6809::STB_dir() {}
+uint8_t Mc6809::STB_ext() {}
+uint8_t Mc6809::STD_dir() {}
+uint8_t Mc6809::STD_ext() {}
+uint8_t Mc6809::STS_dir() {}
+uint8_t Mc6809::STS_ext() {}
+uint8_t Mc6809::STU_dir() {}
+uint8_t Mc6809::STU_ext() {}
+uint8_t Mc6809::STX_dir() {}
+uint8_t Mc6809::STX_ext() {}
+uint8_t Mc6809::STY_dir() {}
+uint8_t Mc6809::STY_ext() {}
+uint8_t Mc6809::SUBA_dir() {}
+uint8_t Mc6809::SUBA_ext() {}
+uint8_t Mc6809::SUBA_imm() {}
+uint8_t Mc6809::SUBB_dir() {}
+uint8_t Mc6809::SUBB_ext() {}
+uint8_t Mc6809::SUBB_imm() {}
+uint8_t Mc6809::SUBD_dir() {}
+uint8_t Mc6809::SUBD_ext() {}
+uint8_t Mc6809::SUBD_imm() {}
+
+
+//*****************************************************************************
+//	SWI					inherent
+//*****************************************************************************
+uint8_t Mc6809::SWI_inh()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Don't care			PC+1	++PC
+		++reg_PC;
+		break;
+	case 3:		// R	Don't care			$ffff
+		reg_CC |= CC::E;
+		break;
+	case 4:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
+		break;
+	case 5:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
+		break;
+	case 6:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
+		break;
+	case 7:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
+		break;
+	case 8:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
+		break;
+	case 9:		// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
+		break;
+	case 10:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
+		break;
+	case 11:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
+		break;
+	case 12:	// W	DP Register			SP-9	--SP
+		Write(--reg_S, reg_DP);
+		break;
+	case 13:	// W	B  Register			SP-10	--SP
+		Write(--reg_S, reg_B);
+		break;
+	case 14:	// W	A  Register			SP-11	--SP
+		Write(--reg_S, reg_A);
+		break;
+	case 15:	// W	CC Register			SP-12	--SP
+		Write(--reg_S, reg_CC);
+		break;
+	case 16:	// R	Don't Care			$ffff
+		reg_CC |= (CC::I | CC::F);
+		break;
+	case 17:	// R	Int Vector High		$fffa
+		PC_hi = Read(0xfffa);
+		break;
+	case 18:	// R	Int Vector Low		$fffb
+		PC_lo = Read(0xfffb);
+		break;
+	case 19:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	SYNC()
+//	SWI2				inherent
 //*****************************************************************************
-// Synchronize to interrupt
-//
-// Address Mode: Inherent
-// Condition Codes Affected: 
-//	N, Z
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::SYNC()
+uint8_t Mc6809::SWI2_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 3:		// R Opcode Fetch			(PC)
-		--cyclesLeft;
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 2:
+	case 2:		// R	Opcode 2nd byte		PC+1	++PC
 		++reg_PC;
-		--cyclesLeft;
 		break;
-	case 1:
-		asdjk;
+	case 3:		// R	Don't care			PC+2	++PC
+		++reg_PC;
+		break;
+	case 4:		// R	Don't care			$ffff
+		reg_CC |= CC::E;
+		break;
+	case 5:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
+		break;
+	case 6:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
+		break;
+	case 7:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
+		break;
+	case 8:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
+		break;
+	case 9:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
+		break;
+	case 10:	// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
+		break;
+	case 11:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
+		break;
+	case 12:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
+		break;
+	case 13:	// W	DP Register			SP-9	--SP
+		Write(--reg_S, reg_DP);
+		break;
+	case 14:	// W	B  Register			SP-10	--SP
+		Write(--reg_S, reg_B);
+		break;
+	case 15:	// W	A  Register			SP-11	--SP
+		Write(--reg_S, reg_A);
+		break;
+	case 16:	// W	CC Register			SP-12	--SP
+		Write(--reg_S, reg_CC);
+		break;
+	case 17:	// R	Don't Care			$ffff
+		break;
+	case 18:	// R	Int Vector High		$fff4
+		PC_hi = Read(0xfff4);
+		break;
+	case 19:	// R	Int Vector Low		$fff5
+		PC_lo = Read(0xfff5);
+		break;
+	case 20:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
 		break;
 	}
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	TFR()
+//	SWI3				inherent
 //*****************************************************************************
-// Transfer/Copy one register to another (of the same size)
-//
-// Address Mode: Immediate
-// Condition Codes Affected: dependent on if CC is targeted in transfer
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::TFR()
+uint8_t Mc6809::SWI3_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 6:		// R Opcode Fetch			(PC)
+	case 1:		// R	Opcode Fetch		PC
 		break;
-	case 5:
-		data_lo = Read(reg_PC);
+	case 2:		// R	Opcode 2nd byte		PC+1	++PC
 		++reg_PC;
 		break;
-	case 4:
-		data_hi = (data_lo & 0xf0) >> 4;
-		data_lo = data_lo & 0x0f;
-		if ((data_lo & 0x80) != (data_hi & 0x80))
-			;	// error in match-up
+	case 3:		// R	Don't care			PC+2	++PC
+		++reg_PC;
 		break;
-	case 3:
-		switch (data_hi)
+	case 4:		// R	Don't care			$ffff
+		reg_CC |= CC::E;
+		break;
+	case 5:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
+		break;
+	case 6:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
+		break;
+	case 7:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
+		break;
+	case 8:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
+		break;
+	case 9:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
+		break;
+	case 10:	// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
+		break;
+	case 11:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
+		break;
+	case 12:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
+		break;
+	case 13:	// W	DP Register			SP-9	--SP
+		Write(--reg_S, reg_DP);
+		break;
+	case 14:	// W	B  Register			SP-10	--SP
+		Write(--reg_S, reg_B);
+		break;
+	case 15:	// W	A  Register			SP-11	--SP
+		Write(--reg_S, reg_A);
+		break;
+	case 16:	// W	CC Register			SP-12	--SP
+		Write(--reg_S, reg_CC);
+		break;
+	case 17:	// R	Don't Care			$ffff
+		break;
+	case 18:	// R	Int Vector High		$fff2
+		PC_hi = Read(0xfff2);
+		break;
+	case 19:	// R	Int Vector Low		$fff3
+		PC_lo = Read(0xfff3);
+		break;
+	case 20:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SYNC				inherent
+//*****************************************************************************
+uint8_t Mc6809::SYNC_inh()
+{
+	static int8_t intCount = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Don't Care			PC+1
+		++reg_PC;
+		break;
+	case 3:		// R	Don't Care			Z
+		if ((reg_CC & CC::I) || (reg_CC & CC::F))
+			clocksUsed = 255;
+		else if (!Nmi || !Firq || !Irq)
+			--clocksUsed;
+		break;
+	case 4:		// R	Don't Care			Z
+		if (Nmi || Firq || Irq)
+		{
+			++intCount;
+			if (intCount >= 3)
+			{
+				if (Nmi)
+				{
+					clocksUsed = 1;
+					intCount = 0;
+					exec = &Mc6809::NMI;
+				}
+				else if (Firq)
+				{
+					clocksUsed = 1;
+					intCount = 0;
+					exec = &Mc6809::FIRQ;
+				}
+				else if (Irq)
+				{
+					clocksUsed = 1;
+					intCount = 0;
+					exec = &Mc6809::IRQ;
+				}
+			}
+		}
+		else if (intCount < 3)
+		{
+			intCount = 0;
+			clocksUsed = 255;
+		}
+		else
+			--clocksUsed;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	TFR					immediate
+//*****************************************************************************
+uint8_t Mc6809::TFR_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R Opcode Fetch			PC
+		break;
+	case 2:		// R	Post Byte			PC+1
+		scratch_lo = Read(reg_PC);
+		++reg_PC;
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = (scratch_lo & 0xf0) >> 4;
+		scratch_lo &= 0x0f;
+		break;
+	case 4:		// R	Don't Care			$ffff
+		switch (scratch_hi)
 		{
 		case REG::A:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::B:
 				reg_B = reg_A;
@@ -2257,7 +4001,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::B:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::A:
 				reg_A = reg_B;
@@ -2271,7 +4015,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::DP:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::A:
 				reg_DP = reg_A;
@@ -2285,7 +4029,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::CC:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::A:
 				reg_CC = reg_A;
@@ -2300,11 +4044,11 @@ uint8_t Mc6809::TFR()
 			break;
 		}
 		break;
-	case 2:
-		switch (data_hi)
+	case 5:		// R	Don't Care			$ffff
+		switch (scratch_hi)
 		{
 		case REG::D:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::X:
 				reg_D = reg_X;
@@ -2324,7 +4068,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::X:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::D:
 				reg_X = reg_D;
@@ -2344,7 +4088,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::Y:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::D:
 				reg_Y = reg_D;
@@ -2365,11 +4109,11 @@ uint8_t Mc6809::TFR()
 			break;
 		}
 		break;
-	case 1:
-		switch (data_hi)
+	case 6:		// R	Don't Care			$ffff
+		switch (scratch_hi)
 		{
 		case REG::U:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::D:
 				reg_U = reg_D;
@@ -2389,7 +4133,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::S:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::D:
 				reg_S = reg_D;
@@ -2409,7 +4153,7 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		case REG::PC:
-			switch (data_lo)
+			switch (scratch_lo)
 			{
 			case REG::D:
 				reg_PC = reg_D;
@@ -2429,2053 +4173,282 @@ uint8_t Mc6809::TFR()
 			}
 			break;
 		}
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	TSTA()
+//	TSTA				inherent
 //*****************************************************************************
-// Test Register A, adjust N and Z Condition codes based on content
-//
-// Address Mode: Inherent
-// Condition Codes Affected: 
-//	N, Z, V
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::TSTA()
+uint8_t Mc6809::TSTA_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care			PC+1
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	TSTB()
+//	TSTB				inherent
 //*****************************************************************************
-// Test Register B, adjust N and Z Condition codes based on content
-//
-// Address Mode: Inherent
-// Condition Codes Affected: 
-//	N, Z, V
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::TSTB()
+uint8_t Mc6809::TSTB_inh()
 {
-	switch (cyclesLeft)
+	switch (++clocksUsed)
 	{
-	case 2:		// R Opcode Fetch			(PC)
+	case 1:		// R Opcode Fetch			PC
 		break;
-	case 1:
+	case 2:		// R	Don't Care			PC+1
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
 		++reg_PC;
+		clocksUsed = 255;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	TST					direct
+//*****************************************************************************
+uint8_t Mc6809::TST_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address Low			PC+1
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 3:		// R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		break;
+	case 5:		// R	Don't Care			$ffff
+		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		// R	Don't Care			$ffff
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+//*****************************************************************************
+//	TST					extended
+//*****************************************************************************
+uint8_t Mc6809::TST_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(++reg_PC);
+		break;
+	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(++reg_PC);
+		break;
+	case 4:		// R	Don't Care			$ffff
+		break;
+	case 5:		// R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		break;
+	case 6:		// R	Don't Care			$ffff
+		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		// R	Don't Care			$ffff
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
 }
 
 
 //*********************************************************************************************************************************
-// opcodes - single addressing mode with submodes
-//*****************************************************************************
-
-
-//*****************************************************************************
-//	LEAS()
-//*****************************************************************************
-// Load Effective Address S (increment or decrement S by a given value. Use  an index register to load another)
-//
-// Address Mode: Indexed
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LEAS()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			(PC)
-		break;
-	case 2:		// R Post Byte				(PC+1)
-		break;
-
-	// index mode, will determine how many more...
-	case 1:		// R Don't Care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	LEAU()
-//*****************************************************************************
-// Load Effective Address U (increment or decrement U by a given value. Use  an index register to load another)
-//
-// Address Mode: Indexed
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LEAU()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			(PC)
-		break;
-	case 2:		// R Post Byte				(PC+1)
-		break;
-
-	// index mode, will determine how many more...
-	case 1:		// R Don't Care				($ffff)
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	LEAX()
-//*****************************************************************************
-// Load Effective Address X (increment or decrement X by a given value. Use  an index register to load another)
-//
-// Address Mode: Indexed
-// Condition Codes Affected: 
-//	Z
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LEAX()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			(PC)
-		break;
-	case 2:		// R Post Byte				(PC+1)
-		break;
-
-	// index mode, will determine how many more...
-	case 1:		// R Don't Care				($ffff)
-		reg_CC = (reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-//	LEAY()
-//*****************************************************************************
-// Load Effective Address Y (increment or decrement Y by a given value. Use  an index register to load another)
-//
-// Address Mode: Indexed
-// Condition Codes Affected: 
-//	Z
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LEAY()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			(PC)
-		break;
-	case 2:		// R Post Byte				(PC+1)
-		break;
-
-	// index mode, will determine how many more...
-	case 1:		// R Don't Care				($ffff)
-		reg_CC = (reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
+// Invalid opcode handler and any undocumented opcodes that are implemented
 //*********************************************************************************************************************************
-// opcodes - conditional branches
-//*****************************************************************************
 
 
 //*****************************************************************************
-// BCC()
+//	XXX()
 //*****************************************************************************
-// Branch on Carry Clear        (C clear)
+//	INVALID INSTRUCTION!
 //
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
+// On the 6309, this would trigger the invalid operation exception vector.
+//
+// On the 6809, this is undefined behavior and does not trigger any such
+// exceptions, as the invalid instruction exception trap does not exist.
+// Instead, we usually wind up with an instruction that is close in function
+// to a nearby instruction, some depend on whether the CC::?  is clear or set
+// as to exactly what is carried out. AS invalid instructions are undefined,
+// including the Halt And Catch Fire opcode(s), these are ignored and funneled
+// through this function. (Depending on build configuration, this includes the
+// RESET "interrupt" opcode $3E)
 //*****************************************************************************
 // Returns:
-//	uint8_t - clock cycles remaining
+//	uint8_t	- 255 to signify function is completed.
+//				(We're treating a bad instruction as if it was a NOP)
 //*****************************************************************************
-uint8_t Mc6809::BCC()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if ((reg_CC & CC::C) == 0)		// if carry is clear, we don't branch
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBCC()
-//*****************************************************************************
-// Long Branch on Carry Clear
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBCC()
-{
-	switch (cyclesLeft)
-	{
-	case 6:		// R Opcode Fetch			{PC)
-		break;
-	case 5:		// R exec byte 2			(PC+1)
-		break;
-	case 4:		// R Offset	hi				(PC+2)
-		data_hi = Read(reg_PC++);
-		break;
-	case 3:		//R Offset	lo				(PC+3)
-		data_lo = Read(reg_PC++);
-		break;
-	case 2:		//R Don't care				($ffff)
-		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
-			--cyclesLeft;
-		break;
-	case 1:		//R Don't care				($ffff)
-		reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BCS()
-//*****************************************************************************
-// Branch on Carry Set          (C set)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BCS()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBCS()
-//*****************************************************************************
-// Long Branch on Carry Set
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBCS()
-{
-	switch (cyclesLeft)
-	{
-	case 6:		// R Opcode Fetch			{PC)
-		break;
-	case 5:		// R exec byte 2			(PC+1)
-		break;
-	case 4:		// R Offset	hi				(PC+2)
-		data_hi = Read(reg_PC++);
-		break;
-	case 3:		//R Offset	lo				(PC+3)
-		data_lo = Read(reg_PC++);
-		break;
-	case 2:		//R Don't care				($ffff)
-		if ((reg_CC & CC::C) == CC::C)		// if carry is clear, we don't branch
-			cyclesLeft = 1;
-		break;
-	case 1:		//R Don't care				($ffff)
-		break;
-		reg_PC += data;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BEQ()
-//*****************************************************************************
-// Branch if Equal              (Z set)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BEQ()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if ((reg_CC & CC::Z) == CC::Z)		// if carry is clear, we don't branch
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBEQ()
-//*****************************************************************************
-// Long Branch if Equal
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBEQ()
-{
-	switch (cyclesLeft)
-	{
-	case 6:		// R Opcode Fetch			{PC)
-		break;
-	case 5:		// R exec byte 2			(PC+1)
-		break;
-	case 4:		// R Offset	hi				(PC+2)
-		data_hi = Read(reg_PC++);
-		break;
-	case 3:		//R Offset	lo				(PC+3)
-		data_lo = Read(reg_PC++);
-		break;
-	case 2:		//R Don't care				($ffff)
-		if ((reg_CC & CC::Z) == CC::Z)
-			cyclesLeft = 1;
-		break;
-	case 1:		//R Don't care				($ffff)
-		reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BGE()
-//*****************************************************************************
-// Branch if Greater or Equal (signed)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BGE()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if (((reg_CC & CC::C) == CC::C) == ((reg_CC & CC::V) == CC::V ))
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBGE()
-//*****************************************************************************
-// Long Branch  if Greater or Equal
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBGE()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BGT()
-//*****************************************************************************
-// Branch if Greater than (signed)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BGT()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if ((((reg_CC & CC::N) == CC::N) == ((reg_CC & CC::V) == CC::V)) && ((reg_CC &CC::Z) == 0))
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBGT()
-//*****************************************************************************
-// Long Branch if Greater than
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBGT()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BHI()
-//*****************************************************************************
-// Branch if Higher (unsigned)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BHI()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if (((reg_CC & CC::C) == CC::C) && ((reg_CC & CC::Z) == CC::Z))
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBHI()
-//*****************************************************************************
-// Long Branch if Higher
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBHI()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BHS()
-//*****************************************************************************
-// Branch if higher or same (unsigned)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BHS()			// BCC()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if ((reg_CC & CC::C) == 0)		// if carry is clear, we don't branch
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBHS()
-//*****************************************************************************
-// Long Branch if higher or same
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBHS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BLE()
-//*****************************************************************************
-// Branch if Less than or Equal (signed)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BLE()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBLE()
-//*****************************************************************************
-// Long Branch if Less than or Equal (signed)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBLE()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BLO()
-//*****************************************************************************
-// Branch if Lower (unsigned)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BLO()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBLO()
-//*****************************************************************************
-// Long Branch if Lower (unsigned)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBLO()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BLS()
-//*****************************************************************************
-// Branch if Lower or Same (unsigned)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BLS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBLS()
-//*****************************************************************************
-// Long Branch if Lower or Same (unsigned)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBLS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BLT()
-//*****************************************************************************
-// Branch if less than (signed)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BLT()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBLT()
-//*****************************************************************************
-// Long Branch if less than (signed)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBLT()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BMI()
-//*****************************************************************************
-// Branch on Minus 
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BMI()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBMI()
-//*****************************************************************************
-// Long Branch on Minus
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBMI()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BNE()
-//*****************************************************************************
-// Branch if Not Equal (Z = 0)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BNE()
-{
-	switch (cyclesLeft)
-	{
-	case 3:		// R Opcode Fetch			{PC)
-		break;
-	case 2:		// R Offset					(PC+1)
-		data_lo = Read(reg_PC++);
-		data_hi = ((data_lo | 0x80) != 0) ? 0xff : 0x00;
-		break;
-	case 1:		//R Don't care				($ffff)
-		if ((reg_CC & CC::Z) == 0)		// if carry is clear, we don't branch
-			reg_PC += data;
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBNE()
-//*****************************************************************************
-// Long Branch if Not Equal (Z = 0)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBNE()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BPL()
-//*****************************************************************************
-// Branch if Plus/Positive
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BPL()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBPL()
-//*****************************************************************************
-// Long Branch if Plus/Positive
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBPL()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BRA()
-//*****************************************************************************
-// Branch Always
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BRA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBRA()
-//*****************************************************************************
-// Long Branch Always
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBRA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BRN()
-//*****************************************************************************
-// Branch Never (another NOP)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BRN()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBRN()
-//*****************************************************************************
-// Long Branch Never (another NOP)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBRN()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BSR()
-//*****************************************************************************
-// Branch to Subroutine
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BSR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBSR()
-//*****************************************************************************
-// Long Branch to Subroutine
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBSR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BVC()
-//*****************************************************************************
-// Branch if no overflow (V is clear)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BVC()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBVC()
-//*****************************************************************************
-// Long Branch if no overflow (V is clear)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBVC()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// BVS()
-//*****************************************************************************
-// Branch on overflow (V is set)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::BVS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*****************************************************************************
-// LBVS()
-//*****************************************************************************
-// Long Branch on overflow (V is set)
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Long Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::LBVS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//********************************************************************************************************************************* 
-// opcodes - Jumps
-//*****************************************************************************
-
-
-// Unconditional Jump (non-relative) to a given (direct or indirect) address
-uint8_t Mc6809::JMP()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Jump to a subroutine (non-relative) at a given (direct or indirect) address
-//
-// Memory Addressing Mode: Memory immediate
-// Address Mode: Relative
-// Condition Codes Affected: None
-//*****************************************************************************
-// Returns:
-//	uint8_t - clock cycles remaining
-//*****************************************************************************
-uint8_t Mc6809::JSR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-//*********************************************************************************************************************************
-// exec - multi addressing modes
-//*****************************************************************************
-
-
-// Add to A + Carry
-uint8_t Mc6809::ADCA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Add to A + Carry
-uint8_t Mc6809::ADCB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Add to A
-uint8_t Mc6809::ADDA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Add to B
-uint8_t Mc6809::ADDB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Add to D (A << 8 | B)
-uint8_t Mc6809::ADDD()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// And A
-uint8_t Mc6809::ANDA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// And B
-uint8_t Mc6809::ANDB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// And Condition Codes (clear one or more flags)
-uint8_t Mc6809::ANDCC()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Arithmetic Shift Left Memory location (Logical Shift Left fill LSb with 0)
-uint8_t Mc6809::ASL()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Arithmetic Shift Right Memory location (fill MSb with Sign bit)
-uint8_t Mc6809::ASR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Bit Test on A with a specific value (by AND)
-uint8_t Mc6809::BITA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Bit Test on B with a specific value (by AND)
-uint8_t Mc6809::BITB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Clear memory location
-uint8_t Mc6809::CLR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register A to memory location or given value(CC H unaffected)
-uint8_t Mc6809::CMPA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register B to memory location or given value (CC H unaffected)
-uint8_t Mc6809::CMPB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register D ( A <<8 | B) to memory locations or given value (CC H unaffected)
-uint8_t Mc6809::CMPD()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register S to memory locations or given value (CC H unaffected)
-uint8_t Mc6809::CMPS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register U to memory locations or given value (CC H unaffected)
-uint8_t Mc6809::CMPU()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register X to memory locations or given value (CC H unaffected)
-uint8_t Mc6809::CMPX()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Compare register Y to memory locations or given value (CC H unaffected)
-uint8_t Mc6809::CMPY()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// 1's Compliment Memory location (i.e. XOR A with 0x00 or 0xFF)
-uint8_t Mc6809::COM()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Decrement Memory location
-uint8_t Mc6809::DEC()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Logical Exclusive OR register A
-uint8_t Mc6809::EORA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Logical Exclusive OR register B
-uint8_t Mc6809::EORB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Increment Memory location
-uint8_t Mc6809::INC()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register A
-uint8_t Mc6809::LDA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register A
-uint8_t Mc6809::LDB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register D  ( A << 8 | B)
-uint8_t Mc6809::LDD()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register S
-uint8_t Mc6809::LDS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register U
-uint8_t Mc6809::LDU()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register X
-uint8_t Mc6809::LDX()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Load Register Y
-uint8_t Mc6809::LDY()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Logical Shift Left memory location (LSb is loaded with 0)
-uint8_t Mc6809::LSL()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Logical Shift Right memory location (MSb is loaded with 0)
-uint8_t Mc6809::LSR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// 2's Complement (negate) memory location
-uint8_t Mc6809::NEG()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-// Logical OR register A
-uint8_t Mc6809::ORA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Logical OR register B
-uint8_t Mc6809::ORB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Logical OR Condition Codes (set one or more flags)
-uint8_t Mc6809::ORCC()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Push one or more registers onto the System Stack
-uint8_t Mc6809::PSHS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Push one or more registers onto the User Stack
-uint8_t Mc6809::PSHU()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Pull one or more registers from the System Stack
-uint8_t Mc6809::PULS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Pull one or more registers from the User Stack
-uint8_t Mc6809::PULU()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-// Rotate memory location Left one bit through the Carry flag (9 bit rotate)
-uint8_t Mc6809::ROL()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Rotate memory location Right one bit through the Carry flag (9 bit rotate)
-uint8_t Mc6809::ROR()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Subtract with carry (borrow) - register A
-uint8_t Mc6809::SBCA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Subtract with carry (borrow) - register B
-uint8_t Mc6809::SBCB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register A
-uint8_t Mc6809::STA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register B 
-uint8_t Mc6809::STB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register D     (A << 8 | B)
-uint8_t Mc6809::STD()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register S
-uint8_t Mc6809::STS()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register U
-uint8_t Mc6809::STU()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register X
-uint8_t Mc6809::STX()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Store Register Y
-uint8_t Mc6809::STY()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Subtract from register A
-uint8_t Mc6809::SUBA()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Subtract from register A
-uint8_t Mc6809::SUBB()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// Subtract from register D     (A << 8 | B)
-uint8_t Mc6809::SUBD()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-
-// Test memory location, adjust N and Z Condition codes based on content
-uint8_t Mc6809::TST()
-{
-	switch (cyclesLeft)
-	{
-	case 1:
-		break;
-	}
-	--cyclesLeft;
-	return(cyclesLeft);
-}
-
-// INVALID INSTRUCTION! on 6309, this would trigger the invalid operation exception vector
 uint8_t Mc6809::XXX()
 {
-	switch (cyclesLeft)
+	return(255);
+}
+
+
+//*****************************************************************************
+//	RESET				inherent
+//*****************************************************************************
+uint8_t Mc6809::RESET_inh()
+{
+	switch (++clocksUsed)
 	{
-	case 1:
+	case 1:		// R	Opcode Fetch		PC
+		break;
+	case 2:		// R	Don't care			PC+1	++PC
+		++reg_PC;
+		break;
+	case 3:		// R	Don't care			$ffff
+		// apparently does not set the E flag, this will throw a RTI from this off.
+		//reg_CC |= CC::E;
+		break;
+	case 4:		// W	PC Low				SP-1	--SP
+		Write(--reg_S, PC_lo);
+		break;
+	case 5:		// W	PC High				SP-2	--SP
+		Write(--reg_S, PC_hi);
+		break;
+	case 6:		// W	User Stack Low		SP-3	--SP
+		Write(--reg_S, U_lo);
+		break;
+	case 7:		// W	User Stack High		SP-4	--SP
+		Write(--reg_S, U_hi);
+		break;
+	case 8:		// W	Y  Register Low		SP-5	--SP
+		Write(--reg_S, Y_lo);
+		break;
+	case 9:		// W	Y  Register High	SP-6	--SP
+		Write(--reg_S, Y_hi);
+		break;
+	case 10:	// W	X  Register Low		SP-7	--SP
+		Write(--reg_S, X_lo);
+		break;
+	case 11:	// W	X  Register High	SP-8	--SP
+		Write(--reg_S, X_hi);
+		break;
+	case 12:	// W	DP Register			SP-9	--SP
+		Write(--reg_S, reg_DP);
+		break;
+	case 13:	// W	B  Register			SP-10	--SP
+		Write(--reg_S, reg_B);
+		break;
+	case 14:	// W	A  Register			SP-11	--SP
+		Write(--reg_S, reg_A);
+		break;
+	case 15:	// W	CC Register			SP-12	--SP
+		Write(--reg_S, reg_CC);
+		break;
+	case 16:	// R	Don't Care			$ffff
+		reg_CC |= (CC::I | CC::F);
+		break;
+	case 17:	// R	Int Vector High		$fffe
+		PC_hi = Read(0xfffe);
+		break;
+	case 18:	// R	Int Vector Low		$ffff
+		PC_lo = Read(0xffff);
+		break;
+	case 19:	// R	Don't Care			$ffff
+		clocksUsed = 0xff;
 		break;
 	}
-	--cyclesLeft;
-	return(cyclesLeft);
+	return(clocksUsed);
 }
 
 
 //*********************************************************************************************************************************
-// INTERNAL - substructure of the emulated CPU/MPU that isn't op-code or
-//			external control system
-//*****************************************************************************
-
-
-//*****************************************************************************
-//	Clock()
-//*****************************************************************************
-//	Triggers the functions of the CPU
-//*****************************************************************************
-void Mc6809::Clock()
-{
-	// does this need to be moved above the rest? or at least the test to execute "exec"?
-	if (exec != nullptr)
-		if (exec() == 0)
-			exec = nullptr; 
-	else
-		if (haltTriggered)
-		return;
-	else if (resetTriggered)			// external RESET was triggered
-		HardwareRESET();
-	else if (nmiTriggered)			// external NMI was triggered
-		NMI();
-	else if (firqTriggered)			// external FIRQ was triggered
-		FIRQ();
-	else if (irqTriggered)			// external IRQ was triggered
-		IRQ();
-	else 
-		Fetch(reg_PC);
-}
-
-
-//*****************************************************************************
-//	Fetch()
-//*****************************************************************************
-// Fetch an instruction from RAM
-//*****************************************************************************
-// Params:
-//	const uint16_t address	- the memory location (from MMU, SAM, or other)
-//							  to read from. NOTES: 6809 is 64K only: $0000-$FFFF
-//*****************************************************************************
-// Returns:
-//	uint8_t
-//*****************************************************************************
-uint8_t Mc6809::Fetch(const uint16_t address)
-{
-	if (instruction_lo == 0x10 || instruction_lo == 0x11)
-		instruction_hi = instruction_lo;
-	else
-		instruction_hi = 0x00;
-
-	instruction_lo = Read(reg_PC);
-
-	++reg_PC;
-	return(0);
-}
-
-
+// Indexed modes for opcodes
 //*********************************************************************************************************************************
-// INTERNAL - Emulator only: not part of the CPU/MPU emulated op-code or
-//			external control system
-//*****************************************************************************
 
-
-uint8_t Mc6809::Read(const uint16_t address, const bool readOnly)
+uint8_t Mc6809::ADCA_idx()	// H N Z V C all modified. reg_A modified
+{}
+uint8_t Mc6809::ADCB_idx() {}
+uint8_t Mc6809::ADDA_idx() {}
+uint8_t Mc6809::ADDB_idx() {}
+uint8_t Mc6809::ADDD_idx()
 {
-	if (mmu != nullptr)
-		data_lo = mmu->Read(address, readOnly);
-	else
-		data = 0;
-	return(data_lo);
+	static uint8_t data_hi;
 }
+uint8_t Mc6809::ANDA_idx() {}
+uint8_t Mc6809::ANDB_idx() {}
+uint8_t Mc6809::ASL_LSL_idx() {}
+uint8_t Mc6809::ASR_idx() {}
+uint8_t Mc6809::BITA_idx() {}
+uint8_t Mc6809::BITB_idx() {}
+uint8_t Mc6809::CLR_idx() {}
+uint8_t Mc6809::CMPA_idx() {}
+uint8_t Mc6809::CMPB_idx() {}
+uint8_t Mc6809::CMPD_idx() {}
+uint8_t Mc6809::CMPS_idx() {}
+uint8_t Mc6809::CMPU_idx() {}
+uint8_t Mc6809::CMPX_idx() {}
+uint8_t Mc6809::CMPY_idx() {}
+uint8_t Mc6809::COM_idx() {}
+uint8_t Mc6809::DEC_idx() {}
+uint8_t Mc6809::EORA_idx() {}
+uint8_t Mc6809::EORB_idx() {}
+uint8_t Mc6809::INC_idx() {}
+uint8_t Mc6809::JMP_idx() {}
+uint8_t Mc6809::JSR_idx() {}
+uint8_t Mc6809::LDA_idx() {}
+uint8_t Mc6809::LDB_idx() {}
+uint8_t Mc6809::LDD_idx() {}
+uint8_t Mc6809::LDS_idx() {}
+uint8_t Mc6809::LDU_idx() {}
+uint8_t Mc6809::LDX_idx() {}
+uint8_t Mc6809::LDY_idx() {}
+uint8_t Mc6809::LEAS_idx() {}
+uint8_t Mc6809::LEAU_idx() {}
+uint8_t Mc6809::LEAX_idx() {}
+uint8_t Mc6809::LEAY_idx() {}
+uint8_t Mc6809::LSR_idx() {}
+uint8_t Mc6809::NEG_idx() {}
+uint8_t Mc6809::ORA_idx() {}
+uint8_t Mc6809::ORB_idx() {}
+uint8_t Mc6809::ROL_idx() {}
+uint8_t Mc6809::ROR_idx() {}
+uint8_t Mc6809::SBCA_idx() {}
+uint8_t Mc6809::SBCB_idx() {}
+uint8_t Mc6809::STA_idx() {}
+uint8_t Mc6809::STB_idx() {}
+uint8_t Mc6809::STD_idx() {}
+uint8_t Mc6809::STS_idx() {}
+uint8_t Mc6809::STU_idx() {}
+uint8_t Mc6809::STX_idx() {}
+uint8_t Mc6809::STY_idx() {}
+uint8_t Mc6809::SUBA_idx() {}
+uint8_t Mc6809::SUBB_idx() {}
+uint8_t Mc6809::SUBD_idx() {}
+uint8_t Mc6809::TST_idx() {}
 
 
-void Mc6809::Write(const uint16_t address, const uint8_t byte)
-{
-	if (mmu != nullptr)
-		mmu->Write(address, byte);
-}
-
-
-void Mc6809::SetMMU(MMU* device)
-{
-	mmu = device;
-}
-
-
-//*********************************************************************************************************************************
+//.
