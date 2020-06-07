@@ -21,7 +21,7 @@
 //	Mc6809()
 //*****************************************************************************
 //	Initializes emulated CPU, but does not start it. Gets it ready for a cold-
-// reset. Also sets the memory bus (aka MMU since the MMU handles memory
+//	Reset. Also sets the memory bus (aka MMU since the MMU handles memory
 // mapping)
 //*****************************************************************************
 Mc6809::Mc6809(MMU* device)
@@ -283,24 +283,24 @@ uint8_t Mc6809::RESET()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Don't care			$fffe
+	case 1:		//	R	Don't care			$fffe
 		if (Reset)
 			--clocksUsed;
 		break;
-	case 2:		// R	Don't care			$fffe
+	case 2:		//	R	Don't care			$fffe
 		reg_CC = (CC::I | CC::F);
 		break;
-	case 3:		// R	Don't care			$fffe
+	case 3:		//	R	Don't care			$fffe
 		break;
-	case 4:		// R	Don't care			$fffe
+	case 4:		//	R	Don't care			$fffe
 		break;
-	case 5:		// R	Int Vector High		$fffe
+	case 5:		//	R	Int Vector High		$fffe
 		PC_hi = Read(0xfffe);
 		break;
-	case 6:		// R	Int Vector Low		$ffff
+	case 6:		//	R	Int Vector Low		$ffff
 		PC_lo = Read(0xffff);
 		break;
-	case 7:		// R	Don't care			$ffff
+	case 7:		//	R	Don't care			$ffff
 		reg_CC = 0x00;
 		clocksUsed = 255;
 		break;
@@ -316,60 +316,60 @@ uint8_t Mc6809::NMI()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	?					PC
+	case 1:		//	R	?					PC
 		break;
-	case 2:		// R	?					PC
+	case 2:		//	R	?					PC
 		break;
-	case 3:		// R	Don't care			$ffff
+	case 3:		//	R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
 	case 4:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 5:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 6:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 7:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 8:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 9:		// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 10:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 11:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 12:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 13:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 14:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 15:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 16:	// R	Don't Care			$ffff
+	case 16:	//	R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 17:	// R	Int Vector High		$fffc
+	case 17:	//	R	Int Vector High		$fffc
 		PC_hi = Read(0xfffc);
 		break;
-	case 18:	// R	Int Vector Low		$fffd
+	case 18:	//	R	Int Vector Low		$fffd
 		PC_lo = Read(0xfffd);
 		break;
-	case 19:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 19:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -383,33 +383,33 @@ uint8_t Mc6809::FIRQ()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	?					PC
+	case 1:		//	R	?					PC
 		break;
-	case 2:		// R	?					PC
+	case 2:		//	R	?					PC
 		break;
-	case 3:		// R	Don't care			$ffff
+	case 3:		//	R	Don't care			$ffff
 		reg_CC &= ~CC::E;
 		break;
 	case 4:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 5:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 6:		// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 7:		// R	Don't Care			$ffff
+	case 7:		//	R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 8:		// R	Int Vector High		$fff6
+	case 8:		//	R	Int Vector High		$fff6
 		PC_hi = Read(0xfff6);
 		break;
-	case 9:		// R	Int Vector Low		$fff7
+	case 9:		//	R	Int Vector Low		$fff7
 		PC_lo = Read(0xfff7);
 		break;
-	case 10:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 10:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -423,60 +423,60 @@ uint8_t Mc6809::IRQ()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	?					PC
+	case 1:		//	R	?					PC
 		break;
-	case 2:		// R	?					PC
+	case 2:		//	R	?					PC
 		break;
-	case 3:		// R	Don't care			$ffff
+	case 3:		//	R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
 	case 4:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 5:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 6:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 7:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 8:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 9:		// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 10:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 11:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 12:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 13:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 14:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 15:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 16:	// R	Don't Care			$ffff
+	case 16:	//	R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 17:	// R	Int Vector High		$fff8
+	case 17:	//	R	Int Vector High		$fff8
 		PC_hi = Read(0xfff8);
 		break;
-	case 18:	// R	Int Vector Low		$fff9
+	case 18:	//	R	Int Vector Low		$fff9
 		PC_lo = Read(0xfff9);
 		break;
-	case 19:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 19:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -495,12 +495,13 @@ uint8_t Mc6809::ABX_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	don't care			PC+1
-		++reg_PC;
+	case 2:		//	R	don't care			PC+1
+		//reg_PC++;
 		break;
-	case 3:		// R	don't care			$ffff
+	case 3:		//	R	don't care			$ffff
 		reg_X += reg_B;
 		clocksUsed = 255;
 		break;
@@ -516,15 +517,16 @@ uint8_t Mc6809::ADCA_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_A;
 		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
@@ -550,16 +552,18 @@ uint8_t Mc6809::ADCA_ext()	// H N Z V C all modified. reg_A modified
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Data				EA
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_A;
 		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
@@ -585,10 +589,11 @@ uint8_t Mc6809::ADCA_imm()	// H N Z V C all modified. reg_A modified
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = reg_A;
 		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
 
@@ -613,15 +618,16 @@ uint8_t Mc6809::ADCB_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_B;
 		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
@@ -647,16 +653,18 @@ uint8_t Mc6809::ADCB_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Data				EA
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_B;
 		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
@@ -682,10 +690,11 @@ uint8_t Mc6809::ADCB_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = reg_B;
 		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
 
@@ -710,15 +719,16 @@ uint8_t Mc6809::ADDA_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_A;
 		reg_A += scratch_lo;
@@ -744,16 +754,18 @@ uint8_t Mc6809::ADDA_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Data				EA
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_A;
 		reg_A += scratch_lo;
@@ -779,10 +791,11 @@ uint8_t Mc6809::ADDA_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = reg_A;
 		reg_A += scratch_lo;
 
@@ -807,15 +820,16 @@ uint8_t Mc6809::ADDB_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_B;
 		reg_B += scratch_lo;
@@ -841,16 +855,18 @@ uint8_t Mc6809::ADDB_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Data				EA
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = reg_B;
 		reg_B += scratch_lo;
@@ -876,10 +892,11 @@ uint8_t Mc6809::ADDB_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = reg_B;
 		reg_B += scratch_lo;
 
@@ -905,22 +922,23 @@ uint8_t Mc6809::ADDD_dir()
 	static uint8_t data_hi;
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data High			$ffff
+	case 4:		//	R	Data High			$ffff
 		data_hi = Read(reg_scratch);
 		break;
-	case 5:		// R	Data Low			EA+1
+	case 5:		//	R	Data Low			EA+1
 		scratch_lo = Read(++reg_scratch);
 		scratch_hi = data_hi;
 		break;
-	case 6:		// R	Don't Care			$ffff
+	case 6:		//	R	Don't Care			$ffff
 		reg_D += reg_scratch;
 
 		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
@@ -942,24 +960,25 @@ uint8_t Mc6809::ADDD_ext()
 	static uint8_t data_hi;
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data High			$ffff
+	case 5:		//	R	Data High			$ffff
 		data_hi = Read(reg_scratch);
 		break;
-	case 6:		// R	Data Low			EA+1
+	case 6:		//	R	Data Low			EA+1
 		scratch_lo = Read(reg_scratch);
 		scratch_hi = data_hi;
 		break;
-	case 7:		// R	Don't Care			$ffff
+	case 7:		//	R	Don't Care			$ffff
 		reg_D += reg_scratch;
 
 		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
@@ -980,15 +999,16 @@ uint8_t Mc6809::ADDD_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data High			PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Data High			PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Data Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Data Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		reg_D += reg_scratch;
 
 		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
@@ -1009,15 +1029,16 @@ uint8_t Mc6809::ANDA_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
@@ -1037,17 +1058,18 @@ uint8_t Mc6809::ANDA_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data				EA
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
@@ -1068,8 +1090,9 @@ uint8_t Mc6809::ANDA_imm()
 	switch (++clocksUsed)
 	{
 	case 1:		//R		Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
+	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
@@ -1090,14 +1113,15 @@ uint8_t Mc6809::ANDB_dir()
 	switch (++clocksUsed)
 	{
 	case 1:		//R		Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
@@ -1117,17 +1141,18 @@ uint8_t Mc6809::ANDB_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data				EA
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
@@ -1147,9 +1172,10 @@ uint8_t Mc6809::ANDB_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
+	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
@@ -1169,12 +1195,13 @@ uint8_t Mc6809::ANDCC_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		reg_CC &= scratch_lo;
 		clocksUsed = 255;
 		break;
@@ -1191,15 +1218,16 @@ uint8_t Mc6809::ASLA_LSLA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	don't care			PC+1
+	case 2:		//	R	don't care			PC+1
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = reg_A << 1;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -1215,15 +1243,16 @@ uint8_t Mc6809::ASLB_LSLB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	don't care			PC+1
+	case 2:		//	R	don't care			PC+1
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = reg_B << 1;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -1241,9 +1270,10 @@ uint8_t Mc6809::ASL_LSL_dir()
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
 	case 2:		//	R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+		scratch_lo = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't care			$ffff
 		scratch_hi = reg_DP;
@@ -1263,6 +1293,7 @@ uint8_t Mc6809::ASL_LSL_dir()
 		clocksUsed = 255;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1276,12 +1307,13 @@ uint8_t Mc6809::ASL_LSL_ext()
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
 	case 2:		//	R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+		scratch_hi = Read(reg_PC++);
 		break;
 	case 3:		//	R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+		scratch_lo = Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't care			$ffff
 		break;
@@ -1300,6 +1332,7 @@ uint8_t Mc6809::ASL_LSL_ext()
 		clocksUsed = 255;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1310,15 +1343,16 @@ uint8_t Mc6809::ASRA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = reg_A & 0x80;
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = ((reg_A >> 1) & 0x7f) | scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -1333,16 +1367,17 @@ uint8_t Mc6809::ASRB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = reg_B & 0x80;
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = ((reg_B >> 1) & 0x7f) | scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -1360,9 +1395,10 @@ uint8_t Mc6809::ASR_dir()
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
 	case 2:		//	R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+		scratch_lo = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't care			$ffff
 		scratch_hi = reg_DP;
@@ -1382,6 +1418,7 @@ uint8_t Mc6809::ASR_dir()
 		clocksUsed = 255;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1396,12 +1433,13 @@ uint8_t Mc6809::ASR_ext()
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
 	case 2:		//	R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+		scratch_hi = Read(reg_PC++);
 		break;
 	case 3:		//	R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+		scratch_lo = Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't care			$ffff
 		break;
@@ -1420,6 +1458,7 @@ uint8_t Mc6809::ASR_ext()
 		clocksUsed = 255;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1430,13 +1469,14 @@ uint8_t Mc6809::BEQ_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::Z) == CC::Z)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1453,13 +1493,14 @@ uint8_t Mc6809::BGE_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if (((reg_CC & CC::C) == CC::C) == ((reg_CC & CC::V) == CC::V))
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1476,13 +1517,14 @@ uint8_t Mc6809::BGT_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((((reg_CC & CC::N) == CC::N) && ((reg_CC & CC::V) == CC::V)) && ((reg_CC & CC::Z) == 0))
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1499,13 +1541,14 @@ uint8_t Mc6809::BHI_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if (((reg_CC & CC::C) != CC::C) && ((reg_CC & CC::Z) != CC::Z))
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1523,13 +1566,14 @@ uint8_t Mc6809::BHS_BCC_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::C) != CC::C)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1546,15 +1590,16 @@ uint8_t Mc6809::BITA_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
@@ -1574,17 +1619,18 @@ uint8_t Mc6809::BITA_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Address Low			PC+2	
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Address Low			PC+2	
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data				EA
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
@@ -1604,10 +1650,11 @@ uint8_t Mc6809::BITA_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		reg_A &= scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
@@ -1626,15 +1673,16 @@ uint8_t Mc6809::BITB_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
@@ -1655,17 +1703,18 @@ uint8_t Mc6809::BITB_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-		scratch_hi = Read(++reg_PC);
-	case 2:		// R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+	case 2:		//	R	Address High		PC+1
 		break;
-		scratch_lo = Read(++reg_PC);
-	case 3:		// R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+	case 3:		//	R	Address Low			PC+2
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data				EA
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
@@ -1685,10 +1734,11 @@ uint8_t Mc6809::BITB_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		reg_B &= scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
@@ -1708,13 +1758,14 @@ uint8_t Mc6809::BLE_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if (((reg_CC & CC::Z) == CC::Z) ||
 			(((reg_CC & CC::N) == CC::N) && (reg_CC & CC::V) != CC::V) ||
 			(((reg_CC & CC::N) != CC::N) && (reg_CC & CC::V) == CC::V))
@@ -1734,13 +1785,14 @@ uint8_t Mc6809::BLO_BCS_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::C) == CC::C)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1757,13 +1809,14 @@ uint8_t Mc6809::BLS_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if (((reg_CC & CC::C) == CC::C) || ((reg_CC & CC::Z) == CC::Z))
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1780,13 +1833,14 @@ uint8_t Mc6809::BLT_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if (((reg_CC & CC::C) == CC::C) != ((reg_CC & CC::N) == CC::N))
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1803,13 +1857,14 @@ uint8_t Mc6809::BMI_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::N) == CC::N)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1826,13 +1881,14 @@ uint8_t Mc6809::BNE_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::Z) != CC::Z)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1849,13 +1905,14 @@ uint8_t Mc6809::BPL_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::N) != CC::N)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1872,13 +1929,14 @@ uint8_t Mc6809::BRA_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		reg_PC += reg_scratch;
 		clocksUsed = 255;
 		break;
@@ -1894,13 +1952,14 @@ uint8_t Mc6809::BRN_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		clocksUsed = 255;
 		break;
 	}
@@ -1915,24 +1974,25 @@ uint8_t Mc6809::BSR_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		break;
-	case 4:		// R	Don't Care			Effective Address
+	case 4:		//	R	Don't Care			Effective Address
 
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		break;
 	case 6:		// W	Retern Address Low	SP-1
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 7:		// W	Return Address High	SP-2
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		reg_PC += reg_scratch;
 		clocksUsed = 255;
 		break;
@@ -1948,13 +2008,14 @@ uint8_t Mc6809::BVC_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::V) != CC::V)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1971,13 +2032,14 @@ uint8_t Mc6809::BVS_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Offset				PC+1
+		scratch_lo = Read(reg_PC++);
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::V) == CC::V)
 			reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -1994,12 +2056,13 @@ uint8_t Mc6809::CLRA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_A = 0;
 		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2014,12 +2077,13 @@ uint8_t Mc6809::CLRB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_B = 0;
 		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2027,24 +2091,28 @@ uint8_t Mc6809::CLRB_inh()
 }
 
 
+//*****************************************************************************
+//	CLR					direct
+//*****************************************************************************
 uint8_t Mc6809::CLR_dir()
 {
 	static uint8_t data_lo;
 
 	switch (++clocksUsed)
 	{
-	case 1:		// R	OpCode Fetch		PC
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
-
+	case 4:		//	R	Data				EA
+		Read(reg_scratch);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
 		break;
 	case 6:		// W	Data				EA
@@ -2056,25 +2124,30 @@ uint8_t Mc6809::CLR_dir()
 }
 
 
+//*****************************************************************************
+//	CLR					extended
+//*****************************************************************************
 uint8_t Mc6809::CLR_ext()
 {
 	static uint8_t data_lo;
 
 	switch (++clocksUsed)
 	{
-	case 1:		// R	OpCode Fetch		PC
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data				EA
+	case 5:		//	R	Data				EA
+		Read(reg_scratch);
 		break;
-	case 6:		// R	Don't Care			$ffff
+	case 6:		//	R	Don't Care			$ffff
 		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
 		break;
 	case 7:		// W	Data				EA
@@ -2086,27 +2159,747 @@ uint8_t Mc6809::CLR_ext()
 }
 
 
-uint8_t Mc6809::CMPA_dir() {}
-uint8_t Mc6809::CMPA_ext() {}
-uint8_t Mc6809::CMPA_imm() {}
-uint8_t Mc6809::CMPB_dir() {}
-uint8_t Mc6809::CMPB_ext() {}
-uint8_t Mc6809::CMPB_imm() {}
-uint8_t Mc6809::CMPD_dir() {}
-uint8_t Mc6809::CMPD_ext() {}
-uint8_t Mc6809::CMPD_imm() {}
-uint8_t Mc6809::CMPS_dir() {}
-uint8_t Mc6809::CMPS_ext() {}
-uint8_t Mc6809::CMPS_imm() {}
-uint8_t Mc6809::CMPU_dir() {}
-uint8_t Mc6809::CMPU_ext() {}
-uint8_t Mc6809::CMPU_imm() {}
-uint8_t Mc6809::CMPX_dir() {}
-uint8_t Mc6809::CMPX_ext() {}
-uint8_t Mc6809::CMPX_imm() {}
-uint8_t Mc6809::CMPY_dir() {}
-uint8_t Mc6809::CMPY_ext() {}
-uint8_t Mc6809::CMPY_imm() {}
+//*****************************************************************************
+//	CMPA				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_scratch = reg_A - scratch_lo;
+		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPA				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_scratch = reg_A - scratch_lo;
+		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPA				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
+		reg_scratch = reg_A - scratch_lo;
+		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPB				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_scratch = reg_B - scratch_lo;
+		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPB				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_scratch = reg_B - scratch_lo;
+		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPB				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
+		reg_scratch = reg_B - scratch_lo;
+		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPD				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPD_dir()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data High			EA
+		data = Read(reg_scratch);
+		break;
+	case 6:		//	R	Data Low			EA+1
+		data =  (data << 8 ) | Read(++reg_scratch);
+		break;
+	case 7:		//	R	Don't Care			$ffff
+		data = reg_D - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPD				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPD_ext()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 7:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 8:		//	R	Don't Care			$ffff
+		data = reg_D - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPD				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPD_imm()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Data High			PC+2
+		data = Read(reg_PC++) << 8;
+		break;
+	case 4:		//	R	Data Low			PC+3
+		data |= Read((reg_PC++));
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		data = reg_D - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPS				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPS_dir()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data High			EA
+		data = Read(reg_scratch);
+		break;
+	case 6:		//	R	Data Low			EA+1
+		data = (data << 8) | Read(++reg_scratch);
+		break;
+	case 7:		//	R	Don't Care			$ffff
+		data = reg_S - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPS				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPS_ext()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 7:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 8:		//	R	Don't Care			$ffff
+		data = reg_S - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPS				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPS_imm()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Data High			PC+2
+		data = Read(reg_PC++) << 8;
+		break;
+	case 4:		//	R	Data Low			PC+3
+		data |= Read((reg_PC++));
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		data = reg_S - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPU				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPU_dir()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data High			EA
+		data = Read(reg_scratch);
+		break;
+	case 6:		//	R	Data Low			EA+1
+		data = (data << 8) | Read(++reg_scratch);
+		break;
+	case 7:		//	R	Don't Care			$ffff
+		data = reg_U - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPU				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPU_ext()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+2
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+3
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 7:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 8:		//	R	Don't Care			$ffff
+		data = reg_U - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPU				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPU_imm()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Data High			PC+2
+		data = Read(reg_PC++) << 8;
+		break;
+	case 4:		//	R	Data Low			PC+3
+		data |= Read((reg_PC++));
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		data = reg_D - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPX				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPX_dir()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data High			EA
+		data = Read(reg_scratch);
+		break;
+	case 6:		//	R	Data Low			EA+1
+		data = (data << 8) | Read(++reg_scratch);
+		break;
+	case 7:		//	R	Don't Care			$ffff
+		data = reg_X - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPX				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPX_ext()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 6:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 7:		//	R	Don't Care			$ffff
+		data = reg_X - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPX				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPX_imm()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data High			PC+1
+		data = Read(reg_PC++) << 8;
+		break;
+	case 3:		//	R	Data Low			PC+2
+		data |= Read((reg_PC++));
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		data = reg_X - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPY				direct
+//*****************************************************************************
+uint8_t Mc6809::CMPY_dir()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data High			EA
+		data = Read(reg_scratch);
+		break;
+	case 6:		//	R	Data Low			EA+1
+		data = (data << 8) | Read(++reg_scratch);
+		break;
+	case 7:		//	R	Don't Care			$ffff
+		data = reg_Y - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPY				extended
+//*****************************************************************************
+uint8_t Mc6809::CMPY_ext()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+2
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+3
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 7:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 8:		//	R	Don't Care			$ffff
+		data = reg_Y - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPY				immediate
+//*****************************************************************************
+uint8_t Mc6809::CMPY_imm()
+{
+	static uint32_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Data High			PC+2
+		data = Read(reg_PC++) << 8;
+		break;
+	case 4:		//	R	Data Low			PC+3
+		data |= Read((reg_PC++));
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		data = reg_Y - data;
+		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
+		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
+		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -2116,15 +2909,16 @@ uint8_t Mc6809::COMA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		reg_A ^= 0xff;
+	case 2:		//	R	Don't Care			PC+1
+		reg_A ^= 255;
 		reg_CC |= (CC::C);
 		reg_CC &= ~(CC::V | CC::N | CC::Z);
 		reg_CC |= (reg_A == 0) ? CC::Z : 0x00;
 		reg_CC |= ((reg_A & 0x80) == 0x80) ? CC::N : 0x00;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2139,11 +2933,12 @@ uint8_t Mc6809::COMB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		reg_B ^= 0xff;
-		++reg_PC;
+	case 2:		//	R	Don't Care			PC+1
+		reg_B ^= 255;
+		//reg_PC++;
 		reg_CC |= (CC::C);
 		reg_CC &= ~(CC::V | CC::N | CC::Z);
 		reg_CC |= (reg_B == 0) ? CC::Z : 0x00;
@@ -2155,8 +2950,81 @@ uint8_t Mc6809::COMB_inh()
 }
 
 
-uint8_t Mc6809::COM_dir() {}
-uint8_t Mc6809::COM_ext() {}
+//*****************************************************************************
+//	COM					direct
+//*****************************************************************************
+uint8_t Mc6809::COM_dir()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		data_lo ^= 0xff;
+		reg_CC |= (CC::C);
+		reg_CC &= ~(CC::V | CC::N | CC::Z);
+		reg_CC |= (data_lo == 0) ? CC::Z : 0x00;
+		reg_CC |= ((data_lo & 0x80) == 0x80) ? CC::N : 0x00;
+		break;
+	case 6:		// W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	COM					extended
+//*****************************************************************************
+uint8_t Mc6809::COM_ext()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care			$ffff
+		data_lo ^= 0xff;
+		reg_CC |= (CC::C);
+		reg_CC &= ~(CC::V | CC::N | CC::Z);
+		reg_CC |= (data_lo == 0) ? CC::Z : 0x00;
+		reg_CC |= ((data_lo & 0x80) == 0x80) ? CC::N : 0x00;
+		break;
+	case 7:		// W  Data			EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 0xff;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -2166,63 +3034,64 @@ uint8_t Mc6809::CWAI_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	CC Mask				PC+1
+	case 2:		//	R	CC Mask				PC+1
 		scratch_lo = Read(reg_PC);
-		++reg_PC;
+		reg_PC++;
 		break;
-	case 3:		// R	Don't Care			PC+2
-		++reg_PC;
+	case 3:		//	R	Don't Care			PC+2
+		reg_PC++;
 		break;
-	case 4:		// R	Don't care			$ffff
+	case 4:		//	R	Don't care			$ffff
 		break;
 	case 5:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 6:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 7:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 8:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 9:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 10:	// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 11:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 12:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 13:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 14:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 15:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 16:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		reg_CC &= scratch_lo;
 		reg_CC |= CC::E;
 		break;
 
-	case 17:	// R	Don't Care			$ffff
+	case 17:	//	R	Don't Care			$ffff
 		// wait for interrupt signal
 		if (!Nmi && !Firq && !Irq)
 			--clocksUsed;
 		break;
 
-	case 18:	// R	Int Vector High		$fffx
+	case 18:	//	R	Int Vector High		$fffx
 		if (Nmi)
 			PC_hi = Read(0xfffc);
 		else if (Firq && (reg_CC & CC::F) != CC::F)
@@ -2230,7 +3099,7 @@ uint8_t Mc6809::CWAI_inh()
 		else if (Irq && (reg_CC & CC::I) != CC::I)
 			PC_hi = Read(0xfff8);
 		break;
-	case 19:	// R	Int Vector Low		$fffx
+	case 19:	//	R	Int Vector Low		$fffx
 		if (Nmi)
 			PC_lo = Read(0xfffd);
 		else if (Firq && (reg_CC & CC::F) != CC::F)
@@ -2238,8 +3107,8 @@ uint8_t Mc6809::CWAI_inh()
 		else if (Irq && (reg_CC & CC::I) != CC::I)
 			PC_lo = Read(0xfff9);
 		break;
-	case 20:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 20:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -2257,9 +3126,10 @@ uint8_t Mc6809::DAA_inh()
 
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = reg_A & 0x0f;
 		scratch_hi = (reg_A & 0xf0) >> 4;
 		carry = reg_CC & CC::C;
@@ -2274,7 +3144,7 @@ uint8_t Mc6809::DAA_inh()
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (cfMsn == 6 || carry) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2289,14 +3159,15 @@ uint8_t Mc6809::DECA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_A & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--reg_A;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2311,14 +3182,15 @@ uint8_t Mc6809::DECB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_B & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--reg_B;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2326,14 +3198,244 @@ uint8_t Mc6809::DECB_inh()
 }
 
 
-uint8_t Mc6809::DEC_dir() {}
-uint8_t Mc6809::DEC_ext() {}
-uint8_t Mc6809::EORA_dir() {}
-uint8_t Mc6809::EORA_ext() {}
-uint8_t Mc6809::EORA_imm() {}
-uint8_t Mc6809::EORB_dir() {}
-uint8_t Mc6809::EORB_ext() {}
-uint8_t Mc6809::EORB_imm() {}
+//*****************************************************************************
+//	DEC					direct
+//*****************************************************************************
+uint8_t Mc6809::DEC_dir()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		--data_lo;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	DEC					extended
+//*****************************************************************************
+uint8_t Mc6809::DEC_ext()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		--data_lo;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORA				direct
+//*****************************************************************************
+uint8_t Mc6809::EORA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_A ^= scratch_lo;
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORA				extended
+//*****************************************************************************
+uint8_t Mc6809::EORA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_A ^= scratch_lo;
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORA				immediate
+//*****************************************************************************
+uint8_t Mc6809::EORA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				EA
+		scratch_lo = Read(reg_PC++);
+		reg_A ^= scratch_lo;
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORB				direct
+//*****************************************************************************
+uint8_t Mc6809::EORB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_B ^= scratch_lo;
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORB				extended
+//*****************************************************************************
+uint8_t Mc6809::EORB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		reg_B ^= scratch_lo;
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORB				immediate
+//*****************************************************************************
+uint8_t Mc6809::EORB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				EA
+		scratch_lo = Read(reg_PC++);
+		reg_B ^= scratch_lo;
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -2345,13 +3447,14 @@ uint8_t Mc6809::EXG_imm()
 	static uint8_t data_lo = 0;
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Post scratch_lo			PC+1
+	case 2:		//	R	Post scratch_lo		PC+1
 		scratch_lo = Read(reg_PC);
-		++reg_PC;
+		reg_PC++;
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		data_hi = scratch_lo & 0xf0;
 		data_lo = scratch_lo & 0x0f;
 		break;
@@ -2621,14 +3724,15 @@ uint8_t Mc6809::INCA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_A & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_A;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2643,14 +3747,15 @@ uint8_t Mc6809::INCB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_B & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_B;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -2658,14 +3763,193 @@ uint8_t Mc6809::INCB_inh()
 }
 
 
-uint8_t Mc6809::INC_dir() {}
-uint8_t Mc6809::INC_ext() {}
+//*****************************************************************************
+//	INC					direct
+//*****************************************************************************
+uint8_t Mc6809::INC_dir()
+{
+	static uint8_t data_lo;
 
-uint8_t Mc6809::JMP_dir() {}
-uint8_t Mc6809::JMP_ext() {}
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		++data_lo;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		// W  Data			EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
 
-uint8_t Mc6809::JSR_dir() {}
-uint8_t Mc6809::JSR_ext() {}
+
+//*****************************************************************************
+//	INC					extended
+//*****************************************************************************
+uint8_t Mc6809::INC_ext()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		++data_lo;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		// W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	JMP					direct
+//*****************************************************************************
+uint8_t Mc6809::JMP_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		PC_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		PC_hi = reg_DP;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	JMP					extended
+//*****************************************************************************
+uint8_t Mc6809::JMP_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		reg_PC = reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	JSR					directg
+//*****************************************************************************
+uint8_t Mc6809::JSR_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Don't Care			EA
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	W	PC Low				SP-1
+		Write(reg_S--, PC_lo);
+		break;
+	case 7:		//	W	PC High				SP-2
+		Write(reg_S--, PC_hi);
+		reg_PC = reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	JSR					extended
+//*****************************************************************************
+uint8_t Mc6809::JSR_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Don't Care			EA
+		break;
+	case 6:		//	R	Don't Care			$ffff
+		break;
+	case 7:		//	W	PC Low				SP-1
+		Write(reg_S--, PC_lo);
+		break;
+	case 8:		//	W	PC High				SP-2
+		Write(reg_S--, PC_hi);
+		reg_PC = reg_scratch;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -2676,19 +3960,19 @@ uint8_t Mc6809::LBCS_LBLO_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::C) != CC::C)
 			clocksUsed = 255;
 		break;
@@ -2708,19 +3992,20 @@ uint8_t Mc6809::LBEQ_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::Z) != CC::Z)
 			clocksUsed = 255;
 		break;
@@ -2740,19 +4025,20 @@ uint8_t Mc6809::LBGE_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if (!(((reg_CC & CC::C) == CC::C) == ((reg_CC & CC::V) == CC::V)))
 			clocksUsed = 255;
 		break;
@@ -2772,19 +4058,20 @@ uint8_t Mc6809::LBGT_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if (!((((reg_CC & CC::N) == CC::N) && ((reg_CC & CC::V) == CC::V)) && ((reg_CC & CC::Z) == 0)))
 			clocksUsed = 255;
 		break;
@@ -2804,19 +4091,20 @@ uint8_t Mc6809::LBHI_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if (!(((reg_CC & CC::C) != CC::C) && ((reg_CC & CC::Z) != CC::Z)))
 			clocksUsed = 255;
 		break;
@@ -2837,19 +4125,20 @@ uint8_t Mc6809::LBHS_LBCC_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::C) == CC::C)
 			clocksUsed = 255;
 		break;
@@ -2869,19 +4158,20 @@ uint8_t Mc6809::LBLE_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if (!(((reg_CC & CC::Z) == CC::Z) ||
 			(((reg_CC & CC::N) == CC::N) && (reg_CC & CC::V) != CC::V) ||
 			(((reg_CC & CC::N) != CC::N) && (reg_CC & CC::V) == CC::V)))
@@ -2903,19 +4193,20 @@ uint8_t Mc6809::LBLS_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if (!(((reg_CC & CC::C) == CC::C) || ((reg_CC & CC::Z) == CC::Z)))
 			clocksUsed = 255;
 		break;
@@ -2935,19 +4226,20 @@ uint8_t Mc6809::LBLT_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if (!(((reg_CC & CC::C) == CC::C) != ((reg_CC & CC::N) == CC::N)))
 			clocksUsed = 255;
 		break;
@@ -2967,19 +4259,20 @@ uint8_t Mc6809::LBMI_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::N) != CC::N)
 			clocksUsed = 255;
 		break;
@@ -2999,19 +4292,20 @@ uint8_t Mc6809::LBNE_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::Z) == CC::Z)
 			clocksUsed = 255;
 		break;
@@ -3031,19 +4325,20 @@ uint8_t Mc6809::LBPL_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::N) == CC::N)
 			clocksUsed = 255;
 		break;
@@ -3063,19 +4358,20 @@ uint8_t Mc6809::LBRA_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		reg_PC += reg_scratch;
 		clocksUsed = 255;
 		break;
@@ -3091,19 +4387,20 @@ uint8_t Mc6809::LBRN_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		clocksUsed = 255;
 		break;
 	case 6:
@@ -3121,28 +4418,29 @@ uint8_t Mc6809::LBSR_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Offset High			PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Offset High			PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Offset Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Offset Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		break;
-	case 6:		// R	Don't Care			Effective Address
+	case 6:		//	R	Don't Care			Effective Address
 		reg_scratch += reg_PC;
 		break;
-	case 7:		// R	Don't Care			$ffff
+	case 7:		//	R	Don't Care			$ffff
 		break;
 	case 8:		// W	Retern Address Low	SP-1
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 9:		// W	Return Address High	SP-2
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		reg_PC = reg_scratch;
 		clocksUsed = 255;
 		break;
@@ -3158,19 +4456,20 @@ uint8_t Mc6809::LBVC_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::V) == CC::V)
 			clocksUsed = 255;
 		break;
@@ -3190,19 +4489,20 @@ uint8_t Mc6809::LBVS_rel()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd Byte		PC+1
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
 		break;
-	case 3:		// R	Offset High			PC+2
-		scratch_hi = Read(++reg_PC);
-		++reg_PC;
+	case 3:		//	R	Offset High			PC+2
+		scratch_hi = Read(reg_PC++);
+		reg_PC++;
 		break;
-	case 4:		// R	Offset Low			PC+3
-		scratch_lo = Read(++reg_PC);
+	case 4:		//	R	Offset Low			PC+3
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		if ((reg_CC & CC::V) != CC::V)
 			clocksUsed = 255;
 		break;
@@ -3215,27 +4515,627 @@ uint8_t Mc6809::LBVS_rel()
 }
 
 
-uint8_t Mc6809::LDA_dir() {}
-uint8_t Mc6809::LDA_ext() {}
-uint8_t Mc6809::LDA_imm() {}
-uint8_t Mc6809::LDB_dir() {}
-uint8_t Mc6809::LDB_ext() {}
-uint8_t Mc6809::LDB_imm() {}
-uint8_t Mc6809::LDD_dir() {}
-uint8_t Mc6809::LDD_ext() {}
-uint8_t Mc6809::LDD_imm() {}
-uint8_t Mc6809::LDS_dir() {}
-uint8_t Mc6809::LDS_ext() {}
-uint8_t Mc6809::LDS_imm() {}
-uint8_t Mc6809::LDU_dir() {}
-uint8_t Mc6809::LDU_ext() {}
-uint8_t Mc6809::LDU_imm() {}
-uint8_t Mc6809::LDX_dir() {}
-uint8_t Mc6809::LDX_ext() {}
-uint8_t Mc6809::LDX_imm() {}
-uint8_t Mc6809::LDY_dir() {}
-uint8_t Mc6809::LDY_ext() {}
-uint8_t Mc6809::LDY_imm() {}
+//*****************************************************************************
+//	LDA					direct
+//*****************************************************************************
+uint8_t Mc6809::LDA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+		scratch_hi = reg_DP;
+	case 3:		//	R	Don't Care			$ffff
+		break;
+	case 4:		//	R	Data				EA
+		reg_A = Read(reg_scratch);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDA					extended
+//*****************************************************************************
+uint8_t Mc6809::LDA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		reg_A = Read(reg_scratch);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDA					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				EA
+		reg_A = Read(reg_PC++);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDB					direct
+//*****************************************************************************
+uint8_t Mc6809::LDB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+		scratch_hi = reg_DP;
+	case 3:		//	R	Don't Care			$ffff
+		break;
+	case 4:		//	R	Data				EA
+		reg_B = Read(reg_scratch);
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDB					extended
+//*****************************************************************************
+uint8_t Mc6809::LDB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		reg_B = Read(reg_scratch);
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDB					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				EA
+		reg_B = Read(reg_PC++);
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDD					direct
+//*****************************************************************************
+uint8_t Mc6809::LDD_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Register High		EA
+		reg_A = Read(reg_scratch++);
+		break;
+	case 5:		//	R	Register Low		EA+1
+		reg_B = Read(reg_scratch);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDD					extended
+//*****************************************************************************
+uint8_t Mc6809::LDD_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Register High		EA
+		reg_A = Read(reg_scratch++);
+		break;
+	case 6:		//	R	Register Low		EA+1
+		reg_B = Read(reg_scratch);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDD					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDD_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Register High		PC+1
+		reg_A = Read(reg_PC++);
+		break;
+	case 3:		//	R	Register Low		PC+2
+		reg_B = Read(reg_PC++);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDS					direct
+//*****************************************************************************
+uint8_t Mc6809::LDS_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Register High		EA
+		S_hi = Read(reg_scratch++);
+		break;
+	case 6:		//	R	Register Low		EA+1
+		S_lo = Read(reg_scratch);
+		reg_CC = (((S_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_S == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDS					extended
+//*****************************************************************************
+uint8_t Mc6809::LDS_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Register High		EA
+		S_hi = Read(reg_scratch++);
+		break;
+	case 7:		//	R	Register Low		EA+1
+		S_lo = Read(reg_scratch);
+		reg_CC = (((S_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_S == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDS					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDS_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Register High		PC+1
+		S_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Register Low		PC+2
+		S_lo = Read(reg_PC++);
+		reg_CC = (((S_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_S == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDU					direct
+//*****************************************************************************
+uint8_t Mc6809::LDU_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Register High		EA
+		U_hi = Read(reg_scratch++);
+		break;
+	case 5:		//	R	Register Low		EA+1
+		U_lo = Read(reg_scratch);
+		reg_CC = (((U_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_U == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDU					extended
+//*****************************************************************************
+uint8_t Mc6809::LDU_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Register High		EA
+		U_hi = Read(reg_scratch++);
+		break;
+	case 6:		//	R	Register Low		EA+1
+		U_lo = Read(reg_scratch);
+		reg_CC = (((U_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_U == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDU					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDU_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Register High		PC+1
+		U_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Register Low		PC+2
+		U_lo = Read(reg_PC++);
+		reg_CC = (((U_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_U == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDX					direct
+//*****************************************************************************
+uint8_t Mc6809::LDX_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Register High		EA
+		X_hi = Read(reg_scratch++);
+		break;
+	case 5:		//	R	Register Low		EA+1
+		X_lo = Read(reg_scratch);
+		reg_CC = (((X_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDX					extended
+//*****************************************************************************
+uint8_t Mc6809::LDX_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Register High		EA
+		X_hi = Read(reg_scratch++);
+		break;
+	case 6:		//	R	Register Low		EA+1
+		X_lo = Read(reg_scratch);
+		reg_CC = (((X_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDX					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDX_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Register High		PC+1
+		X_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Register Low		PC+2
+		X_lo = Read(reg_PC++);
+		reg_CC = (((X_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDY					direct
+//*****************************************************************************
+uint8_t Mc6809::LDY_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Register High		EA
+		Y_hi = Read(reg_scratch++);
+		break;
+	case 6:		//	R	Register Low		EA+1
+		Y_lo = Read(reg_scratch);
+		reg_CC = (((Y_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDY					extended
+//*****************************************************************************
+uint8_t Mc6809::LDY_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Register High		EA
+		Y_hi = Read(reg_scratch++);
+		break;
+	case 7:		//	R	Register Low		EA+1
+		Y_lo = Read(reg_scratch);
+		reg_CC = (((Y_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDY					immediate
+//*****************************************************************************
+uint8_t Mc6809::LDY_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Register High		PC+1
+		Y_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Register Low		PC+2
+		Y_lo = Read(reg_PC++);
+		reg_CC = (((Y_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3245,15 +5145,15 @@ uint8_t Mc6809::LSRA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		scratch_lo = reg_A & 0x80;
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = ((reg_A >> 1) & 0x7f);
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC &= ~CC::N;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3268,15 +5168,15 @@ uint8_t Mc6809::LSRB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		scratch_lo = reg_B & 0x80;
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = ((reg_B >> 1) & 0x7f);
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC &= ~CC::N;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3284,8 +5184,78 @@ uint8_t Mc6809::LSRB_inh()
 }
 
 
-uint8_t Mc6809::LSR_dir() {}
-uint8_t Mc6809::LSR_ext() {}
+//*****************************************************************************
+//	LSR					direct
+//*****************************************************************************
+uint8_t Mc6809::LSR_dir()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = ((data_lo >> 1) & 0x7f);
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC &= ~CC::N;
+		break;
+	case 6:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LSR					extended
+//*****************************************************************************
+uint8_t Mc6809::LSR_ext()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = ((data_lo >> 1) & 0x7f);
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC &= ~CC::N;
+		break;
+	case 7:		//	E	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3295,31 +5265,32 @@ uint8_t Mc6809::MUL_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		++reg_PC;
+	case 2:		//	R	Don't Care			PC+1
+		//reg_PC++;
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		reg_D = reg_A * reg_B;
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		reg_CC = (reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		reg_CC = ((reg_D & 0x0080) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		break;
-	case 6:		// R	Don't Care			$ffff
+	case 6:		//	R	Don't Care			$ffff
 		break;
-	case 7:		// R	Don't Care			$ffff
+	case 7:		//	R	Don't Care			$ffff
 		break;
-	case 8:		// R	Don't Care			$ffff
+	case 8:		//	R	Don't Care			$ffff
 		break;
-	case 9:		// R	Don't Care			$ffff
+	case 9:		//	R	Don't Care			$ffff
 		break;
-	case 10:	// R	Don't Care			$ffff
+	case 10:	//	R	Don't Care			$ffff
 		break;
-	case 11:	// R	Don't Care			$ffff
+	case 11:	//	R	Don't Care			$ffff
 		clocksUsed = 255;
 		break;
 	}
@@ -3334,15 +5305,16 @@ uint8_t Mc6809::NEGA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = (reg_A == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		reg_A = 0 - reg_A;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3357,15 +5329,16 @@ uint8_t Mc6809::NEGB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = (reg_B == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		reg_B = 0 - reg_B;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3373,8 +5346,80 @@ uint8_t Mc6809::NEGB_inh()
 }
 
 
-uint8_t Mc6809::NEG_dir() {}
-uint8_t Mc6809::NEG_ext() {}
+//*****************************************************************************
+//	NEG					direct
+//*****************************************************************************
+uint8_t Mc6809::NEG_dir()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		reg_CC = (data_lo == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		data_lo = 0 - data_lo;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	NEG					extended
+//*****************************************************************************
+uint8_t Mc6809::NEG_ext()
+{
+	static uint8_t data_lo;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care			$ffff
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		reg_CC = (data_lo == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		data_lo = 0 - data_lo;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		//	E	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3384,23 +5429,184 @@ uint8_t Mc6809::NOP_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care				PC+1;
+	case 2:		//	R	Don't Care				PC+1;
 		clocksUsed = 255;
-		++reg_PC;
+		//reg_PC++;
 		break;
 	}
 	return(clocksUsed);
 }
 
 
-uint8_t Mc6809::ORA_dir() {}
-uint8_t Mc6809::ORA_ext() {}
-uint8_t Mc6809::ORA_imm() {}
-uint8_t Mc6809::ORB_dir() {}
-uint8_t Mc6809::ORB_ext() {}
-uint8_t Mc6809::ORB_imm() {}
+//*****************************************************************************
+//	ORA					direct
+//*****************************************************************************
+uint8_t Mc6809::ORA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low				PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care				$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data					EA
+		scratch_lo = Read(reg_scratch);
+		reg_A |= scratch_lo;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORA					extended
+//*****************************************************************************
+uint8_t Mc6809::ORA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low				PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care				$ffff
+		break;
+	case 5:		//	R	Data					EA
+		scratch_lo = Read(reg_scratch);
+		reg_A |= scratch_lo;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORA					immediate
+//*****************************************************************************
+uint8_t Mc6809::ORA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data					PC+1
+		scratch_lo = Read(reg_PC++);
+		reg_A |= scratch_lo;
+		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORB					direct
+//*****************************************************************************
+uint8_t Mc6809::ORB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low				PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care				$ffff
+		break;
+	case 5:		//	R	Data					EA
+		scratch_lo = Read(reg_scratch);
+		reg_B |= scratch_lo;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORB					extended
+//*****************************************************************************
+uint8_t Mc6809::ORB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low				PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care				$ffff
+		break;
+	case 5:		//	R	Data					EA
+		scratch_lo = Read(reg_scratch);
+		reg_B |= scratch_lo;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORB					immediate
+//*****************************************************************************
+uint8_t Mc6809::ORB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data					PC+1
+		scratch_lo = Read(reg_PC++);
+		reg_B |= scratch_lo;
+		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	}
+	return (clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3410,12 +5616,13 @@ uint8_t Mc6809::ORCC_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Data				PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		reg_CC |= scratch_lo;
 		break;
 	}
@@ -3423,10 +5630,340 @@ uint8_t Mc6809::ORCC_imm()
 }
 
 
-uint8_t Mc6809::PSHS_imm() {}
-uint8_t Mc6809::PSHU_imm() {}
-uint8_t Mc6809::PULS_imm() {}
-uint8_t Mc6809::PULU_imm() {}
+//*****************************************************************************
+//	PSHS				immediate
+//*****************************************************************************
+uint8_t Mc6809::PSHS_imm()
+{
+	static int8_t bitNumber;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		bitNumber = 7;
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Don't Care			SP
+		break;
+	case 6:		//	W	Register ?
+		while (bitNumber >= 0 && !((scratch_lo >> bitNumber) & 0x01))
+			--bitNumber;
+
+		if (bitNumber > 0)
+			return(255);
+
+		switch (bitNumber)
+		{
+		case 7:
+			Write(reg_S--, PC_lo);
+			break;
+		case 6:
+			Write(reg_S--, U_lo);
+			break;
+		case 5:
+			Write(reg_S--, Y_lo);
+			break;
+		case 4:
+			Write(reg_S--, X_lo);
+			break;
+		case 3:
+			Write(reg_S--, reg_DP);
+			--clocksUsed;
+			break;
+		case 2:
+			Write(reg_S--, reg_B);
+			--clocksUsed;
+			break;
+		case 1:
+			Write(reg_S--, reg_A);
+			--clocksUsed;
+			break;
+		case 0:
+			Write(reg_S--, reg_CC);
+			--clocksUsed;
+			break;
+		}
+		break;
+	case 7:		//	W	Register ?
+		switch (bitNumber)
+		{
+		case 7:
+			Write(reg_S--, PC_hi);
+			break;
+		case 6:
+			Write(reg_S--, U_hi);
+			break;
+		case 5:
+			Write(reg_S--, Y_hi);
+			break;
+		case 4:
+			Write(reg_S--, X_hi);
+			break;
+		}
+		clocksUsed -= 2;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	PSHU				immediate
+//*****************************************************************************
+uint8_t Mc6809::PSHU_imm()
+{
+	static int8_t bitNumber;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		bitNumber = 7;
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Don't Care			SP
+		break;
+	case 6:		//	W	Register ?
+		while (bitNumber >= 0 && !((scratch_lo >> bitNumber) & 0x01))
+			--bitNumber;
+
+		if (bitNumber > 0)
+			return(255);
+
+		switch (bitNumber)
+		{
+		case 7:
+			Write(reg_U--, PC_lo);
+			break;
+		case 6:
+			Write(reg_U--, S_lo);
+			break;
+		case 5:
+			Write(reg_U--, Y_lo);
+			break;
+		case 4:
+			Write(reg_U--, X_lo);
+			break;
+		case 3:
+			Write(reg_U--, reg_DP);
+			--clocksUsed;
+			break;
+		case 2:
+			Write(reg_U--, reg_B);
+			--clocksUsed;
+			break;
+		case 1:
+			Write(reg_U--, reg_A);
+			--clocksUsed;
+			break;
+		case 0:
+			Write(reg_U--, reg_CC);
+			--clocksUsed;
+			break;
+		}
+		break;
+	case 7:		//	W	Register ?
+		switch (bitNumber)
+		{
+		case 7:
+			Write(reg_U--, PC_hi);
+			break;
+		case 6:
+			Write(reg_U--, S_hi);
+			break;
+		case 5:
+			Write(reg_U--, Y_hi);
+			break;
+		case 4:
+			Write(reg_U--, X_hi);
+			break;
+		}
+		clocksUsed -= 2;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	PULS				immediate
+//*****************************************************************************
+uint8_t Mc6809::PULS_imm()
+{
+	static int8_t bitNumber;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		bitNumber = 0;
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Don't Care			SP
+		break;
+	case 6:		//	R	Register ?
+		while (bitNumber > 8 && !((scratch_lo >> bitNumber) & 0x01))
+			++bitNumber;
+
+		if (bitNumber >= 8)
+			return(255);
+
+		switch (bitNumber)
+		{
+		case 7:
+			Write(++reg_S, PC_hi);
+			break;
+		case 6:
+			Write(++reg_S, U_hi);
+			break;
+		case 5:
+			Write(++reg_S, Y_hi);
+			break;
+		case 4:
+			Write(++reg_S, X_hi);
+			break;
+		case 3:
+			Write(++reg_S, reg_DP);
+			--clocksUsed;
+			break;
+		case 2:
+			Write(++reg_S, reg_B);
+			--clocksUsed;
+			break;
+		case 1:
+			Write(++reg_S, reg_A);
+			--clocksUsed;
+			break;
+		case 0:
+			Write(++reg_S, reg_CC);
+			--clocksUsed;
+			break;
+		}
+		break;
+	case 7:		//	R	Register ?
+		switch (bitNumber)
+		{
+		case 7:
+			Write(++reg_S, PC_lo);
+			break;
+		case 6:
+			Write(++reg_S, U_lo);
+			break;
+		case 5:
+			Write(++reg_S, Y_lo);
+			break;
+		case 4:
+			Write(++reg_S, X_lo);
+			break;
+		}
+		clocksUsed -= 2;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	PULU				immediate
+//*****************************************************************************
+uint8_t Mc6809::PULU_imm()
+{
+	static int8_t bitNumber;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		bitNumber = 0;
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Don't Care			SP
+		break;
+	case 6:		//	W	Register ?
+		while (bitNumber > 8 && !((scratch_lo >> bitNumber) & 0x01))
+			++bitNumber;
+
+		if (bitNumber >= 8)
+			return(255);
+
+		switch (bitNumber)
+		{
+		case 7:
+			Write(++reg_U, PC_hi);
+			break;
+		case 6:
+			Write(++reg_U, S_hi);
+			break;
+		case 5:
+			Write(++reg_U, Y_hi);
+			break;
+		case 4:
+			Write(++reg_U, X_hi);
+			break;
+		case 3:
+			Write(++reg_U, reg_DP);
+			--clocksUsed;
+			break;
+		case 2:
+			Write(++reg_U, reg_B);
+			--clocksUsed;
+			break;
+		case 1:
+			Write(++reg_U, reg_A);
+			--clocksUsed;
+			break;
+		case 0:
+			Write(++reg_U, reg_CC);
+			--clocksUsed;
+			break;
+		}
+		break;
+	case 7:		//	W	Register ?
+		switch (bitNumber)
+		{
+		case 7:
+			Write(++reg_U, PC_lo);
+			break;
+		case 6:
+			Write(++reg_U, S_lo);
+			break;
+		case 5:
+			Write(++reg_U, Y_lo);
+			break;
+		case 4:
+			Write(++reg_U, X_lo);
+			break;
+		}
+		clocksUsed -= 2;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3436,16 +5973,17 @@ uint8_t Mc6809::ROLA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
 		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = (reg_A << 1) | scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3460,16 +5998,17 @@ uint8_t Mc6809::ROLB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
 		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = (reg_B << 1) | scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3477,8 +6016,84 @@ uint8_t Mc6809::ROLB_inh()
 }
 
 
-uint8_t Mc6809::ROL_dir() {}
-uint8_t Mc6809::ROL_ext() {}
+//*****************************************************************************
+//	ROL					direct
+//*****************************************************************************
+uint8_t Mc6809::ROL_dir()
+{
+	static uint8_t data_lo;
+	static uint8_t carry;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low				PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care				$ffff
+		scratch_hi = DP;
+		break;
+	case 4:		//	R	Data					EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care				$ffff
+		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
+		reg_CC = (((data_lo >> 6) & 1) != ((data_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = (data_lo << 1) | carry;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		//	W	Data					EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ROL					extended
+//*****************************************************************************
+uint8_t Mc6809::ROL_ext()
+{
+	static uint8_t data_lo;
+	static uint8_t carry;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low				PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care				$ffff
+		break;
+	case 5:		//	R	Data					EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care				$ffff
+		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
+		reg_CC = (((data_lo >> 6) & 1) != ((data_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = (data_lo << 1) | carry;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		//	W	Data					EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3488,15 +6103,16 @@ uint8_t Mc6809::RORA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = (reg_A >> 1) | scratch_lo;
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3511,15 +6127,16 @@ uint8_t Mc6809::RORB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = (reg_B >> 1) | scratch_lo;
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3527,8 +6144,82 @@ uint8_t Mc6809::RORB_inh()
 }
 
 
-uint8_t Mc6809::ROR_dir() {}
-uint8_t Mc6809::ROR_ext() {}
+//*****************************************************************************
+//	ROR					direct
+//*****************************************************************************
+uint8_t Mc6809::ROR_dir()
+{
+	static uint8_t data_lo;
+	static uint8_t carry;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low				PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care				$ffff
+		scratch_hi = DP;
+		break;
+	case 4:		//	R	Data					EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 5:		//	R	Don't Care				$ffff
+		carry = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = (data_lo >> 1) | carry;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 6:		//	W	Data					EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ROR					extended
+//*****************************************************************************
+uint8_t Mc6809::ROR_ext()
+{
+	static uint8_t data_lo;
+	static uint8_t carry;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch			PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low				PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care				$ffff
+		break;
+	case 5:		//	R	Data					EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 6:		//	R	Don't Care				$ffff
+		carry = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = (data_lo >> 1) | carry;
+		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		break;
+	case 7:		//	W	Data					EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3538,12 +6229,13 @@ uint8_t Mc6809::RTI_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		break;
-	case 3:		// R	CCR					SP
-		reg_CC = Read(reg_S++);
+	case 3:		//	R	CCR					SP
+		reg_CC = Read(++reg_S);
 		break;
 	}
 
@@ -3552,13 +6244,13 @@ uint8_t Mc6809::RTI_inh()
 	{
 		switch (clocksUsed)
 		{
-		case 4:	// R	PC High				SP+1
-			PC_hi = Read(reg_S++);
+		case 4:	//	R	PC High				SP+1
+			PC_hi = Read(++reg_S);
 			break;
-		case 5:	// R	PC low				SP+2
-			PC_lo = Read(reg_S++);
+		case 5:	//	R	PC low				SP+2
+			PC_lo = Read(++reg_S);
 			break;
-		case 6:	// R	Don't Care			$ffff
+		case 6:	//	R	Don't Care			$ffff
 			clocksUsed = 255;
 			break;
 		}
@@ -3569,40 +6261,40 @@ uint8_t Mc6809::RTI_inh()
 	// if the E flag is set (E = 1) we do the long version
 	switch (clocksUsed)
 	{
-	case 4:		// R	A Register			SP+1
-		reg_A = Read(reg_S++);
+	case 4:		//	R	A Register			SP+1
+		reg_A = Read(++reg_S);
 		break;
-	case 5:		// R	B Register			SP+2
-		reg_B = Read(reg_S++);
+	case 5:		//	R	B Register			SP+2
+		reg_B = Read(++reg_S);
 		break;
-	case 6:		// R	DP Register			SP+3
-		reg_DP = Read(reg_S++);
+	case 6:		//	R	DP Register			SP+3
+		reg_DP = Read(++reg_S);
 		break;
-	case 7:		// R	X Register High		SP+4
-		X_hi = Read(reg_S++);
+	case 7:		//	R	X Register High		SP+4
+		X_hi = Read(++reg_S);
 		break;
-	case 8:		// R	X Register Low		SP+5
-		X_lo = Read(reg_S++);
+	case 8:		//	R	X Register Low		SP+5
+		X_lo = Read(++reg_S);
 		break;
-	case 9:		// R	Y Register High		SP+6
-		Y_hi = Read(reg_S++);
+	case 9:		//	R	Y Register High		SP+6
+		Y_hi = Read(++reg_S);
 		break;
-	case 10:	// R	Y Register Low		SP+7
-		Y_lo = Read(reg_S++);
+	case 10:	//	R	Y Register Low		SP+7
+		Y_lo = Read(++reg_S);
 		break;
-	case 11:	// R	User Stack High		SP+8
-		U_hi = Read(reg_S++);
+	case 11:	//	R	User Stack High		SP+8
+		U_hi = Read(++reg_S);
 		break;
-	case 12:	// R	User Stack Low		SP+9
-		U_lo = Read(reg_S++);
+	case 12:	//	R	User Stack Low		SP+9
+		U_lo = Read(++reg_S);
 		break;
-	case 13:	// R	PC High				SP+10
-		PC_hi = Read(reg_S++);
+	case 13:	//	R	PC High				SP+10
+		PC_hi = Read(++reg_S);
 		break;
-	case 14:	// R	PC Low				SP+11
-		PC_lo = Read(reg_S++);
+	case 14:	//	R	PC Low				SP+11
+		PC_lo = Read(++reg_S);
 		break;
-	case 15:	// R	Don't Care			$ffff
+	case 15:	//	R	Don't Care			$ffff
 		clocksUsed = 255;
 		break;
 	}
@@ -3617,18 +6309,19 @@ uint8_t Mc6809::RTS_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		++reg_PC;
+	case 2:		//	R	Don't Care			PC+1
+		//reg_PC++;
 		break;
-	case 3:		// R	PC High				SP
-		PC_lo = Read(reg_S++);
+	case 3:		//	R	PC High				SP
+		PC_lo = Read(++reg_S);
 		break;
-	case 4:		// R	PC Low				SP+1
-		PC_hi = Read(reg_S++);
+	case 4:		//	R	PC Low				SP+1
+		PC_hi = Read(++reg_S);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		clocksUsed = 255;
 		break;
 	}
@@ -3636,12 +6329,200 @@ uint8_t Mc6809::RTS_inh()
 }
 
 
-uint8_t Mc6809::SBCA_dir() {}
-uint8_t Mc6809::SBCA_ext() {}
-uint8_t Mc6809::SBCA_imm() {}
-uint8_t Mc6809::SBCB_dir() {}
-uint8_t Mc6809::SBCB_ext() {}
-uint8_t Mc6809::SBCB_imm() {}
+//*****************************************************************************
+//	SBCA				direct
+//*****************************************************************************
+uint8_t Mc6809::SBCA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+
+		reg_A = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A  == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCA				extended
+//*****************************************************************************
+uint8_t Mc6809::SBCA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+
+		reg_A = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCA				immediate
+//*****************************************************************************
+uint8_t Mc6809::SBCA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
+		scratch_hi = reg_A;
+
+		reg_A = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCB				direct
+//*****************************************************************************
+uint8_t Mc6809::SBCB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+
+		reg_B = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCB				extended
+//*****************************************************************************
+uint8_t Mc6809::SBCB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+
+		reg_B = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCB				immediate
+//*****************************************************************************
+uint8_t Mc6809::SBCB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
+		scratch_hi = reg_B;
+
+		reg_B = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3651,12 +6532,13 @@ uint8_t Mc6809::SEX_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		if ((reg_B & 0x80) == 0x80)
 		{
-			reg_A = 0xff;
+			reg_A = 255;
 			reg_CC |= CC::N;
 			reg_CC &= ~CC::Z;
 		}
@@ -3666,7 +6548,7 @@ uint8_t Mc6809::SEX_inh()
 			reg_CC &= ~CC::N;
 			reg_CC |= CC::Z;
 		}
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -3674,29 +6556,686 @@ uint8_t Mc6809::SEX_inh()
 }
 
 
-uint8_t Mc6809::STA_dir() {}
-uint8_t Mc6809::STA_ext() {}
-uint8_t Mc6809::STB_dir() {}
-uint8_t Mc6809::STB_ext() {}
-uint8_t Mc6809::STD_dir() {}
-uint8_t Mc6809::STD_ext() {}
-uint8_t Mc6809::STS_dir() {}
-uint8_t Mc6809::STS_ext() {}
-uint8_t Mc6809::STU_dir() {}
-uint8_t Mc6809::STU_ext() {}
-uint8_t Mc6809::STX_dir() {}
-uint8_t Mc6809::STX_ext() {}
-uint8_t Mc6809::STY_dir() {}
-uint8_t Mc6809::STY_ext() {}
-uint8_t Mc6809::SUBA_dir() {}
-uint8_t Mc6809::SUBA_ext() {}
-uint8_t Mc6809::SUBA_imm() {}
-uint8_t Mc6809::SUBB_dir() {}
-uint8_t Mc6809::SUBB_ext() {}
-uint8_t Mc6809::SUBB_imm() {}
-uint8_t Mc6809::SUBD_dir() {}
-uint8_t Mc6809::SUBD_ext() {}
-uint8_t Mc6809::SUBD_imm() {}
+//*****************************************************************************
+//	STA					direct
+//*****************************************************************************
+uint8_t Mc6809::STA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	W	Register			EA
+		Write(reg_scratch, reg_A);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STA					extended
+//*****************************************************************************
+uint8_t Mc6809::STA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	W	Register			EA
+		Write(reg_scratch, reg_A);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STB					direct
+//*****************************************************************************
+uint8_t Mc6809::STB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	W	Register			EA
+		Write(reg_scratch, reg_B);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STB					extended
+//*****************************************************************************
+uint8_t Mc6809::STB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High			PC+1
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	W	Register			EA
+		Write(reg_scratch, reg_B);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STD					direct
+//*****************************************************************************
+uint8_t Mc6809::STD_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	W	Register High		EA
+		Write(reg_scratch, reg_A);
+		break;
+	case 5:		//	W	Register Low		EA+1
+		Write(++reg_scratch, reg_B);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STD					extended
+//*****************************************************************************
+uint8_t Mc6809::STD_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+
+		break;
+	case 5:		//	W	Register High		EA
+		Write(reg_scratch, reg_A);
+		break;
+	case 6:		//	W	Register Low		EA+1
+		Write(++reg_scratch, reg_B);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STS					direct
+//*****************************************************************************
+uint8_t Mc6809::STS_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	W	Register High		EA
+		Write(reg_scratch, S_hi);
+		break;
+	case 6:		//	W	Register Low		EA+1
+		Write(++reg_scratch, S_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STS					extended
+//*****************************************************************************
+uint8_t Mc6809::STS_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+2
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+3
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	W	Register High		EA
+		Write(reg_scratch, S_hi);
+		break;
+	case 7:		//	W	Register Low		EA+1
+		Write(++reg_scratch, S_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STU					direct
+//*****************************************************************************
+uint8_t Mc6809::STU_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	W	Register High		EA
+		Write(reg_scratch, U_hi);
+		break;
+	case 5:		//	W	Register Low		EA+1
+		Write(++reg_scratch, U_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STU					extended
+//*****************************************************************************
+uint8_t Mc6809::STU_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	W	Register High		EA
+		Write(reg_scratch, U_hi);
+		break;
+	case 6:		//	W	Register Low		EA+1
+		Write(++reg_scratch, U_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STX					direct
+//*****************************************************************************
+uint8_t Mc6809::STX_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	W	Register High		EA
+		Write(reg_scratch, X_hi);
+		break;
+	case 5:		//	W	Register Low		EA+1
+		Write(++reg_scratch, X_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STX					extended
+//*****************************************************************************
+uint8_t Mc6809::STX_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	W	Register High		EA
+		Write(reg_scratch, X_hi);
+		break;
+	case 6:		//	W	Register Low		EA+1
+		Write(++reg_scratch, X_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STY					direct
+//*****************************************************************************
+uint8_t Mc6809::STY_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	W	Register High		EA
+		Write(reg_scratch, Y_hi);
+		break;
+	case 6:		//	W	Register Low		EA+1
+		Write(++reg_scratch, Y_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STY					extended
+//*****************************************************************************
+uint8_t Mc6809::STY_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Opcode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+2
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+3
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	W	Register High		EA
+		Write(reg_scratch, Y_hi);
+		break;
+	case 7:		//	W	Register Low		EA+1
+		Write(++reg_scratch, Y_lo);
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SUBA				direct
+//*****************************************************************************
+uint8_t Mc6809::SUBA_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+		reg_A -= scratch_lo;
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A== 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SUBA				extended
+//*****************************************************************************
+uint8_t Mc6809::SUBA_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_A;
+		reg_A -= scratch_lo;
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SUBA				immediate
+//*****************************************************************************
+uint8_t Mc6809::SUBA_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
+		scratch_hi = reg_A;
+		reg_A -= scratch_lo;
+
+		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SUBB				direct
+//*****************************************************************************
+uint8_t Mc6809::SUBB_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 3:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 4:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+		reg_B -= scratch_lo;
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SUBB				extended
+//*****************************************************************************
+uint8_t Mc6809::SUBB_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		break;
+	case 5:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		scratch_hi = reg_B;
+		reg_B -= scratch_lo;
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SUBB				immediate
+//*****************************************************************************
+uint8_t Mc6809::SUBB_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Data				PC+1
+		scratch_lo = Read(reg_PC++);
+		scratch_hi = reg_B;
+		reg_B -= scratch_lo;
+
+		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
+		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::SUBD_dir()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 4:		//	R	Don't Care			$ffff
+		scratch_hi = reg_DP;
+		break;
+	case 5:		//	R	Data				EA
+		scratch_hi = Read(reg_scratch);
+		break;
+	case 6:		//	R	Data Low			EA+1
+		scratch_lo = Read(++reg_scratch);
+		reg_D -= reg_scratch;
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::SUBD_ext()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 4:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 5:		//	R	Don't Care			$ffff
+		break;
+	case 6:		//	R	Data				EA
+		scratch_hi = Read(reg_scratch);
+		break;
+	case 7:		//	R	Data Low			EA+1
+		scratch_lo = Read(++reg_scratch);
+		reg_D -= reg_scratch;
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+uint8_t Mc6809::SUBD_imm()
+{
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Data High			PC+2
+		scratch_hi = Read(reg_PC++);
+	case 4:		//	R	Data Low			PC+3
+		scratch_lo = Read(reg_PC++);
+		reg_D -= reg_scratch;
+
+		clocksUsed = 255;
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //*****************************************************************************
@@ -3706,61 +7245,62 @@ uint8_t Mc6809::SWI_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't care			PC+1	++PC
-		++reg_PC;
+	case 2:		//	R	Don't care			PC+1	++PC
+		//reg_PC++;
 		break;
-	case 3:		// R	Don't care			$ffff
+	case 3:		//	R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
 	case 4:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 5:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 6:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 7:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 8:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 9:		// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 10:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 11:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 12:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 13:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 14:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 15:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 16:	// R	Don't Care			$ffff
+	case 16:	//	R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 17:	// R	Int Vector High		$fffa
+	case 17:	//	R	Int Vector High		$fffa
 		PC_hi = Read(0xfffa);
 		break;
-	case 18:	// R	Int Vector Low		$fffb
+	case 18:	//	R	Int Vector Low		$fffb
 		PC_lo = Read(0xfffb);
 		break;
-	case 19:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 19:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -3774,63 +7314,64 @@ uint8_t Mc6809::SWI2_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd byte		PC+1	++PC
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd byte		PC+1	++PC
+		reg_PC++;
 		break;
-	case 3:		// R	Don't care			PC+2	++PC
-		++reg_PC;
+	case 3:		//	R	Don't care			PC+2	++PC
+		reg_PC++;
 		break;
-	case 4:		// R	Don't care			$ffff
+	case 4:		//	R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
 	case 5:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 6:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 7:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 8:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 9:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 10:	// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 11:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 12:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 13:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 14:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 15:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 16:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 17:	// R	Don't Care			$ffff
+	case 17:	//	R	Don't Care			$ffff
 		break;
-	case 18:	// R	Int Vector High		$fff4
+	case 18:	//	R	Int Vector High		$fff4
 		PC_hi = Read(0xfff4);
 		break;
-	case 19:	// R	Int Vector Low		$fff5
+	case 19:	//	R	Int Vector Low		$fff5
 		PC_lo = Read(0xfff5);
 		break;
-	case 20:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 20:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -3844,63 +7385,64 @@ uint8_t Mc6809::SWI3_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Opcode 2nd byte		PC+1	++PC
-		++reg_PC;
+	case 2:		//	R	Opcode 2nd byte		PC+1	++PC
+		reg_PC++;
 		break;
-	case 3:		// R	Don't care			PC+2	++PC
-		++reg_PC;
+	case 3:		//	R	Don't care			PC+2	++PC
+		reg_PC++;
 		break;
-	case 4:		// R	Don't care			$ffff
+	case 4:		//	R	Don't care			$ffff
 		reg_CC |= CC::E;
 		break;
 	case 5:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 6:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 7:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 8:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 9:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 10:	// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 11:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 12:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 13:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 14:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 15:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 16:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 17:	// R	Don't Care			$ffff
+	case 17:	//	R	Don't Care			$ffff
 		break;
-	case 18:	// R	Int Vector High		$fff2
+	case 18:	//	R	Int Vector High		$fff2
 		PC_hi = Read(0xfff2);
 		break;
-	case 19:	// R	Int Vector Low		$fff3
+	case 19:	//	R	Int Vector Low		$fff3
 		PC_lo = Read(0xfff3);
 		break;
-	case 20:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 20:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -3916,18 +7458,19 @@ uint8_t Mc6809::SYNC_inh()
 
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
-		++reg_PC;
+	case 2:		//	R	Don't Care			PC+1
+		//reg_PC++;
 		break;
-	case 3:		// R	Don't Care			Z
+	case 3:		//	R	Don't Care			Z
 		if ((reg_CC & CC::I) || (reg_CC & CC::F))
 			clocksUsed = 255;
 		else if (!Nmi || !Firq || !Irq)
 			--clocksUsed;
 		break;
-	case 4:		// R	Don't Care			Z
+	case 4:		//	R	Don't Care			Z
 		if (Nmi || Firq || Irq)
 		{
 			++intCount;
@@ -3973,17 +7516,18 @@ uint8_t Mc6809::TFR_imm()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Post Byte			PC+1
+	case 2:		//	R	Post Byte			PC+1
 		scratch_lo = Read(reg_PC);
-		++reg_PC;
+		reg_PC++;
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = (scratch_lo & 0xf0) >> 4;
 		scratch_lo &= 0x0f;
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		switch (scratch_hi)
 		{
 		case REG::A:
@@ -4044,7 +7588,7 @@ uint8_t Mc6809::TFR_imm()
 			break;
 		}
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		switch (scratch_hi)
 		{
 		case REG::D:
@@ -4109,7 +7653,7 @@ uint8_t Mc6809::TFR_imm()
 			break;
 		}
 		break;
-	case 6:		// R	Don't Care			$ffff
+	case 6:		//	R	Don't Care			$ffff
 		switch (scratch_hi)
 		{
 		case REG::U:
@@ -4187,13 +7731,14 @@ uint8_t Mc6809::TSTA_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -4208,13 +7753,14 @@ uint8_t Mc6809::TSTB_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R Opcode Fetch			PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't Care			PC+1
+	case 2:		//	R	Don't Care			PC+1
 		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
-		++reg_PC;
+		//reg_PC++;
 		clocksUsed = 255;
 		break;
 	}
@@ -4229,28 +7775,30 @@ uint8_t Mc6809::TST_dir()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address Low			PC+1
-		scratch_lo = Read(++reg_PC);
+	case 2:		//	R	Address Low			PC+1
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 3:		// R	Don't Care			$ffff
+	case 3:		//	R	Don't Care			$ffff
 		scratch_hi = reg_DP;
 		break;
-	case 4:		// R	Data				EA
+	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		break;
-	case 5:		// R	Don't Care			$ffff
+	case 5:		//	R	Don't Care			$ffff
 		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		break;
-	case 6:		// R	Don't Care			$ffff
+	case 6:		//	R	Don't Care			$ffff
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
 }
+
 
 //*****************************************************************************
 //	TST					extended
@@ -4259,24 +7807,25 @@ uint8_t Mc6809::TST_ext()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Address High		PC+1
-		scratch_hi = Read(++reg_PC);
+	case 2:		//	R	Address High		PC+1
+		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		// R	Address Low			PC+2
-		scratch_lo = Read(++reg_PC);
+	case 3:		//	R	Address Low			PC+2
+		scratch_lo = Read(reg_PC++);
 		break;
-	case 4:		// R	Don't Care			$ffff
+	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		// R	Data				EA
+	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		break;
-	case 6:		// R	Don't Care			$ffff
+	case 6:		//	R	Don't Care			$ffff
 		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
 		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		break;
-	case 7:		// R	Don't Care			$ffff
+	case 7:		//	R	Don't Care			$ffff
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4304,9 +7853,9 @@ uint8_t Mc6809::TST_ext()
 // as to exactly what is carried out. AS invalid instructions are undefined,
 // including the Halt And Catch Fire opcode(s), these are ignored and funneled
 // through this function. (Depending on build configuration, this includes the
-// RESET "interrupt" opcode $3E)
+//	RESET "interrupt" opcode $3E)
 //*****************************************************************************
-// Returns:
+//	Returns:
 //	uint8_t	- 255 to signify function is completed.
 //				(We're treating a bad instruction as if it was a NOP)
 //*****************************************************************************
@@ -4323,62 +7872,63 @@ uint8_t Mc6809::RESET_inh()
 {
 	switch (++clocksUsed)
 	{
-	case 1:		// R	Opcode Fetch		PC
+	case 1:		//	R	Opcode Fetch		PC
+		reg_PC++;
 		break;
-	case 2:		// R	Don't care			PC+1	++PC
-		++reg_PC;
+	case 2:		//	R	Don't care			PC+1	++PC
+		//reg_PC++;
 		break;
-	case 3:		// R	Don't care			$ffff
+	case 3:		//	R	Don't care			$ffff
 		// apparently does not set the E flag, this will throw a RTI from this off.
 		//reg_CC |= CC::E;
 		break;
 	case 4:		// W	PC Low				SP-1	--SP
-		Write(--reg_S, PC_lo);
+		Write(reg_S--, PC_lo);
 		break;
 	case 5:		// W	PC High				SP-2	--SP
-		Write(--reg_S, PC_hi);
+		Write(reg_S--, PC_hi);
 		break;
 	case 6:		// W	User Stack Low		SP-3	--SP
-		Write(--reg_S, U_lo);
+		Write(reg_S--, U_lo);
 		break;
 	case 7:		// W	User Stack High		SP-4	--SP
-		Write(--reg_S, U_hi);
+		Write(reg_S--, U_hi);
 		break;
 	case 8:		// W	Y  Register Low		SP-5	--SP
-		Write(--reg_S, Y_lo);
+		Write(reg_S--, Y_lo);
 		break;
 	case 9:		// W	Y  Register High	SP-6	--SP
-		Write(--reg_S, Y_hi);
+		Write(reg_S--, Y_hi);
 		break;
 	case 10:	// W	X  Register Low		SP-7	--SP
-		Write(--reg_S, X_lo);
+		Write(reg_S--, X_lo);
 		break;
 	case 11:	// W	X  Register High	SP-8	--SP
-		Write(--reg_S, X_hi);
+		Write(reg_S--, X_hi);
 		break;
 	case 12:	// W	DP Register			SP-9	--SP
-		Write(--reg_S, reg_DP);
+		Write(reg_S--, reg_DP);
 		break;
 	case 13:	// W	B  Register			SP-10	--SP
-		Write(--reg_S, reg_B);
+		Write(reg_S--, reg_B);
 		break;
 	case 14:	// W	A  Register			SP-11	--SP
-		Write(--reg_S, reg_A);
+		Write(reg_S--, reg_A);
 		break;
 	case 15:	// W	CC Register			SP-12	--SP
-		Write(--reg_S, reg_CC);
+		Write(reg_S--, reg_CC);
 		break;
-	case 16:	// R	Don't Care			$ffff
+	case 16:	//	R	Don't Care			$ffff
 		reg_CC |= (CC::I | CC::F);
 		break;
-	case 17:	// R	Int Vector High		$fffe
+	case 17:	//	R	Int Vector High		$fffe
 		PC_hi = Read(0xfffe);
 		break;
-	case 18:	// R	Int Vector Low		$ffff
+	case 18:	//	R	Int Vector Low		$ffff
 		PC_lo = Read(0xffff);
 		break;
-	case 19:	// R	Don't Care			$ffff
-		clocksUsed = 0xff;
+	case 19:	//	R	Don't Care			$ffff
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);

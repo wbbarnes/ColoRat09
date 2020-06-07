@@ -43,7 +43,7 @@ Z: Tri-Stated bus
 Immediate, Direct, Extended and Indexed Addressing Modes
 ########################################################
 
-ASL, ASR, CLR, COM, DEC, INC, LSL, LSR, NEG, ROL, ROR
+Asl, Asr, Clr, COM, DEC, Inc, Lsl, LSR, NEG, ROL, ROR
 ----------------------------|-----------------------------|-----------------------------|----------------------------
                             | Direct Addressing Mode      | Extended Addressing Mode    | Indexed Addressing Mode
 ----------------------------|-----------------------------|-----------------------------|----------------------------
@@ -67,7 +67,7 @@ Tst
                             |  6 R Don't Care       $ffff |  6 R Don't Care       $ffff |  ? R Don't Care       $ffff
                             |                             |  7 R Don't Care       $ffff |
 
-Adca, ADCB, ADDA, ADDB, ANDA, ANDB, BITA, BITB, CMPA, CMPB, EORA, EORB, LDA, LDB, ORA, ORB, SBCA, SBCB, SUBA, SUBB
+Adca, Adcb, Adda, Addb, Anda, Andb, Bita, Bitb, Cmpa, Cmpb, EORA, EORB, LDA, LDB, ORA, ORB, SBCA, SBCB, SUBA, SUBB
 ----------------------------|-----------------------------|-----------------------------|----------------------------
 Immediate Addressing Mode   | Direct Addressing Mode      | Extended Addressing Mode    | Indexed Addressing Mode
 ----------------------------|-----------------------------|-----------------------------|----------------------------
@@ -95,7 +95,7 @@ STA, STB
                             |  4 W Register         EA    |  4 R Don't Care       $ffff |  ? W Register         EA
                             |                             |  5 W Register         EA    |
 
-ADDD, CMPX, SUBD
+Addd, CMPx, SUBD
 ----------------------------|-----------------------------|-----------------------------|----------------------------
 Immediate Addressing Mode   | Direct Addressing Mode      | Extended Addressing Mode    | Indexed Addressing Mode
 ----------------------------|-----------------------------|-----------------------------|----------------------------
@@ -107,7 +107,7 @@ Immediate Addressing Mode   | Direct Addressing Mode      | Extended Addressing 
                             |  6 R Don't Care       $ffff |  6 R Data Low         EA+1  |  ? R Don't Care       $ffff
                             |                             |  7 R Don't Care       $ffff |
 
-CMPY, CMPD, CMPS, CMPU
+CMPy, CMPd, CMPs, CMPu
 ----------------------------|-----------------------------|-----------------------------|----------------------------
 Immediate Addressing Mode   | Direct Addressing Mode      | Extended Addressing Mode    | Indexed Addressing Mode
 ----------------------------|-----------------------------|-----------------------------|----------------------------
