@@ -133,11 +133,8 @@ protected:
 		uint8_t pgmBytes;
 	};
 
-	std::vector<OPCODE> OpCodeP1;
-	std::vector<OPCODE> OpCodeP2;
-	std::vector<OPCODE> OpCodeP3;
-
-	std::vector<OPCODE> table;
+	std::vector<OPCODE> OpCode[3];
+	uint8_t opCodePage;
 
 
 public:
@@ -234,6 +231,19 @@ protected:
 	uint8_t Read(const uint16_t address, const bool readOnly = false);
 	void Write(const uint16_t address, const uint8_t byte);
 	uint8_t Fetch(const uint16_t address);
+
+	void AdjustCC_H(uint8_t reg);
+	void AdjustCC_N(uint8_t reg);
+	void AdjustCC_Z(uint8_t reg);
+	void AdjustCC_V(uint8_t reg1, uint8_t data, uint8_t result);
+	void AdjustCC_V(uint8_t reg);
+	void AdjustCC_C(uint16_t word);
+
+//	void AdjustCC_H(uint16_t reg);
+	void AdjustCC_N(uint16_t reg);
+	void AdjustCC_Z(uint16_t reg);
+	void AdjustCC_V(uint16_t reg1, uint16_t data, uint16_t result);
+	void AdjustCC_C(uint32_t word);
 
 public:
 	Mc6809(MMU* device = nullptr);

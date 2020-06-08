@@ -36,9 +36,9 @@ Mc6809::Mc6809(MMU* device)
 
 	reg_DP = 0x00;			// Direct Page Registe
 
-	reg_A = 0x00;			// (GP)	Accumulator A
-	reg_B = 0x00;			// (GP)	Accumulator B
-	reg_D = 0x0000;			// (GP)	Accumulator D
+	reg_A = 0x00;			// (GP) Accumulator A
+	reg_B = 0x00;			// (GP) Accumulator B
+	reg_D = 0x0000;			// (GP) Accumulator D
 
 	X_hi = 0x00;			// (internal only)
 	X_lo = 0x00;			// (internal only)
@@ -66,82 +66,83 @@ Mc6809::Mc6809(MMU* device)
 
 	using op = Mc6809;
 
-	OpCodeP1 =
+	OpCode[0] =
 	{
 #ifdef USE_RESET_3E
-		{"NEG"  ,&op::NEG_dir  ,6 ,6, 2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_dir  ,6 ,6 ,2 }, {"LSR"      ,&op::LSR_dir     ,6 ,6 ,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_dir  ,6 ,6 ,2 }, {"ASR"  ,&op::ASR_dir  ,6 ,6 ,2 }, {"ASL/LSL"  ,&op::ASL_LSL_dir   ,6 ,6 ,2 }, {"ROL"  ,&op::ROL_dir  ,6 ,6 ,2 }, {"DEC"  ,&op::DEC_dir  ,6 ,6 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_dir  ,6 ,6 ,2 }, {"TST"  ,&op::TST_dir  ,6 ,6 ,2 }, {"JMP"  ,&op::JMP_dir  ,3 ,3 ,2 }, {"CLR"  ,&op::CLR_dir  ,6 ,6 ,2 },
-		{"***"  ,nullptr       ,1 ,1 ,1 }, {"***"  ,nullptr       ,1 ,1 ,1 }, {"NOP"  ,&op::NOP_inh  ,2 ,2 ,1 }, {"SYNC" ,&op::SYNC_inh ,4 ,00,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"LBRA" ,&op::LBRA_rel ,5 ,5 ,3 }, {"LBSR" ,&op::LBSR_rel ,9 ,9 ,3 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"DAA"  ,&op::DAA_inh  ,2 ,2 ,1 }, {"ORCC" ,&op::ORCC_imm ,3 ,3 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"ANDCC",&op::ANDCC_imm,3 ,3 ,2 }, {"SEX"  ,&op::SEX_inh  ,2 ,2 ,1 }, {"EXG"  ,&op::EXG_imm  ,8 ,8 ,2 }, {"TFR"  ,&op::TFR_imm  ,6 ,6 ,2 },
-		{"BRA"  ,&op::BRA_rel  ,3 ,3 ,2 }, {"BRN"  ,&op::BRN_rel  ,3 ,3 ,2 }, {"BHI"  ,&op::BHI_rel  ,3 ,3 ,2 }, {"BLS"  ,&op::BLS_rel  ,3 ,3 ,2 }, {"BHS/BCC"  ,&op::BHS_BCC_rel ,3 ,3 ,2 }, {"BLO/BCS"  ,&op::BLO_BCS_rel ,3 ,3 ,2 }, {"BNE"  ,&op::BNE_rel  ,3 ,3 ,2 }, {"BEQ"  ,&op::BEQ_rel  ,3 ,3 ,2 }, {"BVC"      ,&op::BVC_rel       ,3 ,3 ,2 }, {"BVS"  ,&op::BVS_rel  ,3 ,3 ,2 }, {"BPL"  ,&op::BPL_rel  ,3 ,3 ,2 }, {"BMI"  ,&op::BMI_rel  ,3 ,3 ,2 }, {"BGE"  ,&op::BGE_rel  ,3 ,3 ,2 }, {"BLT"  ,&op::BLT_rel  ,3 ,3 ,2 }, {"BGT"  ,&op::BGT_rel  ,3 ,3 ,2 }, {"BLE"  ,&op::BLE_rel  ,3 ,3 ,2 },
-		{"LEAX" ,&op::LEAX_idx ,4 ,99,2 }, {"LEAY" ,&op::LEAY_idx ,4 ,99,2 }, {"LEAS" ,&op::LEAS_idx ,4 ,99,2 }, {"LEAU" ,&op::LEAU_idx ,4 ,99,2 }, {"PSHS"     ,&op::PSHS_imm    ,5 ,99,2 }, {"PULS"     ,&op::PULS_imm    ,5 ,99,2 }, {"PSHU" ,&op::PSHU_imm ,5 ,99,2 }, {"PULU" ,&op::PULU_imm ,5 ,99,2 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"RTS"  ,&op::RTS_inh  ,5 ,5 ,1 }, {"ABX"  ,&op::ABX_inh  ,3 ,3 ,1 }, {"RTI"  ,&op::RTI_inh  ,6 ,15,1 }, {"CWAI" ,&op::CWAI_inh ,20,00,2 }, {"MUL"  ,&op::MUL_inh  ,11,11,1 }, {"RESET",&op::RESET_inh,19,19,1 }, {"SWI"  ,&op::SWI_inh  ,19,19,1 },
-		{"NEGA" ,&op::NEGA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMA" ,&op::COMA_inh ,2 ,2 ,1 }, {"LSRA"     ,&op::LSRA_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORA" ,&op::RORA_inh ,2 ,2 ,1 }, {"ASRA" ,&op::ASRA_inh ,2 ,2 ,1 }, {"ASLA/LSLA",&op::ASLA_LSLA_inh ,2 ,2 ,1 }, {"ROLA" ,&op::ROLA_inh ,2 ,2 ,1 }, {"DECA" ,&op::DECA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCA" ,&op::INCA_inh ,2 ,2 ,1 }, {"TSTA" ,&op::TSTA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRA" ,&op::CLRA_inh ,2 ,2 ,1 },
-		{"NEGB" ,&op::NEGB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMB" ,&op::COMB_inh ,2 ,2 ,1 }, {"LSRB"     ,&op::LSRB_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORB" ,&op::RORB_inh ,2 ,2 ,1 }, {"ASRB" ,&op::ASRB_inh ,2 ,2 ,1 }, {"ASLB/LSLB",&op::ASLB_LSLB_inh ,2 ,2 ,1 }, {"ROLB" ,&op::ROLB_inh ,2 ,2 ,1 }, {"DECB" ,&op::DECB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCB" ,&op::INCB_inh ,2 ,2 ,1 }, {"TSTB" ,&op::TSTB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRB" ,&op::CLRB_inh ,2 ,2 ,1 },
-		{"NEG"  ,&op::NEG_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_idx  ,6 ,99,2 }, {"LSR"      ,&op::LSR_idx     ,6 ,99,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_idx  ,6 ,99,2 }, {"ASR"  ,&op::ASR_idx  ,6 ,99,2 }, {"ASL/LSL"  ,&op::ASL_LSL_idx   ,6 ,99,2 }, {"ROL"  ,&op::ROL_idx  ,6 ,99,2 }, {"DEC"  ,&op::DEC_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_idx  ,6 ,99,2 }, {"TST"  ,&op::TST_idx  ,6 ,99,2 }, {"JMP"  ,&op::JMP_idx  ,3 ,99,2 }, {"CLR"  ,&op::CLR_idx  ,6 ,99,2 },
-		{"NEG"  ,&op::NEG_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_ext  ,7 ,7 ,3 }, {"LSR"      ,&op::LSR_ext     ,7 ,7 ,3 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_ext  ,7 ,7 ,3 }, {"ASR"  ,&op::ASR_ext  ,7 ,7 ,3 }, {"ASL/LSL"  ,&op::ASL_LSL_ext   ,7 ,7 ,3 }, {"ROL"  ,&op::ROL_ext  ,7 ,7 ,3 }, {"DEC"  ,&op::DEC_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_ext  ,7 ,7 ,3 }, {"TST"  ,&op::TST_ext  ,7 ,7 ,3 }, {"JMP"  ,&op::JMP_ext  ,4 ,4 ,3 }, {"CLR"  ,&op::CLR_ext  ,7 ,7 ,3 },
-		{"SUBA" ,&op::SUBA_imm ,2 ,2 ,2 }, {"CMPA" ,&op::CMPA_imm ,2 ,2 ,2 }, {"SBCA" ,&op::SBCA_imm ,2 ,2 ,2 }, {"SUBD" ,&op::SUBD_imm ,4 ,4 ,3 }, {"ANDA"     ,&op::ANDA_imm    ,2 ,2 ,2 }, {"BITA"     ,&op::BITA_imm    ,2 ,2 ,2 }, {"LDA"  ,&op::LDA_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORA"     ,&op::EORA_imm      ,2 ,2 ,2 }, {"ADCA" ,&op::ADCA_imm ,2 ,2 ,2 }, {"ORA"  ,&op::ORA_imm  ,2 ,2 ,2 }, {"ADDA" ,&op::ADDA_imm ,2 ,2 ,2 }, {"CMPX" ,&op::CMPX_imm ,4 ,2 ,3 }, {"BSR"  ,&op::BSR_rel  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"SUBA" ,&op::SUBA_dir ,4 ,4 ,2 }, {"CMPA" ,&op::CMPA_dir ,4 ,4 ,2 }, {"SBCA" ,&op::SBCA_dir ,4 ,4 ,2 }, {"SUBD" ,&op::SUBD_dir ,6 ,6 ,2 }, {"ANDA"     ,&op::ANDA_dir    ,4 ,4 ,2 }, {"BITA"     ,&op::BITA_dir    ,4 ,4 ,2 }, {"LDA"  ,&op::LDA_dir  ,4 ,4 ,2 }, {"STA"  ,&op::STA_dir  ,4 ,4 ,2 }, {"EORA"     ,&op::EORA_dir      ,4 ,4 ,2 }, {"ADCA" ,&op::ADCA_dir ,4 ,4 ,2 }, {"ORA"  ,&op::ORA_dir  ,4 ,4 ,2 }, {"ADDA" ,&op::ADDA_dir ,4 ,4 ,2 }, {"CMPX" ,&op::CMPX_dir ,6 ,6 ,2 }, {"JSR"  ,&op::JSR_dir  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_dir  ,5 ,5 ,2 }, {"STX"  ,&op::STX_dir  ,5 ,5 ,2 },
-		{"SUBA" ,&op::SUBA_idx ,4 ,99,2 }, {"CMPA" ,&op::CMPA_idx ,4 ,99,2 }, {"SBCA" ,&op::SBCA_idx ,4 ,99,2 }, {"SUBD" ,&op::SUBD_idx ,4 ,99,2 }, {"ANDA"     ,&op::ANDA_idx    ,4 ,99,2 }, {"BITA"     ,&op::BITA_idx    ,4 ,99,2 }, {"LDA"  ,&op::LDA_idx  ,4 ,99,2 }, {"STA"  ,&op::STA_idx  ,4 ,99,2 }, {"EORA"     ,&op::EORA_idx      ,4 ,99,2 }, {"ADCA" ,&op::ADCA_idx ,4 ,99,2 }, {"ORA"  ,&op::ORA_idx  ,4 ,99,2 }, {"ADDA" ,&op::ADDA_idx ,4 ,99,2 }, {"CMPX" ,&op::CMPX_idx ,6 ,99,2 }, {"JSR"  ,&op::JSR_idx  ,7 ,99,2 }, {"LDX"  ,&op::LDX_idx  ,5 ,99,2 }, {"STX"  ,&op::STX_idx  ,5 ,99,2 },
-		{"SUBA" ,&op::SUBA_ext ,5 ,5 ,3 }, {"CMPA" ,&op::CMPA_ext ,5 ,5 ,3 }, {"SBCA" ,&op::SBCA_ext ,5 ,5 ,3 }, {"SUBD" ,&op::SUBD_ext ,7 ,7 ,3 }, {"ANDA"     ,&op::ANDA_ext    ,5 ,5 ,3 }, {"BITA"     ,&op::BITA_ext    ,5 ,5 ,3 }, {"LDA"  ,&op::LDA_ext  ,5 ,5 ,3 }, {"STA"  ,&op::STA_ext  ,5 ,5 ,3 }, {"EORA"     ,&op::EORA_ext      ,5 ,5 ,3 }, {"ADCA" ,&op::ADCA_ext ,5 ,5 ,3 }, {"ORA"  ,&op::ORA_ext  ,5 ,5 ,3 }, {"ADDA" ,&op::ADDA_ext ,5 ,5 ,3 }, {"CMPX" ,&op::CMPX_ext ,7 ,7 ,3 }, {"JSR"  ,&op::JSR_ext  ,8 ,8 ,3 }, {"LDX"  ,&op::LDX_ext  ,6 ,6 ,3 }, {"STX"  ,&op::STX_ext  ,6 ,6 ,3 },
-		{"SUBB" ,&op::SUBB_imm ,2 ,2 ,2 }, {"CMPB" ,&op::CMPB_imm ,2 ,2 ,2 }, {"SBCB" ,&op::SBCB_imm ,2 ,2 ,2 }, {"ADDD" ,&op::ADDD_imm ,4 ,4 ,3 }, {"ANDB"     ,&op::ANDB_imm    ,2 ,2, 2 }, {"BITB"     ,&op::BITB_imm    ,2 ,2 ,2 }, {"LDB"  ,&op::LDB_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORB"     ,&op::EORB_imm      ,2 ,2 ,2 }, {"ADCB" ,&op::ADCB_imm ,2 ,2 ,2 }, {"ORB"  ,&op::ORB_imm  ,2 ,2 ,2 }, {"ADDB" ,&op::ADDB_imm ,2 ,2 ,2 }, {"LDD"  ,&op::LDD_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDU"  ,&op::LDU_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"SUBB" ,&op::SUBB_dir ,4 ,4 ,2 }, {"CMPB" ,&op::CMPB_dir ,4 ,4 ,2 }, {"SBCB" ,&op::SBCB_dir ,4 ,4 ,2 }, {"ADDD" ,&op::ADDD_dir ,6 ,6 ,2 }, {"ANDB"     ,&op::ANDB_dir    ,4 ,4 ,2 }, {"BITB"     ,&op::BITB_dir    ,4 ,4 ,2 }, {"LDB"  ,&op::LDB_dir  ,4 ,4 ,2 }, {"STB"  ,&op::STB_dir  ,4 ,4 ,2 }, {"EORB"     ,&op::EORB_dir      ,4 ,4 ,2 }, {"ADCB" ,&op::ADCB_dir ,4 ,4 ,2 }, {"ORB"  ,&op::ORB_dir  ,4 ,4 ,2 }, {"ADDB" ,&op::ADDB_dir ,4 ,4 ,2 }, {"LDD"  ,&op::LDD_dir  ,5 ,5 ,2 }, {"STD"  ,&op::STD_dir  ,5 ,5 ,2 }, {"LDU"  ,&op::LDU_dir  ,5 ,5 ,2 }, {"STU"  ,&op::STU_dir  ,5 ,5 ,2 },
-		{"SUBB" ,&op::SUBB_idx ,4 ,99,2 }, {"CMPB" ,&op::CMPB_idx ,4 ,99,2 }, {"SBCB" ,&op::SBCB_idx ,4 ,99,2 }, {"ADDD" ,&op::ADDD_idx ,6 ,99,2 }, {"ANDB"     ,&op::ANDB_idx    ,4 ,99,2 }, {"BITB"     ,&op::BITB_idx    ,4 ,99,2 }, {"LDB"  ,&op::LDB_idx  ,4 ,99,2 }, {"STB"  ,&op::STB_idx  ,4 ,99,2 }, {"EORB"     ,&op::EORB_idx      ,4 ,99,2 }, {"ADCB" ,&op::ADCB_idx ,4 ,99,2 }, {"ORB"  ,&op::ORB_idx  ,4 ,99,2 }, {"ADDB" ,&op::ADDB_idx ,4 ,99,2 }, {"LDD"  ,&op::LDD_idx  ,5 ,99,2 }, {"STD"  ,&op::STD_idx  ,5 ,99,2 }, {"LDU"  ,&op::LDU_idx  ,5 ,99,2 }, {"STU"  ,&op::STU_idx  ,5 ,99,2 },
-		{"SUBB" ,&op::SUBB_ext ,5 ,5 ,3 }, {"CMPB" ,&op::CMPB_ext ,5 ,5 ,3 }, {"SBCB" ,&op::SBCB_ext ,5 ,5 ,3 }, {"ADDD" ,&op::ADDD_ext ,7 ,7 ,3 }, {"ANDB"     ,&op::ANDB_ext    ,5 ,5 ,3 }, {"BITB"     ,&op::BITB_ext    ,5 ,5 ,3 }, {"LDB"  ,&op::LDB_ext  ,5 ,5 ,3 }, {"STB"  ,&op::STB_ext  ,5 ,5 ,3 }, {"EORB"     ,&op::EORB_ext      ,5 ,5 ,3 }, {"ADCB" ,&op::ADCB_ext ,5 ,5 ,3 }, {"ORB"  ,&op::ORB_ext  ,5 ,5 ,3 }, {"ADDB" ,&op::ADDB_ext ,5 ,5 ,3 }, {"LDD"  ,&op::LDD_ext  ,6 ,6 ,3 }, {"STD"  ,&op::STD_ext  ,6 ,6 ,3 }, {"LDU"  ,&op::LDU_ext  ,6 ,6 ,3 }, {"STU"  ,&op::STU_ext  ,6 ,6 ,3 }
+		{"NEG"	,&op::NEG_dir  ,6 ,6, 2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COM"	 ,&op::COM_dir	,6 ,6 ,2 }, {"LSR"		,&op::LSR_dir	  ,6 ,6 ,2 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"ROR"	,&op::ROR_dir  ,6 ,6 ,2 }, {"ASR"  ,&op::ASR_dir  ,6 ,6 ,2 }, {"ASL/LSL"  ,&op::ASL_LSL_dir	  ,6 ,6 ,2 }, {"ROL"  ,&op::ROL_dir	 ,6 ,6 ,2 }, {"DEC"	 ,&op::DEC_dir	,6 ,6 ,2 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INC"  ,&op::INC_dir  ,6 ,6 ,2 }, {"TST"  ,&op::TST_dir	 ,6 ,6 ,2 }, {"JMP"	 ,&op::JMP_dir	,3 ,3 ,2 }, {"CLR"	,&op::CLR_dir  ,6 ,6 ,2 },
+		{"***"	,nullptr	   ,1 ,1 ,1 }, {"***"  ,nullptr		  ,1 ,1 ,1 }, {"NOP"  ,&op::NOP_inh	 ,2 ,2 ,1 }, {"SYNC" ,&op::SYNC_inh ,4 ,00,1 }, {"???"		,&op::XXX		  ,1 ,1 ,1 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"LBRA" ,&op::LBRA_rel ,5 ,5 ,3 }, {"LBSR" ,&op::LBSR_rel ,9 ,9 ,3 }, {"???"	  ,&op::XXX			  ,1 ,1 ,1 }, {"DAA"  ,&op::DAA_inh	 ,2 ,2 ,1 }, {"ORCC" ,&op::ORCC_imm ,3 ,3 ,2 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"ANDCC",&op::ANDCC_imm,3 ,3 ,2 }, {"SEX"  ,&op::SEX_inh	 ,2 ,2 ,1 }, {"EXG"	 ,&op::EXG_imm	,8 ,8 ,2 }, {"TFR"	,&op::TFR_imm  ,6 ,6 ,2 },
+		{"BRA"	,&op::BRA_rel  ,3 ,3 ,2 }, {"BRN"  ,&op::BRN_rel  ,3 ,3 ,2 }, {"BHI"  ,&op::BHI_rel	 ,3 ,3 ,2 }, {"BLS"	 ,&op::BLS_rel	,3 ,3 ,2 }, {"BHS/BCC"	,&op::BHS_BCC_rel ,3 ,3 ,2 }, {"BLO/BCS"  ,&op::BLO_BCS_rel ,3 ,3 ,2 }, {"BNE"	,&op::BNE_rel  ,3 ,3 ,2 }, {"BEQ"  ,&op::BEQ_rel  ,3 ,3 ,2 }, {"BVC"	  ,&op::BVC_rel		  ,3 ,3 ,2 }, {"BVS"  ,&op::BVS_rel	 ,3 ,3 ,2 }, {"BPL"	 ,&op::BPL_rel	,3 ,3 ,2 }, {"BMI"	,&op::BMI_rel  ,3 ,3 ,2 }, {"BGE"  ,&op::BGE_rel  ,3 ,3 ,2 }, {"BLT"  ,&op::BLT_rel	 ,3 ,3 ,2 }, {"BGT"	 ,&op::BGT_rel	,3 ,3 ,2 }, {"BLE"	,&op::BLE_rel  ,3 ,3 ,2 },
+		{"LEAX" ,&op::LEAX_idx ,4 ,99,2 }, {"LEAY" ,&op::LEAY_idx ,4 ,99,2 }, {"LEAS" ,&op::LEAS_idx ,4 ,99,2 }, {"LEAU" ,&op::LEAU_idx ,4 ,99,2 }, {"PSHS"		,&op::PSHS_imm	  ,5 ,99,2 }, {"PULS"	  ,&op::PULS_imm	,5 ,99,2 }, {"PSHU" ,&op::PSHU_imm ,5 ,99,2 }, {"PULU" ,&op::PULU_imm ,5 ,99,2 }, {"???"	  ,&op::XXX			  ,1 ,1 ,1 }, {"RTS"  ,&op::RTS_inh	 ,5 ,5 ,1 }, {"ABX"	 ,&op::ABX_inh	,3 ,3 ,1 }, {"RTI"	,&op::RTI_inh  ,6 ,15,1 }, {"CWAI" ,&op::CWAI_inh ,20,00,2 }, {"MUL"  ,&op::MUL_inh	 ,11,11,1 }, {"RESET",&op::RESET_inh,19,19,1 }, {"SWI"	,&op::SWI_inh  ,19,19,1 },
+		{"NEGA" ,&op::NEGA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COMA" ,&op::COMA_inh ,2 ,2 ,1 }, {"LSRA"		,&op::LSRA_inh	  ,2 ,2 ,1 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"RORA" ,&op::RORA_inh ,2 ,2 ,1 }, {"ASRA" ,&op::ASRA_inh ,2 ,2 ,1 }, {"ASLA/LSLA",&op::ASLA_LSLA_inh ,2 ,2 ,1 }, {"ROLA" ,&op::ROLA_inh ,2 ,2 ,1 }, {"DECA" ,&op::DECA_inh ,2 ,2 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INCA" ,&op::INCA_inh ,2 ,2 ,1 }, {"TSTA" ,&op::TSTA_inh ,2 ,2 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CLRA" ,&op::CLRA_inh ,2 ,2 ,1 },
+		{"NEGB" ,&op::NEGB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COMB" ,&op::COMB_inh ,2 ,2 ,1 }, {"LSRB"		,&op::LSRB_inh	  ,2 ,2 ,1 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"RORB" ,&op::RORB_inh ,2 ,2 ,1 }, {"ASRB" ,&op::ASRB_inh ,2 ,2 ,1 }, {"ASLB/LSLB",&op::ASLB_LSLB_inh ,2 ,2 ,1 }, {"ROLB" ,&op::ROLB_inh ,2 ,2 ,1 }, {"DECB" ,&op::DECB_inh ,2 ,2 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INCB" ,&op::INCB_inh ,2 ,2 ,1 }, {"TSTB" ,&op::TSTB_inh ,2 ,2 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CLRB" ,&op::CLRB_inh ,2 ,2 ,1 },
+		{"NEG"	,&op::NEG_idx  ,6 ,99,2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COM"	 ,&op::COM_idx	,6 ,99,2 }, {"LSR"		,&op::LSR_idx	  ,6 ,99,2 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"ROR"	,&op::ROR_idx  ,6 ,99,2 }, {"ASR"  ,&op::ASR_idx  ,6 ,99,2 }, {"ASL/LSL"  ,&op::ASL_LSL_idx	  ,6 ,99,2 }, {"ROL"  ,&op::ROL_idx	 ,6 ,99,2 }, {"DEC"	 ,&op::DEC_idx	,6 ,99,2 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INC"  ,&op::INC_idx  ,6 ,99,2 }, {"TST"  ,&op::TST_idx	 ,6 ,99,2 }, {"JMP"	 ,&op::JMP_idx	,3 ,99,2 }, {"CLR"	,&op::CLR_idx  ,6 ,99,2 },
+		{"NEG"	,&op::NEG_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COM"	 ,&op::COM_ext	,7 ,7 ,3 }, {"LSR"		,&op::LSR_ext	  ,7 ,7 ,3 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"ROR"	,&op::ROR_ext  ,7 ,7 ,3 }, {"ASR"  ,&op::ASR_ext  ,7 ,7 ,3 }, {"ASL/LSL"  ,&op::ASL_LSL_ext	  ,7 ,7 ,3 }, {"ROL"  ,&op::ROL_ext	 ,7 ,7 ,3 }, {"DEC"	 ,&op::DEC_ext	,7 ,7 ,3 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INC"  ,&op::INC_ext  ,7 ,7 ,3 }, {"TST"  ,&op::TST_ext	 ,7 ,7 ,3 }, {"JMP"	 ,&op::JMP_ext	,4 ,4 ,3 }, {"CLR"	,&op::CLR_ext  ,7 ,7 ,3 },
+		{"SUBA" ,&op::SUBA_imm ,2 ,2 ,2 }, {"CMPA" ,&op::CMPA_imm ,2 ,2 ,2 }, {"SBCA" ,&op::SBCA_imm ,2 ,2 ,2 }, {"SUBD" ,&op::SUBD_imm ,4 ,4 ,3 }, {"ANDA"		,&op::ANDA_imm	  ,2 ,2 ,2 }, {"BITA"	  ,&op::BITA_imm	,2 ,2 ,2 }, {"LDA"	,&op::LDA_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"EORA"	  ,&op::EORA_imm	  ,2 ,2 ,2 }, {"ADCA" ,&op::ADCA_imm ,2 ,2 ,2 }, {"ORA"	 ,&op::ORA_imm	,2 ,2 ,2 }, {"ADDA" ,&op::ADDA_imm ,2 ,2 ,2 }, {"CMPX" ,&op::CMPX_imm ,4 ,2 ,3 }, {"BSR"  ,&op::BSR_rel	 ,7 ,7 ,2 }, {"LDX"	 ,&op::LDX_imm	,3 ,3 ,3 }, {"???"	,&op::XXX	   ,1 ,1 ,1 },
+		{"SUBA" ,&op::SUBA_dir ,4 ,4 ,2 }, {"CMPA" ,&op::CMPA_dir ,4 ,4 ,2 }, {"SBCA" ,&op::SBCA_dir ,4 ,4 ,2 }, {"SUBD" ,&op::SUBD_dir ,6 ,6 ,2 }, {"ANDA"		,&op::ANDA_dir	  ,4 ,4 ,2 }, {"BITA"	  ,&op::BITA_dir	,4 ,4 ,2 }, {"LDA"	,&op::LDA_dir  ,4 ,4 ,2 }, {"STA"  ,&op::STA_dir  ,4 ,4 ,2 }, {"EORA"	  ,&op::EORA_dir	  ,4 ,4 ,2 }, {"ADCA" ,&op::ADCA_dir ,4 ,4 ,2 }, {"ORA"	 ,&op::ORA_dir	,4 ,4 ,2 }, {"ADDA" ,&op::ADDA_dir ,4 ,4 ,2 }, {"CMPX" ,&op::CMPX_dir ,6 ,6 ,2 }, {"JSR"  ,&op::JSR_dir	 ,7 ,7 ,2 }, {"LDX"	 ,&op::LDX_dir	,5 ,5 ,2 }, {"STX"	,&op::STX_dir  ,5 ,5 ,2 },
+		{"SUBA" ,&op::SUBA_idx ,4 ,99,2 }, {"CMPA" ,&op::CMPA_idx ,4 ,99,2 }, {"SBCA" ,&op::SBCA_idx ,4 ,99,2 }, {"SUBD" ,&op::SUBD_idx ,4 ,99,2 }, {"ANDA"		,&op::ANDA_idx	  ,4 ,99,2 }, {"BITA"	  ,&op::BITA_idx	,4 ,99,2 }, {"LDA"	,&op::LDA_idx  ,4 ,99,2 }, {"STA"  ,&op::STA_idx  ,4 ,99,2 }, {"EORA"	  ,&op::EORA_idx	  ,4 ,99,2 }, {"ADCA" ,&op::ADCA_idx ,4 ,99,2 }, {"ORA"	 ,&op::ORA_idx	,4 ,99,2 }, {"ADDA" ,&op::ADDA_idx ,4 ,99,2 }, {"CMPX" ,&op::CMPX_idx ,6 ,99,2 }, {"JSR"  ,&op::JSR_idx	 ,7 ,99,2 }, {"LDX"	 ,&op::LDX_idx	,5 ,99,2 }, {"STX"	,&op::STX_idx  ,5 ,99,2 },
+		{"SUBA" ,&op::SUBA_ext ,5 ,5 ,3 }, {"CMPA" ,&op::CMPA_ext ,5 ,5 ,3 }, {"SBCA" ,&op::SBCA_ext ,5 ,5 ,3 }, {"SUBD" ,&op::SUBD_ext ,7 ,7 ,3 }, {"ANDA"		,&op::ANDA_ext	  ,5 ,5 ,3 }, {"BITA"	  ,&op::BITA_ext	,5 ,5 ,3 }, {"LDA"	,&op::LDA_ext  ,5 ,5 ,3 }, {"STA"  ,&op::STA_ext  ,5 ,5 ,3 }, {"EORA"	  ,&op::EORA_ext	  ,5 ,5 ,3 }, {"ADCA" ,&op::ADCA_ext ,5 ,5 ,3 }, {"ORA"	 ,&op::ORA_ext	,5 ,5 ,3 }, {"ADDA" ,&op::ADDA_ext ,5 ,5 ,3 }, {"CMPX" ,&op::CMPX_ext ,7 ,7 ,3 }, {"JSR"  ,&op::JSR_ext	 ,8 ,8 ,3 }, {"LDX"	 ,&op::LDX_ext	,6 ,6 ,3 }, {"STX"	,&op::STX_ext  ,6 ,6 ,3 },
+		{"SUBB" ,&op::SUBB_imm ,2 ,2 ,2 }, {"CMPB" ,&op::CMPB_imm ,2 ,2 ,2 }, {"SBCB" ,&op::SBCB_imm ,2 ,2 ,2 }, {"ADDD" ,&op::ADDD_imm ,4 ,4 ,3 }, {"ANDB"		,&op::ANDB_imm	  ,2 ,2, 2 }, {"BITB"	  ,&op::BITB_imm	,2 ,2 ,2 }, {"LDB"	,&op::LDB_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"EORB"	  ,&op::EORB_imm	  ,2 ,2 ,2 }, {"ADCB" ,&op::ADCB_imm ,2 ,2 ,2 }, {"ORB"	 ,&op::ORB_imm	,2 ,2 ,2 }, {"ADDB" ,&op::ADDB_imm ,2 ,2 ,2 }, {"LDD"  ,&op::LDD_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"LDU"	 ,&op::LDU_imm	,3 ,3 ,3 }, {"???"	,&op::XXX	   ,1 ,1 ,1 },
+		{"SUBB" ,&op::SUBB_dir ,4 ,4 ,2 }, {"CMPB" ,&op::CMPB_dir ,4 ,4 ,2 }, {"SBCB" ,&op::SBCB_dir ,4 ,4 ,2 }, {"ADDD" ,&op::ADDD_dir ,6 ,6 ,2 }, {"ANDB"		,&op::ANDB_dir	  ,4 ,4 ,2 }, {"BITB"	  ,&op::BITB_dir	,4 ,4 ,2 }, {"LDB"	,&op::LDB_dir  ,4 ,4 ,2 }, {"STB"  ,&op::STB_dir  ,4 ,4 ,2 }, {"EORB"	  ,&op::EORB_dir	  ,4 ,4 ,2 }, {"ADCB" ,&op::ADCB_dir ,4 ,4 ,2 }, {"ORB"	 ,&op::ORB_dir	,4 ,4 ,2 }, {"ADDB" ,&op::ADDB_dir ,4 ,4 ,2 }, {"LDD"  ,&op::LDD_dir  ,5 ,5 ,2 }, {"STD"  ,&op::STD_dir	 ,5 ,5 ,2 }, {"LDU"	 ,&op::LDU_dir	,5 ,5 ,2 }, {"STU"	,&op::STU_dir  ,5 ,5 ,2 },
+		{"SUBB" ,&op::SUBB_idx ,4 ,99,2 }, {"CMPB" ,&op::CMPB_idx ,4 ,99,2 }, {"SBCB" ,&op::SBCB_idx ,4 ,99,2 }, {"ADDD" ,&op::ADDD_idx ,6 ,99,2 }, {"ANDB"		,&op::ANDB_idx	  ,4 ,99,2 }, {"BITB"	  ,&op::BITB_idx	,4 ,99,2 }, {"LDB"	,&op::LDB_idx  ,4 ,99,2 }, {"STB"  ,&op::STB_idx  ,4 ,99,2 }, {"EORB"	  ,&op::EORB_idx	  ,4 ,99,2 }, {"ADCB" ,&op::ADCB_idx ,4 ,99,2 }, {"ORB"	 ,&op::ORB_idx	,4 ,99,2 }, {"ADDB" ,&op::ADDB_idx ,4 ,99,2 }, {"LDD"  ,&op::LDD_idx  ,5 ,99,2 }, {"STD"  ,&op::STD_idx	 ,5 ,99,2 }, {"LDU"	 ,&op::LDU_idx	,5 ,99,2 }, {"STU"	,&op::STU_idx  ,5 ,99,2 },
+		{"SUBB" ,&op::SUBB_ext ,5 ,5 ,3 }, {"CMPB" ,&op::CMPB_ext ,5 ,5 ,3 }, {"SBCB" ,&op::SBCB_ext ,5 ,5 ,3 }, {"ADDD" ,&op::ADDD_ext ,7 ,7 ,3 }, {"ANDB"		,&op::ANDB_ext	  ,5 ,5 ,3 }, {"BITB"	  ,&op::BITB_ext	,5 ,5 ,3 }, {"LDB"	,&op::LDB_ext  ,5 ,5 ,3 }, {"STB"  ,&op::STB_ext  ,5 ,5 ,3 }, {"EORB"	  ,&op::EORB_ext	  ,5 ,5 ,3 }, {"ADCB" ,&op::ADCB_ext ,5 ,5 ,3 }, {"ORB"	 ,&op::ORB_ext	,5 ,5 ,3 }, {"ADDB" ,&op::ADDB_ext ,5 ,5 ,3 }, {"LDD"  ,&op::LDD_ext  ,6 ,6 ,3 }, {"STD"  ,&op::STD_ext	 ,6 ,6 ,3 }, {"LDU"	 ,&op::LDU_ext	,6 ,6 ,3 }, {"STU"	,&op::STU_ext  ,6 ,6 ,3 }
 #else
-		{"NEG"  ,&op::NEG_dir  ,6 ,6, 2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_dir  ,6 ,6 ,2 }, {"LSR"      ,&op::LSR_dir     ,6 ,6 ,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_dir  ,6 ,6 ,2 }, {"ASR"  ,&op::ASR_dir  ,6 ,6 ,2 }, {"ASL/LSL"  ,&op::ASL_LSL_dir   ,6 ,6 ,2 }, {"ROL"  ,&op::ROL_dir  ,6 ,6 ,2 }, {"DEC"  ,&op::DEC_dir  ,6 ,6 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_dir  ,6 ,6 ,2 }, {"TST"  ,&op::TST_dir  ,6 ,6 ,2 }, {"JMP"  ,&op::JMP_dir  ,3 ,3 ,2 }, {"CLR"  ,&op::CLR_dir  ,6 ,6 ,2 },
-		{"***"  ,nullptr       ,1 ,1 ,1 }, {"***"  ,nullptr       ,1 ,1 ,1 }, {"NOP"  ,&op::NOP_inh  ,2 ,2 ,1 }, {"SYNC" ,&op::SYNC_inh ,4 ,00,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"LBRA" ,&op::LBRA_rel ,5 ,5 ,3 }, {"LBSR" ,&op::LBSR_rel ,9 ,9 ,3 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"DAA"  ,&op::DAA_inh  ,2 ,2 ,1 }, {"ORCC" ,&op::ORCC_imm ,3 ,3 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"ANDCC",&op::ANDCC_imm,3 ,3 ,2 }, {"SEX"  ,&op::SEX_inh  ,2 ,2 ,1 }, {"EXG"  ,&op::EXG_imm  ,8 ,8 ,2 }, {"TFR"  ,&op::TFR_imm  ,6 ,6 ,2 },
-		{"BRA"  ,&op::BRA_rel  ,3 ,3 ,2 }, {"BRN"  ,&op::BRN_rel  ,3 ,3 ,2 }, {"BHI"  ,&op::BHI_rel  ,3 ,3 ,2 }, {"BLS"  ,&op::BLS_rel  ,3 ,3 ,2 }, {"BHS/BCC"  ,&op::BHS_BCC_rel ,3 ,3 ,2 }, {"BLO/BCS"  ,&op::BLO_BCS_rel ,3 ,3 ,2 }, {"BNE"  ,&op::BNE_rel  ,3 ,3 ,2 }, {"BEQ"  ,&op::BEQ_rel  ,3 ,3 ,2 }, {"BVC"      ,&op::BVC_rel       ,3 ,3 ,2 }, {"BVS"  ,&op::BVS_rel  ,3 ,3 ,2 }, {"BPL"  ,&op::BPL_rel  ,3 ,3 ,2 }, {"BMI"  ,&op::BMI_rel  ,3 ,3 ,2 }, {"BGE"  ,&op::BGE_rel  ,3 ,3 ,2 }, {"BLT"  ,&op::BLT_rel  ,3 ,3 ,2 }, {"BGT"  ,&op::BGT_rel  ,3 ,3 ,2 }, {"BLE"  ,&op::BLE_rel  ,3 ,3 ,2 },
-		{"LEAX" ,&op::LEAX_idx ,4 ,99,2 }, {"LEAY" ,&op::LEAY_idx ,4 ,99,2 }, {"LEAS" ,&op::LEAS_idx ,4 ,99,2 }, {"LEAU" ,&op::LEAU_idx ,4 ,99,2 }, {"PSHS"     ,&op::PSHS_imm    ,5 ,4 ,2 }, {"PULS"     ,&op::PULS_imm    ,5 ,5 ,2 }, {"PSHU" ,&op::PSHU_imm ,5 ,5 ,2 }, {"PULU" ,&op::PULU_imm ,5 ,5 ,2 }, {"???"      ,&op::XXX           ,1 ,1 ,1 }, {"RTS"  ,&op::RTS_inh  ,5 ,5 ,1 }, {"ABX"  ,&op::ABX_inh  ,3 ,3 ,1 }, {"RTI"  ,&op::RTI_inh  ,6 ,15,1 }, {"CWAI" ,&op::CWAI_inh ,20,00,2 }, {"MUL"  ,&op::MUL_inh  ,11,11,1 }, {"RESET",&op::RESET_inh,20,20,1 }, {"SWI"  ,&op::SWI_inh  ,19,19,1 },
-		{"NEGA" ,&op::NEGA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMA" ,&op::COMA_inh ,2 ,2 ,1 }, {"LSRA"     ,&op::LSRA_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORA" ,&op::RORA_inh ,2 ,2 ,1 }, {"ASRA" ,&op::ASRA_inh ,2 ,2 ,1 }, {"ASLA/LSLA",&op::ASLA_LSLA_inh ,2 ,2 ,1 }, {"ROLA" ,&op::ROLA_inh ,2 ,2 ,1 }, {"DECA" ,&op::DECA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCA" ,&op::INCA_inh ,2 ,2 ,1 }, {"TSTA" ,&op::TSTA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRA" ,&op::CLRA_inh ,2 ,2 ,1 },
-		{"NEGB" ,&op::NEGB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COMB" ,&op::COMB_inh ,2 ,2 ,1 }, {"LSRB"     ,&op::LSRB_inh    ,2 ,2 ,1 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"RORB" ,&op::RORB_inh ,2 ,2 ,1 }, {"ASRB" ,&op::ASRB_inh ,2 ,2 ,1 }, {"ASLB/LSLB",&op::ASLB_LSLB_inh ,2 ,2 ,1 }, {"ROLB" ,&op::ROLB_inh ,2 ,2 ,1 }, {"DECB" ,&op::DECB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INCB" ,&op::INCB_inh ,2 ,2 ,1 }, {"TSTB" ,&op::TSTB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CLRB" ,&op::CLRB_inh ,2 ,2 ,1 },
-		{"NEG"  ,&op::NEG_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_idx  ,6 ,99,2 }, {"LSR"      ,&op::LSR_idx     ,6 ,99,2 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_idx  ,6 ,99,2 }, {"ASR"  ,&op::ASR_idx  ,6 ,99,2 }, {"ASL/LSL"  ,&op::ASL_LSL_idx   ,6 ,99,2 }, {"ROL"  ,&op::ROL_idx  ,6 ,99,2 }, {"DEC"  ,&op::DEC_idx  ,6 ,99,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_idx  ,6 ,99,2 }, {"TST"  ,&op::TST_idx  ,6 ,99,2 }, {"JMP"  ,&op::JMP_idx  ,3 ,99,2 }, {"CLR"  ,&op::CLR_idx  ,6 ,99,2 },
-		{"NEG"  ,&op::NEG_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"COM"  ,&op::COM_ext  ,7 ,7 ,3 }, {"LSR"      ,&op::LSR_ext     ,7 ,7 ,3 }, {"???"      ,&op::XXX         ,1 ,1 ,1 }, {"ROR"  ,&op::ROR_ext  ,7 ,7 ,3 }, {"ASR"  ,&op::ASR_ext  ,7 ,7 ,3 }, {"ASL/LSL"  ,&op::ASL_LSL_ext   ,7 ,7 ,3 }, {"ROL"  ,&op::ROL_ext  ,7 ,7 ,3 }, {"DEC"  ,&op::DEC_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"INC"  ,&op::INC_ext  ,7 ,7 ,3 }, {"TST"  ,&op::TST_ext  ,7 ,7 ,3 }, {"JMP"  ,&op::JMP_ext  ,4 ,4 ,3 }, {"CLR"  ,&op::CLR_ext  ,7 ,7 ,3 },
-		{"SUBA" ,&op::SUBA_imm ,2 ,2 ,2 }, {"CMPA" ,&op::CMPA_imm ,2 ,2 ,2 }, {"SBCA" ,&op::SBCA_imm ,2 ,2 ,2 }, {"SUBD" ,&op::SUBD_imm ,4 ,4 ,3 }, {"ANDA"     ,&op::ANDA_imm    ,2 ,2 ,2 }, {"BITA"     ,&op::BITA_imm    ,2 ,2 ,2 }, {"LDA"  ,&op::LDA_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORA"     ,&op::EORA_imm      ,2 ,2 ,2 }, {"ADCA" ,&op::ADCA_imm ,2 ,2 ,2 }, {"ORA"  ,&op::ORA_imm  ,2 ,2 ,2 }, {"ADDA" ,&op::ADDA_imm ,2 ,2 ,2 }, {"CMPX" ,&op::CMPX_imm ,4 ,2 ,3 }, {"BSR"  ,&op::BSR_rel  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"SUBA" ,&op::SUBA_dir ,4 ,4 ,2 }, {"CMPA" ,&op::CMPA_dir ,4 ,4 ,2 }, {"SBCA" ,&op::SBCA_dir ,4 ,4 ,2 }, {"SUBD" ,&op::SUBD_dir ,6 ,6 ,2 }, {"ANDA"     ,&op::ANDA_dir    ,4 ,4 ,2 }, {"BITA"     ,&op::BITA_dir    ,4 ,4 ,2 }, {"LDA"  ,&op::LDA_dir  ,4 ,4 ,2 }, {"STA"  ,&op::STA_dir  ,4 ,4 ,2 }, {"EORA"     ,&op::EORA_dir      ,4 ,4 ,2 }, {"ADCA" ,&op::ADCA_dir ,4 ,4 ,2 }, {"ORA"  ,&op::ORA_dir  ,4 ,4 ,2 }, {"ADDA" ,&op::ADDA_dir ,4 ,4 ,2 }, {"CMPX" ,&op::CMPX_dir ,6 ,6 ,2 }, {"JSR"  ,&op::JSR_dir  ,7 ,7 ,2 }, {"LDX"  ,&op::LDX_dir  ,5 ,5 ,2 }, {"STX"  ,&op::STX_dir  ,5 ,5 ,2 },
-		{"SUBA" ,&op::SUBA_idx ,4 ,99,2 }, {"CMPA" ,&op::CMPA_idx ,4 ,99,2 }, {"SBCA" ,&op::SBCA_idx ,4 ,99,2 }, {"SUBD" ,&op::SUBD_idx ,4 ,99,2 }, {"ANDA"     ,&op::ANDA_idx    ,4 ,99,2 }, {"BITA"     ,&op::BITA_idx    ,4 ,99,2 }, {"LDA"  ,&op::LDA_idx  ,4 ,99,2 }, {"STA"  ,&op::STA_idx  ,4 ,99,2 }, {"EORA"     ,&op::EORA_idx      ,4 ,99,2 }, {"ADCA" ,&op::ADCA_idx ,4 ,99,2 }, {"ORA"  ,&op::ORA_idx  ,4 ,99,2 }, {"ADDA" ,&op::ADDA_idx ,4 ,99,2 }, {"CMPX" ,&op::CMPX_idx ,6 ,99,2 }, {"JSR"  ,&op::JSR_idx  ,7 ,99,2 }, {"LDX"  ,&op::LDX_idx  ,5 ,99,2 }, {"STX"  ,&op::STX_idx  ,5 ,99,2 },
-		{"SUBA" ,&op::SUBA_ext ,5 ,5 ,3 }, {"CMPA" ,&op::CMPA_ext ,5 ,5 ,3 }, {"SBCA" ,&op::SBCA_ext ,5 ,5 ,3 }, {"SUBD" ,&op::SUBD_ext ,7 ,7 ,3 }, {"ANDA"     ,&op::ANDA_ext    ,5 ,5 ,3 }, {"BITA"     ,&op::BITA_ext    ,5 ,5 ,3 }, {"LDA"  ,&op::LDA_ext  ,5 ,5 ,3 }, {"STA"  ,&op::STA_ext  ,5 ,5 ,3 }, {"EORA"     ,&op::EORA_ext      ,5 ,5 ,3 }, {"ADCA" ,&op::ADCA_ext ,5 ,5 ,3 }, {"ORA"  ,&op::ORA_ext  ,5 ,5 ,3 }, {"ADDA" ,&op::ADDA_ext ,5 ,5 ,3 }, {"CMPX" ,&op::CMPX_ext ,7 ,7 ,3 }, {"JSR"  ,&op::JSR_ext  ,8 ,8 ,3 }, {"LDX"  ,&op::LDX_ext  ,6 ,6 ,3 }, {"STX"  ,&op::STX_ext  ,6 ,6 ,3 },
-		{"SUBB" ,&op::SUBB_imm ,2 ,2 ,2 }, {"CMPB" ,&op::CMPB_imm ,2 ,2 ,2 }, {"SBCB" ,&op::SBCB_imm ,2 ,2 ,2 }, {"ADDD" ,&op::ADDD_imm ,4 ,4 ,3 }, {"ANDB"     ,&op::ANDB_imm    ,2 ,2, 2 }, {"BITB"     ,&op::BITB_imm    ,2 ,2 ,2 }, {"LDB"  ,&op::LDB_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"EORB"     ,&op::EORB_imm      ,2 ,2 ,2 }, {"ADCB" ,&op::ADCB_imm ,2 ,2 ,2 }, {"ORB"  ,&op::ORB_imm  ,2 ,2 ,2 }, {"ADDB" ,&op::ADDB_imm ,2 ,2 ,2 }, {"LDD"  ,&op::LDD_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDU"  ,&op::LDU_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"SUBB" ,&op::SUBB_dir ,4 ,4 ,2 }, {"CMPB" ,&op::CMPB_dir ,4 ,4 ,2 }, {"SBCB" ,&op::SBCB_dir ,4 ,4 ,2 }, {"ADDD" ,&op::ADDD_dir ,6 ,6 ,2 }, {"ANDB"     ,&op::ANDB_dir    ,4 ,4 ,2 }, {"BITB"     ,&op::BITB_dir    ,4 ,4 ,2 }, {"LDB"  ,&op::LDB_dir  ,4 ,4 ,2 }, {"STB"  ,&op::STB_dir  ,4 ,4 ,2 }, {"EORB"     ,&op::EORB_dir      ,4 ,4 ,2 }, {"ADCB" ,&op::ADCB_dir ,4 ,4 ,2 }, {"ORB"  ,&op::ORB_dir  ,4 ,4 ,2 }, {"ADDB" ,&op::ADDB_dir ,4 ,4 ,2 }, {"LDD"  ,&op::LDD_dir  ,5 ,5 ,2 }, {"STD"  ,&op::STD_dir  ,5 ,5 ,2 }, {"LDU"  ,&op::LDU_dir  ,5 ,5 ,2 }, {"STU"  ,&op::STU_dir  ,5 ,5 ,2 },
-		{"SUBB" ,&op::SUBB_idx ,4 ,99,2 }, {"CMPB" ,&op::CMPB_idx ,4 ,99,2 }, {"SBCB" ,&op::SBCB_idx ,4 ,99,2 }, {"ADDD" ,&op::ADDD_idx ,6 ,99,2 }, {"ANDB"     ,&op::ANDB_idx    ,4 ,99,2 }, {"BITB"     ,&op::BITB_idx    ,4 ,99,2 }, {"LDB"  ,&op::LDB_idx  ,4 ,99,2 }, {"STB"  ,&op::STB_idx  ,4 ,99,2 }, {"EORB"     ,&op::EORB_idx      ,4 ,99,2 }, {"ADCB" ,&op::ADCB_idx ,4 ,99,2 }, {"ORB"  ,&op::ORB_idx  ,4 ,99,2 }, {"ADDB" ,&op::ADDB_idx ,4 ,99,2 }, {"LDD"  ,&op::LDD_idx  ,5 ,99,2 }, {"STD"  ,&op::STD_idx  ,5 ,99,2 }, {"LDU"  ,&op::LDU_idx  ,5 ,99,2 }, {"STU"  ,&op::STU_idx  ,5 ,99,2 },
-		{"SUBB" ,&op::SUBB_ext ,5 ,5 ,3 }, {"CMPB" ,&op::CMPB_ext ,5 ,5 ,3 }, {"SBCB" ,&op::SBCB_ext ,5 ,5 ,3 }, {"ADDD" ,&op::ADDD_ext ,7 ,7 ,3 }, {"ANDB"     ,&op::ANDB_ext    ,5 ,5 ,3 }, {"BITB"     ,&op::BITB_ext    ,5 ,5 ,3 }, {"LDB"  ,&op::LDB_ext  ,5 ,5 ,3 }, {"STB"  ,&op::STB_ext  ,5 ,5 ,3 }, {"EORB"     ,&op::EORB_ext      ,5 ,5 ,3 }, {"ADCB" ,&op::ADCB_ext ,5 ,5 ,3 }, {"ORB"  ,&op::ORB_ext  ,5 ,5 ,3 }, {"ADDB" ,&op::ADDB_ext ,5 ,5 ,3 }, {"LDD"  ,&op::LDD_ext  ,6 ,6 ,3 }, {"STD"  ,&op::STD_ext  ,6 ,6 ,3 }, {"LDU"  ,&op::LDU_ext  ,6 ,6 ,3 }, {"STU"  ,&op::STU_ext  ,6 ,6 ,3 }
+		{"NEG"	,& op::NEG_dir  ,6 ,6, 2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COM"	 ,&op::COM_dir	,6 ,6 ,2 }, {"LSR"		,&op::LSR_dir	  ,6 ,6 ,2 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"ROR"	,&op::ROR_dir  ,6 ,6 ,2 }, {"ASR"  ,&op::ASR_dir  ,6 ,6 ,2 }, {"ASL/LSL"  ,&op::ASL_LSL_dir	  ,6 ,6 ,2 }, {"ROL"  ,&op::ROL_dir	 ,6 ,6 ,2 }, {"DEC"	 ,&op::DEC_dir	,6 ,6 ,2 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INC"  ,&op::INC_dir  ,6 ,6 ,2 }, {"TST"  ,&op::TST_dir	 ,6 ,6 ,2 }, {"JMP"	 ,&op::JMP_dir	,3 ,3 ,2 }, {"CLR"	,&op::CLR_dir  ,6 ,6 ,2 },
+		{"***"	,nullptr	   ,1 ,1 ,1 }, {"***"  ,nullptr		  ,1 ,1 ,1 }, {"NOP"  ,&op::NOP_inh	 ,2 ,2 ,1 }, {"SYNC" ,&op::SYNC_inh ,4 ,00,1 }, {"???"		,&op::XXX		  ,1 ,1 ,1 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"LBRA" ,&op::LBRA_rel ,5 ,5 ,3 }, {"LBSR" ,&op::LBSR_rel ,9 ,9 ,3 }, {"???"	  ,&op::XXX			  ,1 ,1 ,1 }, {"DAA"  ,&op::DAA_inh	 ,2 ,2 ,1 }, {"ORCC" ,&op::ORCC_imm ,3 ,3 ,2 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"ANDCC",&op::ANDCC_imm,3 ,3 ,2 }, {"SEX"  ,&op::SEX_inh	 ,2 ,2 ,1 }, {"EXG"	 ,&op::EXG_imm	,8 ,8 ,2 }, {"TFR"	,&op::TFR_imm  ,6 ,6 ,2 },
+		{"BRA"	,&op::BRA_rel  ,3 ,3 ,2 }, {"BRN"  ,&op::BRN_rel  ,3 ,3 ,2 }, {"BHI"  ,&op::BHI_rel	 ,3 ,3 ,2 }, {"BLS"	 ,&op::BLS_rel	,3 ,3 ,2 }, {"BHS/BCC"	,&op::BHS_BCC_rel ,3 ,3 ,2 }, {"BLO/BCS"  ,&op::BLO_BCS_rel ,3 ,3 ,2 }, {"BNE"	,&op::BNE_rel  ,3 ,3 ,2 }, {"BEQ"  ,&op::BEQ_rel  ,3 ,3 ,2 }, {"BVC"	  ,&op::BVC_rel		  ,3 ,3 ,2 }, {"BVS"  ,&op::BVS_rel	 ,3 ,3 ,2 }, {"BPL"	 ,&op::BPL_rel	,3 ,3 ,2 }, {"BMI"	,&op::BMI_rel  ,3 ,3 ,2 }, {"BGE"  ,&op::BGE_rel  ,3 ,3 ,2 }, {"BLT"  ,&op::BLT_rel	 ,3 ,3 ,2 }, {"BGT"	 ,&op::BGT_rel	,3 ,3 ,2 }, {"BLE"	,&op::BLE_rel  ,3 ,3 ,2 },
+		{"LEAX" ,&op::LEAX_idx ,4 ,99,2 }, {"LEAY" ,&op::LEAY_idx ,4 ,99,2 }, {"LEAS" ,&op::LEAS_idx ,4 ,99,2 }, {"LEAU" ,&op::LEAU_idx ,4 ,99,2 }, {"PSHS"		,&op::PSHS_imm	  ,5 ,4 ,2 }, {"PULS"	  ,&op::PULS_imm	,5 ,5 ,2 }, {"PSHU" ,&op::PSHU_imm ,5 ,5 ,2 }, {"PULU" ,&op::PULU_imm ,5 ,5 ,2 }, {"???"	  ,&op::XXX			  ,1 ,1 ,1 }, {"RTS"  ,&op::RTS_inh	 ,5 ,5 ,1 }, {"ABX"	 ,&op::ABX_inh	,3 ,3 ,1 }, {"RTI"	,&op::RTI_inh  ,6 ,15,1 }, {"CWAI" ,&op::CWAI_inh ,20,00,2 }, {"MUL"  ,&op::MUL_inh	 ,11,11,1 }, {"RESET",&op::RESET_inh,20,20,1 }, {"SWI"	,&op::SWI_inh  ,19,19,1 },
+		{"NEGA" ,&op::NEGA_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COMA" ,&op::COMA_inh ,2 ,2 ,1 }, {"LSRA"		,&op::LSRA_inh	  ,2 ,2 ,1 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"RORA" ,&op::RORA_inh ,2 ,2 ,1 }, {"ASRA" ,&op::ASRA_inh ,2 ,2 ,1 }, {"ASLA/LSLA",&op::ASLA_LSLA_inh ,2 ,2 ,1 }, {"ROLA" ,&op::ROLA_inh ,2 ,2 ,1 }, {"DECA" ,&op::DECA_inh ,2 ,2 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INCA" ,&op::INCA_inh ,2 ,2 ,1 }, {"TSTA" ,&op::TSTA_inh ,2 ,2 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CLRA" ,&op::CLRA_inh ,2 ,2 ,1 },
+		{"NEGB" ,&op::NEGB_inh ,2 ,2 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COMB" ,&op::COMB_inh ,2 ,2 ,1 }, {"LSRB"		,&op::LSRB_inh	  ,2 ,2 ,1 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"RORB" ,&op::RORB_inh ,2 ,2 ,1 }, {"ASRB" ,&op::ASRB_inh ,2 ,2 ,1 }, {"ASLB/LSLB",&op::ASLB_LSLB_inh ,2 ,2 ,1 }, {"ROLB" ,&op::ROLB_inh ,2 ,2 ,1 }, {"DECB" ,&op::DECB_inh ,2 ,2 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INCB" ,&op::INCB_inh ,2 ,2 ,1 }, {"TSTB" ,&op::TSTB_inh ,2 ,2 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CLRB" ,&op::CLRB_inh ,2 ,2 ,1 },
+		{"NEG"	,&op::NEG_idx  ,6 ,99,2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COM"	 ,&op::COM_idx	,6 ,99,2 }, {"LSR"		,&op::LSR_idx	  ,6 ,99,2 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"ROR"	,&op::ROR_idx  ,6 ,99,2 }, {"ASR"  ,&op::ASR_idx  ,6 ,99,2 }, {"ASL/LSL"  ,&op::ASL_LSL_idx	  ,6 ,99,2 }, {"ROL"  ,&op::ROL_idx	 ,6 ,99,2 }, {"DEC"	 ,&op::DEC_idx	,6 ,99,2 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INC"  ,&op::INC_idx  ,6 ,99,2 }, {"TST"  ,&op::TST_idx	 ,6 ,99,2 }, {"JMP"	 ,&op::JMP_idx	,3 ,99,2 }, {"CLR"	,&op::CLR_idx  ,6 ,99,2 },
+		{"NEG"	,&op::NEG_ext  ,7 ,7 ,3 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"COM"	 ,&op::COM_ext	,7 ,7 ,3 }, {"LSR"		,&op::LSR_ext	  ,7 ,7 ,3 }, {"???"	  ,&op::XXX			,1 ,1 ,1 }, {"ROR"	,&op::ROR_ext  ,7 ,7 ,3 }, {"ASR"  ,&op::ASR_ext  ,7 ,7 ,3 }, {"ASL/LSL"  ,&op::ASL_LSL_ext	  ,7 ,7 ,3 }, {"ROL"  ,&op::ROL_ext	 ,7 ,7 ,3 }, {"DEC"	 ,&op::DEC_ext	,7 ,7 ,3 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"INC"  ,&op::INC_ext  ,7 ,7 ,3 }, {"TST"  ,&op::TST_ext	 ,7 ,7 ,3 }, {"JMP"	 ,&op::JMP_ext	,4 ,4 ,3 }, {"CLR"	,&op::CLR_ext  ,7 ,7 ,3 },
+		{"SUBA" ,&op::SUBA_imm ,2 ,2 ,2 }, {"CMPA" ,&op::CMPA_imm ,2 ,2 ,2 }, {"SBCA" ,&op::SBCA_imm ,2 ,2 ,2 }, {"SUBD" ,&op::SUBD_imm ,4 ,4 ,3 }, {"ANDA"		,&op::ANDA_imm	  ,2 ,2 ,2 }, {"BITA"	  ,&op::BITA_imm	,2 ,2 ,2 }, {"LDA"	,&op::LDA_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"EORA"	  ,&op::EORA_imm	  ,2 ,2 ,2 }, {"ADCA" ,&op::ADCA_imm ,2 ,2 ,2 }, {"ORA"	 ,&op::ORA_imm	,2 ,2 ,2 }, {"ADDA" ,&op::ADDA_imm ,2 ,2 ,2 }, {"CMPX" ,&op::CMPX_imm ,4 ,2 ,3 }, {"BSR"  ,&op::BSR_rel	 ,7 ,7 ,2 }, {"LDX"	 ,&op::LDX_imm	,3 ,3 ,3 }, {"???"	,&op::XXX	   ,1 ,1 ,1 },
+		{"SUBA" ,&op::SUBA_dir ,4 ,4 ,2 }, {"CMPA" ,&op::CMPA_dir ,4 ,4 ,2 }, {"SBCA" ,&op::SBCA_dir ,4 ,4 ,2 }, {"SUBD" ,&op::SUBD_dir ,6 ,6 ,2 }, {"ANDA"		,&op::ANDA_dir	  ,4 ,4 ,2 }, {"BITA"	  ,&op::BITA_dir	,4 ,4 ,2 }, {"LDA"	,&op::LDA_dir  ,4 ,4 ,2 }, {"STA"  ,&op::STA_dir  ,4 ,4 ,2 }, {"EORA"	  ,&op::EORA_dir	  ,4 ,4 ,2 }, {"ADCA" ,&op::ADCA_dir ,4 ,4 ,2 }, {"ORA"	 ,&op::ORA_dir	,4 ,4 ,2 }, {"ADDA" ,&op::ADDA_dir ,4 ,4 ,2 }, {"CMPX" ,&op::CMPX_dir ,6 ,6 ,2 }, {"JSR"  ,&op::JSR_dir	 ,7 ,7 ,2 }, {"LDX"	 ,&op::LDX_dir	,5 ,5 ,2 }, {"STX"	,&op::STX_dir  ,5 ,5 ,2 },
+		{"SUBA" ,&op::SUBA_idx ,4 ,99,2 }, {"CMPA" ,&op::CMPA_idx ,4 ,99,2 }, {"SBCA" ,&op::SBCA_idx ,4 ,99,2 }, {"SUBD" ,&op::SUBD_idx ,4 ,99,2 }, {"ANDA"		,&op::ANDA_idx	  ,4 ,99,2 }, {"BITA"	  ,&op::BITA_idx	,4 ,99,2 }, {"LDA"	,&op::LDA_idx  ,4 ,99,2 }, {"STA"  ,&op::STA_idx  ,4 ,99,2 }, {"EORA"	  ,&op::EORA_idx	  ,4 ,99,2 }, {"ADCA" ,&op::ADCA_idx ,4 ,99,2 }, {"ORA"	 ,&op::ORA_idx	,4 ,99,2 }, {"ADDA" ,&op::ADDA_idx ,4 ,99,2 }, {"CMPX" ,&op::CMPX_idx ,6 ,99,2 }, {"JSR"  ,&op::JSR_idx	 ,7 ,99,2 }, {"LDX"	 ,&op::LDX_idx	,5 ,99,2 }, {"STX"	,&op::STX_idx  ,5 ,99,2 },
+		{"SUBA" ,&op::SUBA_ext ,5 ,5 ,3 }, {"CMPA" ,&op::CMPA_ext ,5 ,5 ,3 }, {"SBCA" ,&op::SBCA_ext ,5 ,5 ,3 }, {"SUBD" ,&op::SUBD_ext ,7 ,7 ,3 }, {"ANDA"		,&op::ANDA_ext	  ,5 ,5 ,3 }, {"BITA"	  ,&op::BITA_ext	,5 ,5 ,3 }, {"LDA"	,&op::LDA_ext  ,5 ,5 ,3 }, {"STA"  ,&op::STA_ext  ,5 ,5 ,3 }, {"EORA"	  ,&op::EORA_ext	  ,5 ,5 ,3 }, {"ADCA" ,&op::ADCA_ext ,5 ,5 ,3 }, {"ORA"	 ,&op::ORA_ext	,5 ,5 ,3 }, {"ADDA" ,&op::ADDA_ext ,5 ,5 ,3 }, {"CMPX" ,&op::CMPX_ext ,7 ,7 ,3 }, {"JSR"  ,&op::JSR_ext	 ,8 ,8 ,3 }, {"LDX"	 ,&op::LDX_ext	,6 ,6 ,3 }, {"STX"	,&op::STX_ext  ,6 ,6 ,3 },
+		{"SUBB" ,&op::SUBB_imm ,2 ,2 ,2 }, {"CMPB" ,&op::CMPB_imm ,2 ,2 ,2 }, {"SBCB" ,&op::SBCB_imm ,2 ,2 ,2 }, {"ADDD" ,&op::ADDD_imm ,4 ,4 ,3 }, {"ANDB"		,&op::ANDB_imm	  ,2 ,2, 2 }, {"BITB"	  ,&op::BITB_imm	,2 ,2 ,2 }, {"LDB"	,&op::LDB_imm  ,2 ,2 ,2 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"EORB"	  ,&op::EORB_imm	  ,2 ,2 ,2 }, {"ADCB" ,&op::ADCB_imm ,2 ,2 ,2 }, {"ORB"	 ,&op::ORB_imm	,2 ,2 ,2 }, {"ADDB" ,&op::ADDB_imm ,2 ,2 ,2 }, {"LDD"  ,&op::LDD_imm  ,3 ,3 ,3 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"LDU"	 ,&op::LDU_imm	,3 ,3 ,3 }, {"???"	,&op::XXX	   ,1 ,1 ,1 },
+		{"SUBB" ,&op::SUBB_dir ,4 ,4 ,2 }, {"CMPB" ,&op::CMPB_dir ,4 ,4 ,2 }, {"SBCB" ,&op::SBCB_dir ,4 ,4 ,2 }, {"ADDD" ,&op::ADDD_dir ,6 ,6 ,2 }, {"ANDB"		,&op::ANDB_dir	  ,4 ,4 ,2 }, {"BITB"	  ,&op::BITB_dir	,4 ,4 ,2 }, {"LDB"	,&op::LDB_dir  ,4 ,4 ,2 }, {"STB"  ,&op::STB_dir  ,4 ,4 ,2 }, {"EORB"	  ,&op::EORB_dir	  ,4 ,4 ,2 }, {"ADCB" ,&op::ADCB_dir ,4 ,4 ,2 }, {"ORB"	 ,&op::ORB_dir	,4 ,4 ,2 }, {"ADDB" ,&op::ADDB_dir ,4 ,4 ,2 }, {"LDD"  ,&op::LDD_dir  ,5 ,5 ,2 }, {"STD"  ,&op::STD_dir	 ,5 ,5 ,2 }, {"LDU"	 ,&op::LDU_dir	,5 ,5 ,2 }, {"STU"	,&op::STU_dir  ,5 ,5 ,2 },
+		{"SUBB" ,&op::SUBB_idx ,4 ,99,2 }, {"CMPB" ,&op::CMPB_idx ,4 ,99,2 }, {"SBCB" ,&op::SBCB_idx ,4 ,99,2 }, {"ADDD" ,&op::ADDD_idx ,6 ,99,2 }, {"ANDB"		,&op::ANDB_idx	  ,4 ,99,2 }, {"BITB"	  ,&op::BITB_idx	,4 ,99,2 }, {"LDB"	,&op::LDB_idx  ,4 ,99,2 }, {"STB"  ,&op::STB_idx  ,4 ,99,2 }, {"EORB"	  ,&op::EORB_idx	  ,4 ,99,2 }, {"ADCB" ,&op::ADCB_idx ,4 ,99,2 }, {"ORB"	 ,&op::ORB_idx	,4 ,99,2 }, {"ADDB" ,&op::ADDB_idx ,4 ,99,2 }, {"LDD"  ,&op::LDD_idx  ,5 ,99,2 }, {"STD"  ,&op::STD_idx	 ,5 ,99,2 }, {"LDU"	 ,&op::LDU_idx	,5 ,99,2 }, {"STU"	,&op::STU_idx  ,5 ,99,2 },
+		{"SUBB" ,&op::SUBB_ext ,5 ,5 ,3 }, {"CMPB" ,&op::CMPB_ext ,5 ,5 ,3 }, {"SBCB" ,&op::SBCB_ext ,5 ,5 ,3 }, {"ADDD" ,&op::ADDD_ext ,7 ,7 ,3 }, {"ANDB"		,&op::ANDB_ext	  ,5 ,5 ,3 }, {"BITB"	  ,&op::BITB_ext	,5 ,5 ,3 }, {"LDB"	,&op::LDB_ext  ,5 ,5 ,3 }, {"STB"  ,&op::STB_ext  ,5 ,5 ,3 }, {"EORB"	  ,&op::EORB_ext	  ,5 ,5 ,3 }, {"ADCB" ,&op::ADCB_ext ,5 ,5 ,3 }, {"ORB"	 ,&op::ORB_ext	,5 ,5 ,3 }, {"ADDB" ,&op::ADDB_ext ,5 ,5 ,3 }, {"LDD"  ,&op::LDD_ext  ,6 ,6 ,3 }, {"STD"  ,&op::STD_ext	 ,6 ,6 ,3 }, {"LDU"	 ,&op::LDU_ext	,6 ,6 ,3 }, {"STU"	,&op::STU_ext  ,6 ,6 ,3 }
 #endif
 	};
-	OpCodeP2 =
+	OpCode[1] =
 	{
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"***"  ,nullptr   ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"LBRN" ,&op::LBRN_rel ,5 ,5 ,4 }, {"LBHI" ,&op::LBHI_rel ,5 ,6 ,4 }, {"LBLS" ,&op::LBLS_rel ,5 ,6 ,4 }, {"LBHS/LBCC",&op::LBHS_LBCC_rel,5 ,6 ,4 }, {"LBCS/LBLO",&op::LBCS_LBLO_rel,5 ,6 ,4 }, {"LBNE" ,&op::LBNE_rel ,5 ,6 ,4 }, {"LBEQ" ,&op::LBEQ_rel ,5 ,6 ,4 }, {"LBVC" ,&op::LBVC_rel ,5 ,6 ,4 }, {"LBVS" ,&op::LBVS_rel ,5 ,6 ,4 }, {"LBPL" ,&op::LBPL_rel ,5 ,6 ,4 }, {"LBMI" ,&op::LBMI_rel ,5 ,6 ,4 }, {"LBGE" ,&op::LBGE_rel ,5 ,6 ,4 }, {"LBLT" ,&op::LBLT_rel ,5 ,6 ,4 }, {"LBGT" ,&op::LBGT_rel ,5 ,6 ,4 }, {"LBLE" ,&op::LBLE_rel ,5 ,6 ,4 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"SWI2" ,&op::SWI2_inh ,20,20,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_imm ,5 ,5 ,4 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_imm  ,4 ,4 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_dir ,7 ,7 ,3 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_dir  ,6 ,6 ,3 }, {"STY"  ,&op::STY_dir  ,6 ,6 ,3 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_idx ,7 ,99,3 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_idx ,7 ,99,3 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_idx  ,6 ,99,3 }, {"STY"  ,&op::STY_idx  ,6 ,99,3 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_ext ,8 ,8 ,4 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_ext  ,7 ,7 ,4 }, {"STY"  ,&op::STY_ext  ,7 ,7 ,4 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_imm  ,4 ,4 ,4 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_dir  ,6 ,6 ,4 }, {"STS"  ,&op::STS_dir  ,6 ,6, 3 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_idx  ,6 ,99,3 }, {"STS"  ,&op::STS_idx  ,6 ,99,3 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"      ,&op::XXX          ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_ext  ,7 ,7 ,4 }, {"STS"  ,&op::STS_ext  ,7 ,7, 4 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"***"	,nullptr   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"LBRN" ,&op::LBRN_rel ,5 ,5 ,4 }, {"LBHI" ,&op::LBHI_rel ,5 ,6 ,4 }, {"LBLS" ,&op::LBLS_rel ,5 ,6 ,4 }, {"LBHS/LBCC",&op::LBHS_LBCC_rel,5 ,6 ,4 }, {"LBCS/LBLO",&op::LBCS_LBLO_rel,5 ,6 ,4 }, {"LBNE" ,&op::LBNE_rel ,5 ,6 ,4 }, {"LBEQ" ,&op::LBEQ_rel ,5 ,6 ,4 }, {"LBVC" ,&op::LBVC_rel ,5 ,6 ,4 }, {"LBVS" ,&op::LBVS_rel ,5 ,6 ,4 }, {"LBPL" ,&op::LBPL_rel ,5 ,6 ,4 }, {"LBMI" ,&op::LBMI_rel ,5 ,6 ,4 }, {"LBGE" ,&op::LBGE_rel ,5 ,6 ,4 }, {"LBLT" ,&op::LBLT_rel ,5 ,6 ,4 }, {"LBGT" ,&op::LBGT_rel ,5 ,6 ,4 }, {"LBLE" ,&op::LBLE_rel ,5 ,6 ,4 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"SWI2" ,&op::SWI2_inh ,20,20,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_imm ,5 ,5 ,4 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_imm	 ,4 ,4 ,4 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_dir ,7 ,7 ,3 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_dir	 ,6 ,6 ,3 }, {"STY"	 ,&op::STY_dir	,6 ,6 ,3 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_idx ,7 ,99,3 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_idx ,7 ,99,3 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_idx	 ,6 ,99,3 }, {"STY"	 ,&op::STY_idx	,6 ,99,3 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"CMPD" ,&op::CMPD_ext ,8 ,8 ,4 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"CMPY" ,&op::CMPY_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDY"  ,&op::LDY_ext	 ,7 ,7 ,4 }, {"STY"	 ,&op::STY_ext	,7 ,7 ,4 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_imm	 ,4 ,4 ,4 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_dir	 ,6 ,6 ,4 }, {"STS"	 ,&op::STS_dir	,6 ,6, 3 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_idx	 ,6 ,99,3 }, {"STS"	 ,&op::STS_idx	,6 ,99,3 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"		,&op::XXX		   ,1 ,1 ,1 }, {"???"	   ,&op::XXX		  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"???"  ,&op::XXX		 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX	  ,1 ,1 ,1 }, {"LDS"  ,&op::LDS_ext	 ,7 ,7 ,4 }, {"STS"	 ,&op::STS_ext	,7 ,7, 4 },
 	};
-	OpCodeP3 =
+	OpCode[2] =
 	{
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"***"  ,nullptr   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"SWI3" ,&op::SWI3_inh ,20,20,2 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_idx ,7 ,99,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_idx ,7 ,99,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 },
-		{"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX      ,1 ,1 ,1 }
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"***"	,nullptr   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"SWI3" ,&op::SWI3_inh ,20,20,2 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_imm ,5 ,5 ,4 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_imm ,5 ,5 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_dir ,7 ,7 ,3 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_dir ,7 ,7 ,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_idx ,7 ,99,3 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_idx ,7 ,99,3 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"CMPU" ,&op::CMPU_ext ,8 ,8 ,4 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"CMPS" ,&op::CMPS_ext ,8 ,8 ,4 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 },
+		{"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX	,1 ,1 ,1 }, {"???"	,&op::XXX	   ,1 ,1 ,1 }, {"???"  ,&op::XXX  ,1 ,1 ,1 }, {"???"  ,&op::XXX	 ,1 ,1 ,1 }, {"???"	 ,&op::XXX		,1 ,1 ,1 }
 	};
+	opCodePage = 0;
 }
 
 
@@ -179,15 +180,15 @@ void Mc6809::Clock()
 {
 	if (exec == nullptr)
 	{
-		if (Halt && (table == OpCodeP1))
+		if (Halt && (opCodePage == 0))
 			exec = &Mc6809::HALT;
-		else if (Reset && (table == OpCodeP1))
+		else if (Reset && (opCodePage == 0))
 			exec = &Mc6809::RESET;
-		else if (Nmi && (table == OpCodeP1))
+		else if (Nmi && (opCodePage == 0))
 			exec = &Mc6809::NMI;
-		else if (Firq && (table == OpCodeP1))
+		else if (Firq && (opCodePage == 0))
 			exec = &Mc6809::FIRQ;
-		else if (Irq && (table == OpCodeP1))
+		else if (Irq && (opCodePage == 0))
 			exec = &Mc6809::IRQ;
 		else
 			Fetch(reg_PC);
@@ -197,6 +198,7 @@ void Mc6809::Clock()
 	{
 		exec = nullptr;
 		clocksUsed = 0;
+		opCodePage = 0;
 	}
 	return;
 }
@@ -239,25 +241,132 @@ uint8_t Mc6809::Fetch(const uint16_t address)
 
 	if (opcode == 0x10)
 	{
-		table = OpCodeP2;
+		opCodePage = 1;
 		clocksUsed = 1;
 	}
 	else if (opcode == 0x11)
 	{
-		table = OpCodeP3;
+		opCodePage = 2;
 		clocksUsed = 1;
 	}
 	else
 	{
-		exec = table[opcode].opcode;
+		exec = OpCode[opCodePage][opcode].opcode;
 		++clocksUsed;
-
-		// ALWAYS revert back to the first opcode table
-		table = OpCodeP1;
 	}
 
 	// process opcode and set it to execute it.
 	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_H()
+//*****************************************************************************
+//	Set or Clear Half-Carry Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_H(uint8_t data)
+{
+	reg_CC = ((data & 0x0010) == 0x0010) ? (reg_CC | CC::H) : (reg_CC & ~CC::H);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_N()
+//*****************************************************************************
+//	Set or Clear Negative Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_N(uint8_t data)
+{
+	reg_CC = ((data & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC | ~CC::N);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_Z()
+//*****************************************************************************
+//	Set or Clear Zero Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_Z(uint8_t data)
+{
+	reg_CC = (data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_V()
+//*****************************************************************************
+//	Set or Clear Overflow Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_V(uint8_t reg)
+{
+	reg_CC = (((reg >> 6) & 0x01) != ((reg >> 7) & 0x01)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_V()
+//*****************************************************************************
+//	Set or Clear Overflow Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_V(uint8_t dataA, uint8_t dataB, uint8_t result)
+{
+	reg_CC = (((dataA & 0x80) == 0) && ((dataB & 0x80) == 0) && ((result & 0x80) == 0x80)) ? (reg_CC | CC::V) : (reg_CC | ~CC::V);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_C()
+//*****************************************************************************
+//	Set or Clear Carry Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_C(uint16_t data)
+{
+	reg_CC = ((data & 0x0100) == 0x0100) ? (reg_CC | CC::C) : (reg_CC | ~CC::C);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_N()
+//*****************************************************************************
+//	Set or Clear Negative Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_N(uint16_t data)
+{
+	reg_CC = ((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC | ~CC::N);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_Z()
+//*****************************************************************************
+//	Set or Clear Zero Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_Z(uint16_t data)
+{
+	reg_CC = (data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_V()
+//*****************************************************************************
+//	Set or Clear Overflow Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_V(uint16_t dataA, uint16_t dataB, uint16_t result)
+{
+	reg_CC = (((dataA & 0x8000) == 0) && ((dataB & 0x8000) == 0) && ((result & 0x8000) == 0x8000)) ? (reg_CC | CC::V) : (reg_CC | ~CC::V);
+}
+
+
+//*****************************************************************************
+//	AdjustCC_C()
+//*****************************************************************************
+//	Set or Clear Carry Condition Code
+//*****************************************************************************
+void Mc6809::AdjustCC_C(uint32_t data)
+{
+	reg_CC = ((data & 0x00010000) == 0x00010000) ? (reg_CC | CC::C) : (reg_CC | ~CC::C);
 }
 
 
@@ -515,6 +624,8 @@ uint8_t Mc6809::ABX_inh()
 //*****************************************************************************
 uint8_t Mc6809::ADCA_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -528,16 +639,13 @@ uint8_t Mc6809::ADCA_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -550,6 +658,8 @@ uint8_t Mc6809::ADCA_dir()
 //*****************************************************************************
 uint8_t Mc6809::ADCA_ext()	// H N Z V C all modified. reg_A modified
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -565,16 +675,13 @@ uint8_t Mc6809::ADCA_ext()	// H N Z V C all modified. reg_A modified
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -587,23 +694,22 @@ uint8_t Mc6809::ADCA_ext()	// H N Z V C all modified. reg_A modified
 //*****************************************************************************
 uint8_t Mc6809::ADCA_imm()	// H N Z V C all modified. reg_A modified
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				PC+1
-		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_A;
-		reg_A += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		scratch_lo = Read(reg_scratch);
+		data = reg_A + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -616,6 +722,8 @@ uint8_t Mc6809::ADCA_imm()	// H N Z V C all modified. reg_A modified
 //*****************************************************************************
 uint8_t Mc6809::ADCB_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -629,16 +737,13 @@ uint8_t Mc6809::ADCB_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -651,6 +756,8 @@ uint8_t Mc6809::ADCB_dir()
 //*****************************************************************************
 uint8_t Mc6809::ADCB_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -666,16 +773,13 @@ uint8_t Mc6809::ADCB_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -688,6 +792,8 @@ uint8_t Mc6809::ADCB_ext()
 //*****************************************************************************
 uint8_t Mc6809::ADCB_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -695,16 +801,13 @@ uint8_t Mc6809::ADCB_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_B;
-		reg_B += scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -717,6 +820,8 @@ uint8_t Mc6809::ADCB_imm()
 //*****************************************************************************
 uint8_t Mc6809::ADDA_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -730,16 +835,13 @@ uint8_t Mc6809::ADDA_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-		reg_A += scratch_lo;
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -752,6 +854,8 @@ uint8_t Mc6809::ADDA_dir()
 //*****************************************************************************
 uint8_t Mc6809::ADDA_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -767,16 +871,13 @@ uint8_t Mc6809::ADDA_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-		reg_A += scratch_lo;
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -789,6 +890,8 @@ uint8_t Mc6809::ADDA_ext()
 //*****************************************************************************
 uint8_t Mc6809::ADDA_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -796,16 +899,13 @@ uint8_t Mc6809::ADDA_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_A;
-		reg_A += scratch_lo;
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -818,6 +918,8 @@ uint8_t Mc6809::ADDA_imm()
 //*****************************************************************************
 uint8_t Mc6809::ADDB_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -831,16 +933,13 @@ uint8_t Mc6809::ADDB_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-		reg_B += scratch_lo;
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -853,6 +952,8 @@ uint8_t Mc6809::ADDB_dir()
 //*****************************************************************************
 uint8_t Mc6809::ADDB_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -868,16 +969,13 @@ uint8_t Mc6809::ADDB_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-		reg_B += scratch_lo;
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -890,6 +988,8 @@ uint8_t Mc6809::ADDB_ext()
 //*****************************************************************************
 uint8_t Mc6809::ADDB_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -897,16 +997,13 @@ uint8_t Mc6809::ADDB_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_B;
-		reg_B += scratch_lo;
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x08) != (scratch_hi & 0x08) ? (reg_CC | CC::H) : (reg_CC & ~CC::H));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -919,7 +1016,7 @@ uint8_t Mc6809::ADDB_imm()
 //*****************************************************************************
 uint8_t Mc6809::ADDD_dir()
 {
-	static uint8_t data_hi;
+	static uint32_t data;
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -932,19 +1029,19 @@ uint8_t Mc6809::ADDD_dir()
 		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data High			$ffff
-		data_hi = Read(reg_scratch);
+		scratch_hi = Read(reg_scratch);
 		break;
 	case 5:		//	R	Data Low			EA+1
 		scratch_lo = Read(++reg_scratch);
-		scratch_hi = data_hi;
 		break;
 	case 6:		//	R	Don't Care			$ffff
-		reg_D += reg_scratch;
-
-		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_D & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+		data = reg_D + reg_scratch;
+		AdjustCC_V(reg_scratch, reg_D, (data & 0xffff));
+		reg_D = data & 0xffff;
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -957,7 +1054,9 @@ uint8_t Mc6809::ADDD_dir()
 //*****************************************************************************
 uint8_t Mc6809::ADDD_ext()
 {
-	static uint8_t data_hi;
+	static uint16_t data;
+	uint32_t tempRegValue;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -972,19 +1071,18 @@ uint8_t Mc6809::ADDD_ext()
 	case 4:		//	R	Don't Care			$ffff
 		break;
 	case 5:		//	R	Data High			$ffff
-		data_hi = Read(reg_scratch);
+		data = Read(reg_scratch) << 8;
 		break;
 	case 6:		//	R	Data Low			EA+1
-		scratch_lo = Read(reg_scratch);
-		scratch_hi = data_hi;
+		data |= Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		reg_D += reg_scratch;
-
-		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_D & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+		tempRegValue = reg_D + data;
+		AdjustCC_V(data, reg_D, tempRegValue);
+		reg_D = tempRegValue & 0xffff;
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -997,6 +1095,8 @@ uint8_t Mc6809::ADDD_ext()
 //*****************************************************************************
 uint8_t Mc6809::ADDD_imm()
 {
+	uint32_t tempRegValue;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -1009,12 +1109,12 @@ uint8_t Mc6809::ADDD_imm()
 		scratch_lo = Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't Care			$ffff
-		reg_D += reg_scratch;
-
-		reg_CC = ((reg_D == 0x0000) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_D & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_D & 0x8000) != (reg_scratch & 0x8000) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
+		tempRegValue = reg_D + reg_scratch;
+		AdjustCC_V(reg_scratch, reg_D, tempRegValue);
+		reg_D = tempRegValue & 0xffff;
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -1042,8 +1142,8 @@ uint8_t Mc6809::ANDA_dir()
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
-		reg_CC = (((reg_A & 0x80)== 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		AdjustCC_Z(reg_A);
+		AdjustCC_N(reg_A);
 		clocksUsed = 255;
 		break;
 	}
@@ -1073,8 +1173,8 @@ uint8_t Mc6809::ANDA_ext()
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		AdjustCC_Z(reg_A);
+		AdjustCC_N(reg_A);
 		clocksUsed = 255;
 		break;
 	}
@@ -1096,8 +1196,8 @@ uint8_t Mc6809::ANDA_imm()
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		AdjustCC_Z(reg_A);
+		AdjustCC_N(reg_A);
 		clocksUsed = 255;
 		break;
 	}
@@ -1125,8 +1225,8 @@ uint8_t Mc6809::ANDB_dir()
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		AdjustCC_Z(reg_B);
+		AdjustCC_N(reg_B);
 		clocksUsed = 255;
 		break;
 	}
@@ -1156,8 +1256,8 @@ uint8_t Mc6809::ANDB_ext()
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		AdjustCC_Z(reg_B);
+		AdjustCC_N(reg_B);
 		clocksUsed = 255;
 		break;
 	}
@@ -1179,8 +1279,8 @@ uint8_t Mc6809::ANDB_imm()
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC &= ~CC::Z));
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC &= ~CC::N));
+		AdjustCC_Z(reg_B);
+		AdjustCC_N(reg_B);
 		clocksUsed = 255;
 		break;
 	}
@@ -1222,11 +1322,11 @@ uint8_t Mc6809::ASLA_LSLA_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	don't care			PC+1
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = reg_A << 1;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_C((uint16_t)(reg_A << 1));
+		AdjustCC_V(reg_A);
+		reg_A = (reg_A << 1) & 0xfe;
+		AdjustCC_Z(reg_A);
+		AdjustCC_N(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -1247,11 +1347,11 @@ uint8_t Mc6809::ASLB_LSLB_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	don't care			PC+1
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_B = reg_B << 1;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_C((uint16_t)(reg_B << 1));
+		AdjustCC_V(reg_B);
+		reg_B = (reg_B << 1) & 0xfe;
+		AdjustCC_Z(reg_B);
+		AdjustCC_N(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -1282,11 +1382,11 @@ uint8_t Mc6809::ASL_LSL_dir()
 		data_lo = Read(reg_scratch);
 		break;
 	case 5:		//	R	Don't care			$ffff
-		reg_CC = ((data_lo& 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = data_lo << 1;
-		reg_CC = (data_lo== 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo& 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		reg_CC = (((data_lo>> 6) & 1) != ((data_lo>> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_C((uint16_t)(data_lo << 1));
+		AdjustCC_V(data_lo);
+		data_lo = (data_lo << 1) & 0xfe;
+		AdjustCC_Z(data_lo);
+		AdjustCC_N(data_lo);
 		break;
 	case 6:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -1321,11 +1421,11 @@ uint8_t Mc6809::ASL_LSL_ext()
 		data_lo = Read(reg_scratch);
 		break;
 	case 6:		//	R	Don't care			$ffff
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = data_lo << 1;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-		reg_CC = (((data_lo >> 6) & 1) != ((data_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_C((uint16_t)(data_lo << 1));
+		AdjustCC_V(data_lo);
+		data_lo = (data_lo << 1) & 0xfe;
+		AdjustCC_Z(data_lo);
+		AdjustCC_N(data_lo);
 		break;
 	case 7:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -1348,10 +1448,10 @@ uint8_t Mc6809::ASRA_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = reg_A & 0x80;
-		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_CC = ((reg_A & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = ((reg_A >> 1) & 0x7f) | scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_Z(reg_A);
+		AdjustCC_N(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -1372,11 +1472,10 @@ uint8_t Mc6809::ASRB_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = reg_B & 0x80;
-		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_B = ((reg_B >> 1) & 0x7f) | scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
-
+		reg_CC = ((reg_B & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_A = ((reg_B >> 1) & 0x7f) | scratch_lo;
+		AdjustCC_Z(reg_B);
+		AdjustCC_N(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -1408,10 +1507,10 @@ uint8_t Mc6809::ASR_dir()
 		break;
 	case 5:		//	R	Don't care			$ffff
 		data_ghst = data_lo & 0x80;
-		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = ((data_lo >> 1) & 0x7f) | data_ghst;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_A = ((data_lo >> 1) & 0x7f) | scratch_lo;
+		AdjustCC_Z(data_lo);
+		AdjustCC_N(data_lo);
 		break;
 	case 6:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -1448,10 +1547,10 @@ uint8_t Mc6809::ASR_ext()
 		break;
 	case 6:		//	R	Don't care			$ffff
 		data_ghst = data_lo & 0x80;
-		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = ((data_lo >> 1) & 0x7f) | data_ghst;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_A = ((data_lo >> 1) & 0x7f) | scratch_lo;
+		AdjustCC_Z(data_lo);
+		AdjustCC_N(data_lo);
 		break;
 	case 7:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -1602,9 +1701,9 @@ uint8_t Mc6809::BITA_dir()
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		clocksUsed = 255;
 		break;
 	}
@@ -1625,7 +1724,7 @@ uint8_t Mc6809::BITA_ext()
 	case 2:		//	R	Address High		PC+1
 		scratch_hi = Read(reg_PC++);
 		break;
-	case 3:		//	R	Address Low			PC+2	
+	case 3:		//	R	Address Low			PC+2
 		scratch_lo = Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't Care			$ffff
@@ -1633,9 +1732,9 @@ uint8_t Mc6809::BITA_ext()
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_A &= scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		clocksUsed = 255;
 		break;
 	}
@@ -1656,9 +1755,9 @@ uint8_t Mc6809::BITA_imm()
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
 		reg_A &= scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		clocksUsed = 255;
 		break;
 	}
@@ -1685,10 +1784,9 @@ uint8_t Mc6809::BITB_dir()
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
-
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		clocksUsed = 255;
 		break;
 	}
@@ -1717,9 +1815,9 @@ uint8_t Mc6809::BITB_ext()
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		reg_B &= scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		clocksUsed = 255;
 		break;
 	}
@@ -1740,10 +1838,9 @@ uint8_t Mc6809::BITB_imm()
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
 		reg_B &= scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC &= ~CC::V;
-
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		clocksUsed = 255;
 		break;
 	}
@@ -1769,7 +1866,7 @@ uint8_t Mc6809::BLE_rel()
 		if (((reg_CC & CC::Z) == CC::Z) ||
 			(((reg_CC & CC::N) == CC::N) && (reg_CC & CC::V) != CC::V) ||
 			(((reg_CC & CC::N) != CC::N) && (reg_CC & CC::V) == CC::V))
-				reg_PC += reg_scratch;
+			reg_PC += reg_scratch;
 		clocksUsed = 255;
 		break;
 	}
@@ -1991,7 +2088,7 @@ uint8_t Mc6809::BSR_rel()
 	case 6:		// W	Retern Address Low	SP-1
 		Write(reg_S--, PC_lo);
 		break;
-	case 7:		// W	Return Address High	SP-2
+	case 7:		// W	Return Address High SP-2
 		Write(reg_S--, PC_hi);
 		reg_PC += reg_scratch;
 		clocksUsed = 255;
@@ -2061,7 +2158,7 @@ uint8_t Mc6809::CLRA_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		reg_A = 0;
-		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+		reg_CC = (reg_CC & CC::H) | CC::Z;
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -2082,7 +2179,7 @@ uint8_t Mc6809::CLRB_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		reg_B = 0;
-		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+		reg_CC = (reg_CC & CC::H) | CC::Z;
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -2096,8 +2193,6 @@ uint8_t Mc6809::CLRB_inh()
 //*****************************************************************************
 uint8_t Mc6809::CLR_dir()
 {
-	static uint8_t data_lo;
-
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -2113,7 +2208,7 @@ uint8_t Mc6809::CLR_dir()
 		Read(reg_scratch);
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+		reg_CC = (reg_CC & CC::H) | CC::Z;
 		break;
 	case 6:		// W	Data				EA
 		Write(reg_scratch, 0);
@@ -2129,8 +2224,6 @@ uint8_t Mc6809::CLR_dir()
 //*****************************************************************************
 uint8_t Mc6809::CLR_ext()
 {
-	static uint8_t data_lo;
-
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -2148,7 +2241,7 @@ uint8_t Mc6809::CLR_ext()
 		Read(reg_scratch);
 		break;
 	case 6:		//	R	Don't Care			$ffff
-		reg_CC = (reg_CC & (CC::H | CC::I | CC::E | CC::F)) | CC::Z | CC::C;
+		reg_CC = (reg_CC & CC::H) | CC::Z;
 		break;
 	case 7:		// W	Data				EA
 		Write(reg_scratch, 0);
@@ -2164,6 +2257,8 @@ uint8_t Mc6809::CLR_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPA_dir()
 {
+	uint8_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -2176,12 +2271,12 @@ uint8_t Mc6809::CMPA_dir()
 		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_scratch = reg_A - scratch_lo;
-		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		data = Read(reg_scratch);
+		reg_scratch = reg_A - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_A, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
 		clocksUsed = 255;
 		break;
 	}
@@ -2194,6 +2289,8 @@ uint8_t Mc6809::CMPA_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPA_ext()
 {
+	uint8_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -2208,12 +2305,12 @@ uint8_t Mc6809::CMPA_ext()
 	case 4:		//	R	Don't Care			$ffff
 		break;
 	case 5:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_scratch = reg_A - scratch_lo;
-		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		data = Read(reg_scratch);
+		reg_scratch = reg_A - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_A, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
 		clocksUsed = 255;
 		break;
 	}
@@ -2226,18 +2323,20 @@ uint8_t Mc6809::CMPA_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPA_imm()
 {
+	uint8_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				PC+1
-		scratch_lo = Read(reg_PC++);
-		reg_scratch = reg_A - scratch_lo;
-		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		data = Read(reg_PC++);
+		reg_scratch = reg_A - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_A, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
 		clocksUsed = 255;
 		break;
 	}
@@ -2250,6 +2349,8 @@ uint8_t Mc6809::CMPA_imm()
 //*****************************************************************************
 uint8_t Mc6809::CMPB_dir()
 {
+	uint8_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -2262,12 +2363,12 @@ uint8_t Mc6809::CMPB_dir()
 		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_scratch = reg_B - scratch_lo;
-		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		data = Read(reg_scratch);
+		reg_scratch = reg_B - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_B, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
 		clocksUsed = 255;
 		break;
 	}
@@ -2280,6 +2381,8 @@ uint8_t Mc6809::CMPB_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPB_ext()
 {
+	uint8_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -2294,12 +2397,12 @@ uint8_t Mc6809::CMPB_ext()
 	case 4:		//	R	Don't Care			$ffff
 		break;
 	case 5:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_scratch = reg_B - scratch_lo;
-		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		data = Read(reg_scratch);
+		reg_scratch = reg_B - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_B, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
 		clocksUsed = 255;
 		break;
 	}
@@ -2312,18 +2415,20 @@ uint8_t Mc6809::CMPB_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPB_imm()
 {
+	uint8_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				PC+1
-		scratch_lo = Read(reg_PC++);
-		reg_scratch = reg_B - scratch_lo;
-		reg_CC = (((scratch_lo & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((reg_scratch & 0x1000) == 0x1000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((scratch_hi != 0) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		data = Read(reg_PC++);
+		reg_scratch = reg_B - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_B, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
 		clocksUsed = 255;
 		break;
 	}
@@ -2336,7 +2441,8 @@ uint8_t Mc6809::CMPB_imm()
 //*****************************************************************************
 uint8_t Mc6809::CMPD_dir()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2356,14 +2462,14 @@ uint8_t Mc6809::CMPD_dir()
 		data = Read(reg_scratch);
 		break;
 	case 6:		//	R	Data Low			EA+1
-		data =  (data << 8 ) | Read(++reg_scratch);
+		data = (data << 8) | Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		data = reg_D - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_D - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_D, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2376,7 +2482,8 @@ uint8_t Mc6809::CMPD_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPD_ext()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2401,11 +2508,11 @@ uint8_t Mc6809::CMPD_ext()
 		data |= Read(++reg_scratch);
 		break;
 	case 8:		//	R	Don't Care			$ffff
-		data = reg_D - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_D - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_D, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2418,7 +2525,8 @@ uint8_t Mc6809::CMPD_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPD_imm()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2435,11 +2543,11 @@ uint8_t Mc6809::CMPD_imm()
 		data |= Read((reg_PC++));
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		data = reg_D - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_D - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_D, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2452,7 +2560,8 @@ uint8_t Mc6809::CMPD_imm()
 //*****************************************************************************
 uint8_t Mc6809::CMPS_dir()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2475,11 +2584,11 @@ uint8_t Mc6809::CMPS_dir()
 		data = (data << 8) | Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		data = reg_S - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_S - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_S, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2492,7 +2601,8 @@ uint8_t Mc6809::CMPS_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPS_ext()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2517,11 +2627,11 @@ uint8_t Mc6809::CMPS_ext()
 		data |= Read(++reg_scratch);
 		break;
 	case 8:		//	R	Don't Care			$ffff
-		data = reg_S - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_S - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_S, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2534,7 +2644,8 @@ uint8_t Mc6809::CMPS_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPS_imm()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2551,11 +2662,11 @@ uint8_t Mc6809::CMPS_imm()
 		data |= Read((reg_PC++));
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		data = reg_S - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_S - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_S, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2568,7 +2679,8 @@ uint8_t Mc6809::CMPS_imm()
 //*****************************************************************************
 uint8_t Mc6809::CMPU_dir()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2591,11 +2703,11 @@ uint8_t Mc6809::CMPU_dir()
 		data = (data << 8) | Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		data = reg_U - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_U - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_U, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2608,7 +2720,8 @@ uint8_t Mc6809::CMPU_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPU_ext()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2633,11 +2746,11 @@ uint8_t Mc6809::CMPU_ext()
 		data |= Read(++reg_scratch);
 		break;
 	case 8:		//	R	Don't Care			$ffff
-		data = reg_U - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_U - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_U, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2650,7 +2763,8 @@ uint8_t Mc6809::CMPU_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPU_imm()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2667,11 +2781,11 @@ uint8_t Mc6809::CMPU_imm()
 		data |= Read((reg_PC++));
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		data = reg_D - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_U - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_U, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2684,7 +2798,8 @@ uint8_t Mc6809::CMPU_imm()
 //*****************************************************************************
 uint8_t Mc6809::CMPX_dir()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2704,11 +2819,11 @@ uint8_t Mc6809::CMPX_dir()
 		data = (data << 8) | Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		data = reg_X - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_X - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_X, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2721,7 +2836,8 @@ uint8_t Mc6809::CMPX_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPX_ext()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2743,11 +2859,11 @@ uint8_t Mc6809::CMPX_ext()
 		data |= Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		data = reg_X - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_X - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_X, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2760,7 +2876,8 @@ uint8_t Mc6809::CMPX_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPX_imm()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2774,11 +2891,11 @@ uint8_t Mc6809::CMPX_imm()
 		data |= Read((reg_PC++));
 		break;
 	case 4:		//	R	Don't Care			$ffff
-		data = reg_X - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_X - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_X, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2791,7 +2908,8 @@ uint8_t Mc6809::CMPX_imm()
 //*****************************************************************************
 uint8_t Mc6809::CMPY_dir()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2814,11 +2932,11 @@ uint8_t Mc6809::CMPY_dir()
 		data = (data << 8) | Read(++reg_scratch);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		data = reg_Y - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_Y - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_Y, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2831,7 +2949,8 @@ uint8_t Mc6809::CMPY_dir()
 //*****************************************************************************
 uint8_t Mc6809::CMPY_ext()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2856,11 +2975,11 @@ uint8_t Mc6809::CMPY_ext()
 		data |= Read(++reg_scratch);
 		break;
 	case 8:		//	R	Don't Care			$ffff
-		data = reg_Y - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_Y - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_Y, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2873,7 +2992,8 @@ uint8_t Mc6809::CMPY_ext()
 //*****************************************************************************
 uint8_t Mc6809::CMPY_imm()
 {
-	static uint32_t data;
+	static uint16_t data;
+	uint32_t tempRegValue;
 
 	switch (++clocksUsed)
 	{
@@ -2890,11 +3010,11 @@ uint8_t Mc6809::CMPY_imm()
 		data |= Read((reg_PC++));
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		data = reg_Y - data;
-		reg_CC = (((data & 0x8000) == 0x8000) ? (reg_CC | CC::N) : (reg_CC & !CC::N));
-		reg_CC = ((data == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = (((data & 0x10000) == 0x10000) ? (reg_CC | CC::C) : (reg_CC & !CC::C));
-		reg_CC = ((data != 0xff0000) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
+		tempRegValue = reg_Y - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_Y, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
 		clocksUsed = 255;
 		break;
 	}
@@ -2939,10 +3059,10 @@ uint8_t Mc6809::COMB_inh()
 	case 2:		//	R	Don't Care			PC+1
 		reg_B ^= 255;
 		//reg_PC++;
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		reg_CC &= ~(CC::V);
 		reg_CC |= (CC::C);
-		reg_CC &= ~(CC::V | CC::N | CC::Z);
-		reg_CC |= (reg_B == 0) ? CC::Z : 0x00;
-		reg_CC |= ((reg_B & 0x80) == 0x80) ? CC::N : 0x00;
 		clocksUsed = 255;
 		break;
 	}
@@ -2973,14 +3093,14 @@ uint8_t Mc6809::COM_dir()
 		break;
 	case 5:		//	R	Don't Care			$ffff
 		data_lo ^= 0xff;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		reg_CC &= ~(CC::V);
 		reg_CC |= (CC::C);
-		reg_CC &= ~(CC::V | CC::N | CC::Z);
-		reg_CC |= (data_lo == 0) ? CC::Z : 0x00;
-		reg_CC |= ((data_lo & 0x80) == 0x80) ? CC::N : 0x00;
 		break;
 	case 6:		// W	Data				EA
 		Write(reg_scratch, data_lo);
-		clocksUsed = 0xff;
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -3013,14 +3133,14 @@ uint8_t Mc6809::COM_ext()
 		break;
 	case 6:		//	R	Don't Care			$ffff
 		data_lo ^= 0xff;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		reg_CC &= ~(CC::V);
 		reg_CC |= (CC::C);
-		reg_CC &= ~(CC::V | CC::N | CC::Z);
-		reg_CC |= (data_lo == 0) ? CC::Z : 0x00;
-		reg_CC |= ((data_lo & 0x80) == 0x80) ? CC::N : 0x00;
 		break;
 	case 7:		// W  Data			EA
 		Write(reg_scratch, data_lo);
-		clocksUsed = 0xff;
+		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
@@ -3140,9 +3260,9 @@ uint8_t Mc6809::DAA_inh()
 
 		reg_A += cfLsn;			// fixes lsn
 		reg_A += (cfMsn << 4);	// fixes msn
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
 		reg_CC = (cfMsn == 6 || carry) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 
 		//reg_PC++;
 		clocksUsed = 255;
@@ -3165,8 +3285,8 @@ uint8_t Mc6809::DECA_inh()
 	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_A & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--reg_A;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -3188,8 +3308,8 @@ uint8_t Mc6809::DECB_inh()
 	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_B & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--reg_B;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -3222,8 +3342,8 @@ uint8_t Mc6809::DEC_dir()
 	case 5:		//	R	Don't Care			$ffff
 		reg_CC = ((data_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--data_lo;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 6:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -3260,8 +3380,8 @@ uint8_t Mc6809::DEC_ext()
 	case 6:		//	R	Don't Care			$ffff
 		reg_CC = ((data_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		--data_lo;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 7:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -3289,10 +3409,9 @@ uint8_t Mc6809::EORA_dir()
 		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_A ^= scratch_lo;
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_A ^= Read(reg_scratch);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -3320,10 +3439,9 @@ uint8_t Mc6809::EORA_ext()
 	case 4:		//	R	Don't Care			$ffff
 		break;
 	case 5:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_A ^= scratch_lo;
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_A ^= Read(reg_scratch);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -3343,10 +3461,9 @@ uint8_t Mc6809::EORA_imm()
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				EA
-		scratch_lo = Read(reg_PC++);
-		reg_A ^= scratch_lo;
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_A ^= Read(reg_PC++);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -3372,10 +3489,9 @@ uint8_t Mc6809::EORB_dir()
 		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_B ^= scratch_lo;
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_B ^= Read(reg_scratch);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -3403,10 +3519,9 @@ uint8_t Mc6809::EORB_ext()
 	case 4:		//	R	Don't Care			$ffff
 		break;
 	case 5:		//	R	Data				EA
-		scratch_lo = Read(reg_scratch);
-		reg_B ^= scratch_lo;
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_B ^= Read(reg_scratch);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -3426,10 +3541,9 @@ uint8_t Mc6809::EORB_imm()
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				EA
-		scratch_lo = Read(reg_PC++);
-		reg_B ^= scratch_lo;
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		reg_B ^= Read(reg_PC++);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -3730,8 +3844,8 @@ uint8_t Mc6809::INCA_inh()
 	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_A & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_A;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -3753,8 +3867,8 @@ uint8_t Mc6809::INCB_inh()
 	case 2:		//	R	Don't Care			PC+1
 		reg_CC = ((reg_B & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++reg_B;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -3787,8 +3901,8 @@ uint8_t Mc6809::INC_dir()
 	case 5:		//	R	Don't Care			$ffff
 		reg_CC = ((data_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++data_lo;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 6:		// W  Data			EA
 		Write(reg_scratch, data_lo);
@@ -3825,8 +3939,8 @@ uint8_t Mc6809::INC_ext()
 	case 6:		//	R	Don't Care			$ffff
 		reg_CC = ((data_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
 		++data_lo;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 7:		// W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -4175,7 +4289,7 @@ uint8_t Mc6809::LBLE_rel()
 		if (!(((reg_CC & CC::Z) == CC::Z) ||
 			(((reg_CC & CC::N) == CC::N) && (reg_CC & CC::V) != CC::V) ||
 			(((reg_CC & CC::N) != CC::N) && (reg_CC & CC::V) == CC::V)))
-				clocksUsed = 255;
+			clocksUsed = 255;
 		break;
 	case 6:
 		reg_PC += reg_scratch;
@@ -4439,7 +4553,7 @@ uint8_t Mc6809::LBSR_rel()
 	case 8:		// W	Retern Address Low	SP-1
 		Write(reg_S--, PC_lo);
 		break;
-	case 9:		// W	Return Address High	SP-2
+	case 9:		// W	Return Address High SP-2
 		Write(reg_S--, PC_hi);
 		reg_PC = reg_scratch;
 		clocksUsed = 255;
@@ -4533,8 +4647,8 @@ uint8_t Mc6809::LDA_dir()
 		break;
 	case 4:		//	R	Data				EA
 		reg_A = Read(reg_scratch);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4563,8 +4677,8 @@ uint8_t Mc6809::LDA_ext()
 		break;
 	case 5:		//	R	Data				EA
 		reg_A = Read(reg_scratch);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4585,8 +4699,8 @@ uint8_t Mc6809::LDA_imm()
 		break;
 	case 2:		//	R	Data				EA
 		reg_A = Read(reg_PC++);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4613,8 +4727,8 @@ uint8_t Mc6809::LDB_dir()
 		break;
 	case 4:		//	R	Data				EA
 		reg_B = Read(reg_scratch);
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4643,8 +4757,8 @@ uint8_t Mc6809::LDB_ext()
 		break;
 	case 5:		//	R	Data				EA
 		reg_B = Read(reg_scratch);
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4665,8 +4779,8 @@ uint8_t Mc6809::LDB_imm()
 		break;
 	case 2:		//	R	Data				EA
 		reg_B = Read(reg_PC++);
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4696,8 +4810,8 @@ uint8_t Mc6809::LDD_dir()
 		break;
 	case 5:		//	R	Register Low		EA+1
 		reg_B = Read(reg_scratch);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4729,8 +4843,8 @@ uint8_t Mc6809::LDD_ext()
 		break;
 	case 6:		//	R	Register Low		EA+1
 		reg_B = Read(reg_scratch);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4754,8 +4868,8 @@ uint8_t Mc6809::LDD_imm()
 		break;
 	case 3:		//	R	Register Low		PC+2
 		reg_B = Read(reg_PC++);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4788,8 +4902,8 @@ uint8_t Mc6809::LDS_dir()
 		break;
 	case 6:		//	R	Register Low		EA+1
 		S_lo = Read(reg_scratch);
-		reg_CC = (((S_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_S == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_S);
+		AdjustCC_Z(reg_S);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4824,8 +4938,8 @@ uint8_t Mc6809::LDS_ext()
 		break;
 	case 7:		//	R	Register Low		EA+1
 		S_lo = Read(reg_scratch);
-		reg_CC = (((S_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_S == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_S);
+		AdjustCC_Z(reg_S);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4852,8 +4966,8 @@ uint8_t Mc6809::LDS_imm()
 		break;
 	case 4:		//	R	Register Low		PC+2
 		S_lo = Read(reg_PC++);
-		reg_CC = (((S_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_S == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_S);
+		AdjustCC_Z(reg_S);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4883,8 +4997,8 @@ uint8_t Mc6809::LDU_dir()
 		break;
 	case 5:		//	R	Register Low		EA+1
 		U_lo = Read(reg_scratch);
-		reg_CC = (((U_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_U == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_U);
+		AdjustCC_Z(reg_U);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4916,8 +5030,8 @@ uint8_t Mc6809::LDU_ext()
 		break;
 	case 6:		//	R	Register Low		EA+1
 		U_lo = Read(reg_scratch);
-		reg_CC = (((U_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_U == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_U);
+		AdjustCC_Z(reg_U);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4941,8 +5055,8 @@ uint8_t Mc6809::LDU_imm()
 		break;
 	case 3:		//	R	Register Low		PC+2
 		U_lo = Read(reg_PC++);
-		reg_CC = (((U_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_U == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_U);
+		AdjustCC_Z(reg_U);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -4972,8 +5086,8 @@ uint8_t Mc6809::LDX_dir()
 		break;
 	case 5:		//	R	Register Low		EA+1
 		X_lo = Read(reg_scratch);
-		reg_CC = (((X_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_X);
+		AdjustCC_Z(reg_X);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5005,8 +5119,8 @@ uint8_t Mc6809::LDX_ext()
 		break;
 	case 6:		//	R	Register Low		EA+1
 		X_lo = Read(reg_scratch);
-		reg_CC = (((X_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_X);
+		AdjustCC_Z(reg_X);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5030,8 +5144,8 @@ uint8_t Mc6809::LDX_imm()
 		break;
 	case 3:		//	R	Register Low		PC+2
 		X_lo = Read(reg_PC++);
-		reg_CC = (((X_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_X == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_X);
+		AdjustCC_Z(reg_X);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5064,8 +5178,8 @@ uint8_t Mc6809::LDY_dir()
 		break;
 	case 6:		//	R	Register Low		EA+1
 		Y_lo = Read(reg_scratch);
-		reg_CC = (((Y_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_Y);
+		AdjustCC_Z(reg_Y);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5100,8 +5214,8 @@ uint8_t Mc6809::LDY_ext()
 		break;
 	case 7:		//	R	Register Low		EA+1
 		Y_lo = Read(reg_scratch);
-		reg_CC = (((Y_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_Y);
+		AdjustCC_Z(reg_Y);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5128,8 +5242,8 @@ uint8_t Mc6809::LDY_imm()
 		break;
 	case 4:		//	R	Register Low		PC+2
 		Y_lo = Read(reg_PC++);
-		reg_CC = (((Y_hi & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_Y == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
+		AdjustCC_N(reg_Y);
+		AdjustCC_Z(reg_Y);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5149,9 +5263,9 @@ uint8_t Mc6809::LSRA_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	Don't Care			PC+1
-		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_CC = ((reg_A & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = ((reg_A >> 1) & 0x7f);
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::N;
 		//reg_PC++;
 		clocksUsed = 255;
@@ -5172,9 +5286,9 @@ uint8_t Mc6809::LSRB_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	Don't Care			PC+1
-		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_CC = ((reg_B & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = ((reg_B >> 1) & 0x7f);
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::N;
 		//reg_PC++;
 		clocksUsed = 255;
@@ -5206,9 +5320,9 @@ uint8_t Mc6809::LSR_dir()
 		data_lo = Read(reg_scratch);
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		data_lo = ((data_lo >> 1) & 0x7f);
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		AdjustCC_Z(data_lo);
 		reg_CC &= ~CC::N;
 		break;
 	case 6:		//	W	Data				EA
@@ -5244,9 +5358,9 @@ uint8_t Mc6809::LSR_ext()
 		data_lo = Read(reg_scratch);
 		break;
 	case 6:		//	R	Don't Care			$ffff
-		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		data_lo = ((data_lo >> 1) & 0x7f);
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		AdjustCC_Z(data_lo);
 		reg_CC &= ~CC::N;
 		break;
 	case 7:		//	E	Data				EA
@@ -5275,10 +5389,10 @@ uint8_t Mc6809::MUL_inh()
 		reg_D = reg_A * reg_B;
 		break;
 	case 4:		//	R	Don't Care			$ffff
-		reg_CC = (reg_D == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
+		AdjustCC_Z(reg_D);
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		reg_CC = ((reg_D & 0x0080) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		break;
 	case 6:		//	R	Don't Care			$ffff
 		break;
@@ -5310,10 +5424,10 @@ uint8_t Mc6809::NEGA_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		reg_CC = (reg_A == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		reg_CC = (reg_A != 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		reg_A = 0 - reg_A;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -5334,10 +5448,10 @@ uint8_t Mc6809::NEGB_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		reg_CC = (reg_B == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		reg_CC = (reg_B != 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		reg_B = 0 - reg_B;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -5369,10 +5483,10 @@ uint8_t Mc6809::NEG_dir()
 		break;
 	case 5:		//	R	Don't Care			$ffff
 		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		reg_CC = (data_lo == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		reg_CC = (data_lo != 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		data_lo = 0 - data_lo;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 6:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
@@ -5408,10 +5522,10 @@ uint8_t Mc6809::NEG_ext()
 		break;
 	case 6:		//	R	Don't Care			$ffff
 		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
-		reg_CC = (data_lo == 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		reg_CC = (data_lo != 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
 		data_lo = 0 - data_lo;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 7:		//	E	Data				EA
 		Write(reg_scratch, data_lo);
@@ -5460,8 +5574,8 @@ uint8_t Mc6809::ORA_dir()
 	case 4:		//	R	Data					EA
 		scratch_lo = Read(reg_scratch);
 		reg_A |= scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5491,8 +5605,8 @@ uint8_t Mc6809::ORA_ext()
 	case 5:		//	R	Data					EA
 		scratch_lo = Read(reg_scratch);
 		reg_A |= scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5514,8 +5628,8 @@ uint8_t Mc6809::ORA_imm()
 	case 2:		//	R	Data					PC+1
 		scratch_lo = Read(reg_PC++);
 		reg_A |= scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5545,8 +5659,8 @@ uint8_t Mc6809::ORB_dir()
 	case 5:		//	R	Data					EA
 		scratch_lo = Read(reg_scratch);
 		reg_B |= scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5576,8 +5690,8 @@ uint8_t Mc6809::ORB_ext()
 	case 5:		//	R	Data					EA
 		scratch_lo = Read(reg_scratch);
 		reg_B |= scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5599,8 +5713,8 @@ uint8_t Mc6809::ORB_imm()
 	case 2:		//	R	Data					PC+1
 		scratch_lo = Read(reg_PC++);
 		reg_B |= scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
@@ -5978,11 +6092,11 @@ uint8_t Mc6809::ROLA_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
-		reg_CC = (((reg_A >> 6) & 1) != ((reg_A >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_V(scratch_lo);
 		reg_CC = ((reg_A & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_A = (reg_A << 1) | scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -6003,11 +6117,11 @@ uint8_t Mc6809::ROLB_inh()
 		break;
 	case 2:		//	R	Don't Care			PC+1
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 1 : 0;
-		reg_CC = (((reg_B >> 6) & 1) != ((reg_B >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_V(scratch_lo);
 		reg_CC = ((reg_B & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = (reg_B << 1) | scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -6040,11 +6154,11 @@ uint8_t Mc6809::ROL_dir()
 		break;
 	case 5:		//	R	Don't Care				$ffff
 		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
-		reg_CC = (((data_lo >> 6) & 1) != ((data_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_V(data_lo);
 		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = (data_lo << 1) | carry;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		data_lo = (data_lo << 1) | scratch_lo;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 6:		//	W	Data					EA
 		Write(reg_scratch, data_lo);
@@ -6081,11 +6195,11 @@ uint8_t Mc6809::ROL_ext()
 		break;
 	case 6:		//	R	Don't Care				$ffff
 		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
-		reg_CC = (((data_lo >> 6) & 1) != ((data_lo >> 7) & 1)) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		AdjustCC_V(data_lo);
 		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = (data_lo << 1) | carry;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		data_lo = (data_lo << 1) | scratch_lo;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 7:		//	W	Data					EA
 		Write(reg_scratch, data_lo);
@@ -6107,11 +6221,11 @@ uint8_t Mc6809::RORA_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	Don't Care			PC+1
-		scratch_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
+		scratch_hi = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((reg_A & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = (reg_A >> 1) | scratch_lo;
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		reg_A = (reg_A >> 1) | scratch_hi;
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -6134,8 +6248,8 @@ uint8_t Mc6809::RORB_inh()
 		scratch_lo = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((reg_B & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		reg_B = (reg_B >> 1) | scratch_lo;
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		//reg_PC++;
 		clocksUsed = 255;
 		break;
@@ -6170,8 +6284,8 @@ uint8_t Mc6809::ROR_dir()
 		carry = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		data_lo = (data_lo >> 1) | carry;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 6:		//	W	Data					EA
 		Write(reg_scratch, data_lo);
@@ -6210,8 +6324,8 @@ uint8_t Mc6809::ROR_ext()
 		carry = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
 		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
 		data_lo = (data_lo >> 1) | carry;
-		reg_CC = (data_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
 		break;
 	case 7:		//	W	Data					EA
 		Write(reg_scratch, data_lo);
@@ -6244,13 +6358,13 @@ uint8_t Mc6809::RTI_inh()
 	{
 		switch (clocksUsed)
 		{
-		case 4:	//	R	PC High				SP+1
+		case 4: //	R	PC High				SP+1
 			PC_hi = Read(++reg_S);
 			break;
-		case 5:	//	R	PC low				SP+2
+		case 5: //	R	PC low				SP+2
 			PC_lo = Read(++reg_S);
 			break;
-		case 6:	//	R	Don't Care			$ffff
+		case 6: //	R	Don't Care			$ffff
 			clocksUsed = 255;
 			break;
 		}
@@ -6334,6 +6448,8 @@ uint8_t Mc6809::RTS_inh()
 //*****************************************************************************
 uint8_t Mc6809::SBCA_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -6347,15 +6463,13 @@ uint8_t Mc6809::SBCA_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-
-		reg_A = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A  == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -6368,6 +6482,8 @@ uint8_t Mc6809::SBCA_dir()
 //*****************************************************************************
 uint8_t Mc6809::SBCA_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -6383,15 +6499,13 @@ uint8_t Mc6809::SBCA_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-
-		reg_A = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -6404,6 +6518,8 @@ uint8_t Mc6809::SBCA_ext()
 //*****************************************************************************
 uint8_t Mc6809::SBCA_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -6411,15 +6527,13 @@ uint8_t Mc6809::SBCA_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_A;
-
-		reg_A = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -6432,6 +6546,8 @@ uint8_t Mc6809::SBCA_imm()
 //*****************************************************************************
 uint8_t Mc6809::SBCB_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -6445,15 +6561,13 @@ uint8_t Mc6809::SBCB_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-
-		reg_B = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -6466,6 +6580,8 @@ uint8_t Mc6809::SBCB_dir()
 //*****************************************************************************
 uint8_t Mc6809::SBCB_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -6481,15 +6597,13 @@ uint8_t Mc6809::SBCB_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-
-		reg_B = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -6502,6 +6616,8 @@ uint8_t Mc6809::SBCB_ext()
 //*****************************************************************************
 uint8_t Mc6809::SBCB_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -6509,21 +6625,18 @@ uint8_t Mc6809::SBCB_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_B;
-
-		reg_B = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
 	return(clocksUsed);
 }
-
 
 //*****************************************************************************
 //	SEX					inherent
@@ -6968,6 +7081,8 @@ uint8_t Mc6809::STY_ext()
 //*****************************************************************************
 uint8_t Mc6809::SUBA_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -6981,14 +7096,12 @@ uint8_t Mc6809::SUBA_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-		reg_A -= scratch_lo;
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A== 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A - scratch_lo;
+		AdjustCC_V(reg_A, scratch_lo, (uint8_t)(data & 0xff));
+		reg_A = (uint8_t)(data & 0xff);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7001,6 +7114,8 @@ uint8_t Mc6809::SUBA_dir()
 //*****************************************************************************
 uint8_t Mc6809::SUBA_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7016,14 +7131,12 @@ uint8_t Mc6809::SUBA_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_A;
-		reg_A -= scratch_lo;
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A - scratch_lo;
+		AdjustCC_V(reg_A, scratch_lo, (uint8_t)(data & 0xff));
+		reg_A = (uint8_t)(data & 0xff);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7036,6 +7149,8 @@ uint8_t Mc6809::SUBA_ext()
 //*****************************************************************************
 uint8_t Mc6809::SUBA_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7043,14 +7158,12 @@ uint8_t Mc6809::SUBA_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_A;
-		reg_A -= scratch_lo;
-
-		reg_CC = (((reg_A & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_A == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_A & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_A - scratch_lo;
+		AdjustCC_V(reg_A, scratch_lo, (uint8_t)(data & 0xff));
+		reg_A = (uint8_t)(data & 0xff);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7063,6 +7176,8 @@ uint8_t Mc6809::SUBA_imm()
 //*****************************************************************************
 uint8_t Mc6809::SUBB_dir()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7076,14 +7191,12 @@ uint8_t Mc6809::SUBB_dir()
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-		reg_B -= scratch_lo;
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo;
+		AdjustCC_V(reg_B, scratch_lo, (uint8_t)(data & 0xff));
+		reg_B = (uint8_t)(data & 0xff);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7096,6 +7209,8 @@ uint8_t Mc6809::SUBB_dir()
 //*****************************************************************************
 uint8_t Mc6809::SUBB_ext()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7111,14 +7226,12 @@ uint8_t Mc6809::SUBB_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		scratch_hi = reg_B;
-		reg_B -= scratch_lo;
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo;
+		AdjustCC_V(reg_B, scratch_lo, (uint8_t)(data & 0xff));
+		reg_B = (uint8_t)(data & 0xff);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7131,6 +7244,8 @@ uint8_t Mc6809::SUBB_ext()
 //*****************************************************************************
 uint8_t Mc6809::SUBB_imm()
 {
+	uint16_t data;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7138,14 +7253,12 @@ uint8_t Mc6809::SUBB_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		scratch_hi = reg_B;
-		reg_B -= scratch_lo;
-
-		reg_CC = (((reg_B & 0x80) == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N));
-		reg_CC = ((reg_B == 0x00) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V));
-		reg_CC = ((reg_B & 0x80) != (scratch_hi & 0x80) ? (reg_CC | CC::C) : (reg_CC & ~CC::C));
-
+		data = reg_B - scratch_lo;
+		AdjustCC_V(reg_B, scratch_lo, (uint8_t)(data & 0xff));
+		reg_B = (uint8_t)(data & 0xff);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7153,8 +7266,14 @@ uint8_t Mc6809::SUBB_imm()
 }
 
 
+//*****************************************************************************
+//	SUBD				direct
+//*****************************************************************************
 uint8_t Mc6809::SUBD_dir()
 {
+	uint32_t data;
+	static uint16_t tempRegValue;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7170,12 +7289,16 @@ uint8_t Mc6809::SUBD_dir()
 		scratch_hi = reg_DP;
 		break;
 	case 5:		//	R	Data				EA
-		scratch_hi = Read(reg_scratch);
+		tempRegValue = Read(reg_scratch) << 8;
 		break;
 	case 6:		//	R	Data Low			EA+1
-		scratch_lo = Read(++reg_scratch);
-		reg_D -= reg_scratch;
-
+		tempRegValue |= Read(++reg_scratch);
+		data = reg_D - tempRegValue;
+		AdjustCC_V(reg_D, tempRegValue, (uint16_t)(data & 0xffff));
+		reg_D = (uint16_t)(data & 0xffff);
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7183,8 +7306,14 @@ uint8_t Mc6809::SUBD_dir()
 }
 
 
+//*****************************************************************************
+//	SUBD				extended
+//*****************************************************************************
 uint8_t Mc6809::SUBD_ext()
 {
+	uint32_t data;
+	static uint16_t tempRegValue;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7202,12 +7331,16 @@ uint8_t Mc6809::SUBD_ext()
 	case 5:		//	R	Don't Care			$ffff
 		break;
 	case 6:		//	R	Data				EA
-		scratch_hi = Read(reg_scratch);
+		tempRegValue = Read(reg_scratch) << 8;
 		break;
 	case 7:		//	R	Data Low			EA+1
-		scratch_lo = Read(++reg_scratch);
-		reg_D -= reg_scratch;
-
+		tempRegValue |= Read(++reg_scratch);
+		data = reg_D - tempRegValue;
+		AdjustCC_V(reg_D, tempRegValue, (uint16_t)(data & 0xffff));
+		reg_D = (uint16_t)(data & 0xffff);
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7215,8 +7348,14 @@ uint8_t Mc6809::SUBD_ext()
 }
 
 
+//*****************************************************************************
+//	SUBD				immediate
+//*****************************************************************************
 uint8_t Mc6809::SUBD_imm()
 {
+	uint32_t data;
+	static uint16_t tempRegValue;
+
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	OpCode Fetch		PC
@@ -7226,11 +7365,15 @@ uint8_t Mc6809::SUBD_imm()
 		reg_PC++;
 		break;
 	case 3:		//	R	Data High			PC+2
-		scratch_hi = Read(reg_PC++);
+		tempRegValue = Read(reg_PC++) << 8;
 	case 4:		//	R	Data Low			PC+3
-		scratch_lo = Read(reg_PC++);
-		reg_D -= reg_scratch;
-
+		tempRegValue = Read(reg_PC++);
+		data = reg_D - tempRegValue;
+		AdjustCC_V(reg_D, tempRegValue, (uint16_t)(data & 0xffff));
+		reg_D = (uint16_t)(data & 0xffff);
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -7735,8 +7878,8 @@ uint8_t Mc6809::TSTA_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	Don't Care			PC+1
-		reg_CC = (reg_A == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_A == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		reg_CC &= ~CC::V;
 		//reg_PC++;
 		clocksUsed = 255;
@@ -7757,8 +7900,8 @@ uint8_t Mc6809::TSTB_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	Don't Care			PC+1
-		reg_CC = (reg_B == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (reg_B == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
 		reg_CC &= ~CC::V;
 		//reg_PC++;
 		clocksUsed = 255;
@@ -7788,11 +7931,11 @@ uint8_t Mc6809::TST_dir()
 		scratch_lo = Read(reg_scratch);
 		break;
 	case 5:		//	R	Don't Care			$ffff
-		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		reg_CC &= ~CC::V;
 		break;
 	case 6:		//	R	Don't Care			$ffff
-		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
 	}
@@ -7822,11 +7965,11 @@ uint8_t Mc6809::TST_ext()
 		scratch_lo = Read(reg_scratch);
 		break;
 	case 6:		//	R	Don't Care			$ffff
-		reg_CC = (scratch_lo == 0) ? (reg_CC | CC::Z) : (reg_CC & ~CC::Z);
-		reg_CC = (scratch_lo == 0x80) ? (reg_CC | CC::N) : (reg_CC & ~CC::N);
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		reg_CC &= ~CC::V;
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		reg_CC &= ~CC::V;
 		clocksUsed = 255;
 		break;
 	}
@@ -7856,7 +7999,7 @@ uint8_t Mc6809::TST_ext()
 //	RESET "interrupt" opcode $3E)
 //*****************************************************************************
 //	Returns:
-//	uint8_t	- 255 to signify function is completed.
+//	uint8_t - 255 to signify function is completed.
 //				(We're treating a bad instruction as if it was a NOP)
 //*****************************************************************************
 uint8_t Mc6809::XXX()
