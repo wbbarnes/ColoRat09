@@ -245,6 +245,33 @@ protected:
 	void AdjustCC_V(uint16_t reg1, uint16_t data, uint16_t result);
 	void AdjustCC_C(uint32_t word);
 
+	void Direct(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectNoOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Direct5bitOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Direct8BitOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Direct16BitOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectInc1Offset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectDec1Offset(uint8_t postByte, uint8_t* clocksUsed);
+	void DirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed);
+	void Direct8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Direct16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
+
+	void Indirect(uint8_t postByte, uint8_t* clocksUsed);
+	void IndirectNoOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Indirect8BitOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Indirect16BitOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void IndirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void IndirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void IndirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void IndirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed);
+	void IndirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed);
+	void Indirect8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Indirect16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void Indirect16BitExtendedOffset(uint8_t postByte, uint8_t* clocksUsed);
 public:
 	Mc6809(MMU* device = nullptr);
 	~Mc6809();

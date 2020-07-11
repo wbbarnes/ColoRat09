@@ -260,6 +260,14 @@ uint8_t Mc6809::Fetch(const uint16_t address)
 }
 
 
+//*********************************************************************************************************************************
+//	Condition Code adjustments. This covers MOST adjustments. 
+//	Sets or Clears are handled in the function doing the setting or clearing
+//	Some other special adjustments are left in the function doing the setting
+// or clearing
+//*********************************************************************************************************************************
+
+
 //*****************************************************************************
 //	AdjustCC_H()
 //*****************************************************************************
@@ -368,6 +376,1305 @@ void Mc6809::AdjustCC_C(uint32_t data)
 {
 	reg_CC = ((data & 0x00010000) == 0x00010000) ? (reg_CC | CC::C) : (reg_CC | ~CC::C);
 }
+
+
+//*********************************************************************************************************************************
+// Index mode determinations - to help process index modes
+//*********************************************************************************************************************************
+
+
+//*****************************************************************************
+//	Direct
+//*****************************************************************************
+void Mc6809::Direct(uint8_t postByte, uint8_t* clocksUsed)
+{
+	auto idxMode = (((postByte & 0x80) == 0) ? 0 : (postByte & 0x9f));
+
+	switch (idxMode)
+	{
+	case 0x84:		// no offset
+		DirectNoOffset(postByte, clocksUsed);
+		break;
+	case 0x00:		// 5-bit offset
+		Direct5bitOffset(postByte, clocksUsed);
+		break;
+	case 0x88:		// 8-bit offset
+		Direct8BitOffset(postByte, clocksUsed);
+		break;
+	case 0x89:		// 16-bit offset
+		Direct16BitOffset(postByte, clocksUsed);
+		break;
+	case 0x86:		// A Accumulator Offset
+		DirectAccAOffset(postByte, clocksUsed);
+		break;
+	case 0x85:		// B Accumulator Offset
+		DirectAccBOffset(postByte, clocksUsed);
+		break;
+	case 0x8b:		// D Accumulator Offset
+		DirectAccDOffset(postByte, clocksUsed);
+		break;
+	case 0x80:		// Increment by 1
+		DirectInc1Offset(postByte, clocksUsed);
+		break;
+	case 0x81:		// Increment by 2
+		DirectInc2Offset(postByte, clocksUsed);
+		break;
+	case 0x82:		// Decrement by 1
+		DirectDec1Offset(postByte, clocksUsed);
+		break;
+	case 0x83:		// Decrement by 2
+		DirectDec2Offset(postByte, clocksUsed);
+		break;
+	case 0x8c:		// 8-bit offset from PC
+		Direct8BitFromPcOffset(postByte, clocksUsed);
+		break;
+	case 0x8d:		// 16-bit offset from PC
+		Direct16BitFromPcOffset(postByte, clocksUsed);
+		break;
+	case 0x8f:		// 16-bit address - INVALID
+	default:		// Invalid/Undefined values
+		*clocksUsed = 0xff;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectNoOffset				Indexed - Direct - No Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::DirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (reg_ID)		//	R	Don't Care
+	{
+	case 00:		// reg X
+		reg_scratch = reg_X;
+		break;
+	case 01:		// reg Y
+		reg_scratch = reg_Y;
+		break;
+	case 02:		// reg U
+		reg_scratch = reg_U;
+		break;
+	case 03:		// reg S
+		reg_scratch = reg_S;
+		break;
+	}
+	*clocksUsed = 10;
+}
+
+
+//*****************************************************************************
+//	Direct5bitOffset			Indexed - Direct - 5-bit Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::Direct5bitOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		scratch_hi = (((postByte & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+		break;
+	case 101:		//	R	Don't Care
+		scratch_lo = (postByte & 0x0f);
+
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Direct8BitOffset			Indexed - Direct - 8-Bit Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::Direct8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Offset
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 101:		//	R	Don't Care
+		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
+
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Direct16BitOffset			Indexed - Direct - 16-Bit Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::Direct16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Offset High
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 101:		//	R	Offset Low
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 102:		//	R	Don't Care
+		break;
+	case 103:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		break;
+	case 104:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectAccAOffset			Indexed - Direct - A Accumulator Offset
+//								Accumulator Offset from register 2s complement
+//*****************************************************************************
+void Mc6809::DirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		scratch_lo = reg_A;
+		break;
+	case 101:		//	R	Don't Care
+		scratch_hi = ((reg_A & 0x80) == 0x80 ? 0xff : 0);
+
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectAccBOffset			Indexed - Direct - B Accumulator Offset
+//								Accumulator Offset from register 2s complement
+//*****************************************************************************
+void Mc6809::DirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		scratch_lo = reg_B;
+		break;
+	case 101:		//	R	Don't Care
+		scratch_hi = ((reg_B & 0x80) == 0x80 ? 0xff : 0);
+
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectAccDOffset			Indexed - Direct - D Accumulator Offset
+//								Accumulator Offset from register 2s complement
+//*****************************************************************************
+void Mc6809::DirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		scratch_hi = reg_A;
+		break;
+	case 101:		//	R	Don't Care
+		scratch_lo = reg_B;
+		break;
+	case 102:		//	R	Don't Care
+		break;
+	case 103:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		break;
+	case 104:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectInc1Offset			Indexed - Direct - Increment Offset by 1
+//								Auto Increment/Decrement Register
+//*****************************************************************************
+void Mc6809::DirectInc1Offset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		break;
+	case 101:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			++reg_X;
+			break;
+		case 01:		// reg Y
+			++reg_Y;
+			break;
+		case 02:		// reg U
+			++reg_U;
+			break;
+		case 03:		// reg S
+			++reg_S;
+			break;
+		}
+		break;
+	case 102:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectInc2Offset			Indexed - Direct - Increment Offset by 2
+//								Auto Increment/Decrement Register
+//*****************************************************************************
+void Mc6809::DirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		break;
+	case 101:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			++reg_X;
+			break;
+		case 01:		// reg Y
+			++reg_Y;
+			break;
+		case 02:		// reg U
+			++reg_U;
+			break;
+		case 03:		// reg S
+			++reg_S;
+			break;
+		}
+		break;
+	case 102:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			++reg_X;
+			break;
+		case 01:		// reg Y
+			++reg_Y;
+			break;
+		case 02:		// reg U
+			++reg_U;
+			break;
+		case 03:		// reg S
+			++reg_S;
+			break;
+		}
+		break;
+	case 103:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectDec1Offset			Indexed - Direct - Decrement Offset by 1
+//								Auto Increment/Decrement Register
+//*****************************************************************************
+void Mc6809::DirectDec1Offset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			--reg_X;
+			break;
+		case 01:		// reg Y
+			--reg_Y;
+			break;
+		case 02:		// reg U
+			--reg_U;
+			break;
+		case 03:		// reg S
+			--reg_S;
+			break;
+		}
+		break;
+	case 101:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		break;
+	case 102:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	DirectDec2Offset			Indexed - Direct - Decrement Offset by 2
+//								Auto Increment/Decrement Register
+//*****************************************************************************
+void Mc6809::DirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			--reg_X;
+			break;
+		case 01:		// reg Y
+			--reg_Y;
+			break;
+		case 02:		// reg U
+			--reg_U;
+			break;
+		case 03:		// reg S
+			--reg_S;
+			break;
+		}
+		break;
+	case 101:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			--reg_X;
+			break;
+		case 01:		// reg Y
+			--reg_Y;
+			break;
+		case 02:		// reg U
+			--reg_U;
+			break;
+		case 03:		// reg S
+			--reg_S;
+			break;
+		}
+		break;
+	case 102:		//	R	Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_scratch += reg_X;
+			break;
+		case 01:		// reg Y
+			reg_scratch += reg_Y;
+			break;
+		case 02:		// reg U
+			reg_scratch += reg_U;
+			break;
+		case 03:		// reg S
+			reg_scratch += reg_S;
+			break;
+		}
+		break;
+	case 103:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Direct8BitFromPcOffset		Indexed - Direct - 8-Bit Offset
+//								Constant offset from Program Counter
+//								2s complement
+//*****************************************************************************
+void Mc6809::Direct8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Offset
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 101:		//	R	Don't Care
+		scratch_hi = ((scratch_lo & 0x80) == 0x80 ? 0xff : 0);
+
+		reg_scratch += reg_PC;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Direct16BitFromPcOffset		Indexed - Direct - 16-Bit Offset
+//								Constant offset from Program Counter
+//								2s complement
+//*****************************************************************************
+void Mc6809::Direct16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Offset High
+		scratch_hi = Read(reg_PC++);
+		break;
+	case 101:		//	R	Offset Low
+		scratch_lo = Read(reg_PC++);
+		break;
+	case 102:		//	R	Don't Care
+		break;
+	case 103:		//	R	Don't Care
+		break;
+	case 104:		//	R	Don't Care
+		break;
+	case 105:		//	R	Don't Care
+		reg_scratch += reg_PC;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Indirect
+//*****************************************************************************
+void Mc6809::Indirect(uint8_t postByte, uint8_t* clocksUsed)
+{
+	auto idxMode = postByte & 0x9f;
+	if(*clocksUsed == 2)
+	{
+		if ((postByte & 0x80) == 0)
+			idxMode = 0;
+		switch (idxMode)
+		{
+		case 0x94:		// no offset
+			IndirectNoOffset(postByte, clocksUsed);
+			break;
+		case 0x00:		// 5-bit offset - DEFAULTS to 8-bit offset
+		case 0x98:		// 8-bit offset
+			Indirect8BitOffset(postByte, clocksUsed);
+			break;
+		case 0x99:		// 16-bit offset
+			Indirect16BitOffset(postByte, clocksUsed);
+			break;
+		case 0x96:		// A Accumulator Offset
+			IndirectAccAOffset(postByte, clocksUsed);
+			break;
+		case 0x95:		// B Accumulator Offset
+			IndirectAccBOffset(postByte, clocksUsed);
+			break;
+		case 0x9b:		// D Accumulator Offset
+			IndirectAccDOffset(postByte, clocksUsed);
+			break;
+		case 0x91:		// Increment by 2
+			IndirectInc2Offset(postByte, clocksUsed);
+			break;
+		case 0x93:		// Decrement by 2
+			IndirectDec2Offset(postByte, clocksUsed);
+			break;
+		case 0x9c:		// 8-bit offset from PC
+			Indirect8BitFromPcOffset(postByte, clocksUsed);
+			break;
+		case 0x9d:		// 16-bit offset from PC
+			Indirect16BitFromPcOffset(postByte, clocksUsed);
+			break;
+		case 0x9f:		// 16-bit address
+			Indirect16BitExtendedOffset(postByte, clocksUsed);
+			break;
+		case 0x90:		// Increment by 1 - NOT ALLOWED
+		case 0x92:		// Decrement by 1 - NOT ALLOWED
+		default:		// Invalid/Undefined values
+			*clocksUsed = 0xff;
+			break;
+		}
+		++(*clocksUsed);
+	}
+}
+
+
+//*****************************************************************************
+//	IndirectNoOffset			Indexed - Indirect - No Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::IndirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Don't Care
+		break;
+	case 101:		//	R	Indirect High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_hi = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			scratch_hi = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			scratch_hi = Read(reg_U);
+			break;
+		case 03:		// reg S
+			scratch_hi = Read(reg_S);
+			break;
+		}
+		break;
+	case 102:		//	R	Indirect Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_lo = Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			scratch_lo = Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			scratch_lo = Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			scratch_lo = Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 103:		//	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Indirect8BitOffset			Indexed - Indirect - (5-bit ->) 8-bit Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::Indirect8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R	Offset
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			offset = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			offset = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			offset = Read(reg_U);
+			break;
+		case 03:		// reg S
+			offset = Read(reg_S);
+			break;
+		}
+		break;
+	case 101:		//	Don't Care
+		if ((offset & 0x80) == 0x80)
+			offset |= 0xff00;
+		else
+			offset &= 0x00ff;
+		break;
+	case 102:		//	R	Indirect High
+		scratch_hi = Read(offset);
+		break;
+	case 103:		//	R	Indirect Low
+		scratch_lo = Read(offset + 1);
+		break;
+	case 104:		//	R	Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Indirect16BitOffset			Indexed - Indirect - 16-Bit Offset
+//								Constant offset from Regester   2s complement
+//*****************************************************************************
+void Mc6809::Indirect16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Offset High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			offset = (Read(reg_X + 1) << 4);
+			break;
+		case 01:		// reg Y
+			offset = (Read(reg_Y + 1) << 4);
+			break;
+		case 02:		// reg U
+			offset = (Read(reg_U + 1) << 4);
+			break;
+		case 03:		// reg S
+			offset = (Read(reg_S + 1) << 4);
+			break;
+		}
+		break;
+	case 101:		//	R		Offset Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			offset |= Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			offset |= Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			offset |= Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			offset |= Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 102:		//	R		Don't Care
+		break;
+	case 103:		//	R		Don't Care
+		break;
+	case 104:		//	R		Don't Care
+		break;
+	case 105:		//	R		Indirect High
+		scratch_hi = Read(offset);
+		break;
+	case 106:		//	R		Indirect Low
+		scratch_lo = Read(offset + 1);
+		break;
+	case 107:		//	R		Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndirectAccAOffset			Indexed - Indirect - A Accumulator Offset
+//								Accumulator Offset from register 2s complement
+//*****************************************************************************
+void Mc6809::IndirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Don't Care
+		offset = reg_A;
+		break;
+	case 101:		//	R		Don't Care
+		if ((offset & 0x80) == 0x80)
+			offset |= 0xff00;
+		else
+			offset &= 0x00ff;
+		break;
+	case 102:		//	R		Indirect High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_hi = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			scratch_hi = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			scratch_hi = Read(reg_U);
+			break;
+		case 03:		// reg S
+			scratch_hi = Read(reg_S);
+			break;
+		}
+		break;
+	case 103:		//	R		Indirect Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_lo = Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			scratch_lo = Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			scratch_lo = Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			scratch_lo = Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 104:		//	R		Don't Care
+		reg_scratch += offset;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndirectAccBOffset			Indexed - Indirect - B Accumulator Offset
+//								Accumulator Offset from register 2s complement
+//*****************************************************************************
+void Mc6809::IndirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Don't Care
+		offset = reg_A;
+		break;
+	case 101:		//	R		Don't Care
+		if ((offset & 0x80) == 0x80)
+			offset |= 0xff00;
+		else
+			offset &= 0x00ff;
+		break;
+	case 102:		//	R		Indirect High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_hi = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			scratch_hi = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			scratch_hi = Read(reg_U);
+			break;
+		case 03:		// reg S
+			scratch_hi = Read(reg_S);
+			break;
+		}
+		break;
+	case 103:		//	R		Indirect Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_lo = Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			scratch_lo = Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			scratch_lo = Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			scratch_lo = Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 104:		//	R		Don't Care
+		reg_scratch += offset;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndirectAccDOffset			Indexed - Indirect - D Accumulator Offset
+//								Accumulator Offset from register 2s complement
+//*****************************************************************************
+void Mc6809::IndirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Don't Care
+		offset = reg_D;
+		break;
+	case 101:		//	R		Don't Care
+		break;
+	case 102:		//	R		Don't Care
+		break;
+	case 103:		//	R		Don't Care
+		break;
+	case 104:		//	R		Don't Care
+		break;
+	case 105:		//	R		Indirect High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_hi = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			scratch_hi = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			scratch_hi = Read(reg_U);
+			break;
+		case 03:		// reg S
+			scratch_hi = Read(reg_S);
+			break;
+		}
+		break;
+	case 106:		//	R		Indirect Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_lo = Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			scratch_lo = Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			scratch_lo = Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			scratch_lo = Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 107:		//	R		Don't Care
+		reg_scratch += offset;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndirectInc2Offset			Indexed - Indirect - Increment Offset by 2
+//								Auto Increment/Decrement Register
+//*****************************************************************************
+void Mc6809::IndirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Don't Care
+		break;
+	case 101:		//	R		Don't Care
+		break;
+	case 102:		//	R		Don't Care
+		break;
+	case 103:		//	R		Don't Care
+		break;
+	case 104:		//	R		Indirect High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_hi = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			scratch_hi = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			scratch_hi = Read(reg_U);
+			break;
+		case 03:		// reg S
+			scratch_hi = Read(reg_S);
+			break;
+		}
+		break;
+	case 105:		//	R		Indirect Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_lo = Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			scratch_lo = Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			scratch_lo = Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			scratch_lo = Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 106:		//	R		Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			reg_X += 2;
+			break;
+		case 01:		// reg Y
+			reg_Y += 2;
+			break;
+		case 02:		// reg U
+			reg_U += 2;
+			break;
+		case 03:		// reg S
+			reg_S += 2;
+			break;
+		}
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndirectDec2Offset			Indexed - Indirect - Decrement Offset by 2
+//								Auto Increment/Decrement Register
+//*****************************************************************************
+void Mc6809::IndirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			--reg_X;
+			break;
+		case 01:		// reg Y
+			--reg_Y;
+			break;
+		case 02:		// reg U
+			--reg_U;
+			break;
+		case 03:		// reg S
+			--reg_S;
+			break;
+		}
+		break;
+	case 101:		//	R		Don't Care
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			--reg_X;
+			break;
+		case 01:		// reg Y
+			--reg_Y;
+			break;
+		case 02:		// reg U
+			--reg_U;
+			break;
+		case 03:		// reg S
+			--reg_S;
+			break;
+		}
+		break;
+	case 102:		//	R		Don't Care
+		break;
+	case 103:		//	R		Don't Care
+		break;
+	case 104:		//	R		Indirect High
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_hi = Read(reg_X);
+			break;
+		case 01:		// reg Y
+			scratch_hi = Read(reg_Y);
+			break;
+		case 02:		// reg U
+			scratch_hi = Read(reg_U);
+			break;
+		case 03:		// reg S
+			scratch_hi = Read(reg_S);
+			break;
+		}
+		break;
+	case 105:		//	R		Indirect Low
+		switch (reg_ID)
+		{
+		case 00:		// reg X
+			scratch_lo = Read(reg_X + 1);
+			break;
+		case 01:		// reg Y
+			scratch_lo = Read(reg_Y + 1);
+			break;
+		case 02:		// reg U
+			scratch_lo = Read(reg_U + 1);
+			break;
+		case 03:		// reg S
+			scratch_lo = Read(reg_S + 1);
+			break;
+		}
+		break;
+	case 106:		//	R		Don't Care
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Indirect8BitFromPcOffset	Indexed - Indirect - 8-Bit Offset
+//								Constant offset from Program Counter
+//								2s complement
+//*****************************************************************************
+void Mc6809::Indirect8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Offset
+		offset = Read(reg_PC++);
+		break;
+	case 101:		//	R		Don't Care
+		if ((offset & 0x80) == 0x80)
+			offset |= 0xff00;
+		else
+			offset &= 0x00ff;
+		break;
+	case 102:		//	R		Indirect High
+		scratch_hi = PC_hi;
+		break;
+	case 103:		//	R		Indirect Low
+		scratch_lo = PC_lo;
+		break;
+	case 104:		//	R		Don't Care
+		reg_scratch += offset;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Indirect16BitFromPcOffset	Indexed - Indirect - 16-Bit Offset
+//								Constant offset from Program Counter
+//								2s complement
+//*****************************************************************************
+void Mc6809::Indirect16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t offset;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Offset High
+		offset = (Read(reg_PC++) << 4);
+		break;
+	case 101:		//	R		Offset Low
+		offset |= Read(reg_PC++);
+		break;
+	case 102:		//	R		Don't Care
+		break;
+	case 103:		//	R		Don't Care
+		break;
+	case 104:		//	R		Don't Care
+		break;
+	case 105:		//	R		Don't Care
+		break;
+	case 106:		//	R		Indirect High
+		scratch_hi = PC_hi;
+		break;
+	case 107:		//	R		Indirect Low
+		scratch_lo = PC_lo;
+		break;
+	case 108:		//	R		Don't Care
+		reg_scratch += offset;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	Indirect16BitExtendedOffset		Indexed - Extended Indirect - 16-Bit Address
+//									Constant offset from Program Counter
+//									2s complement
+//*****************************************************************************
+void Mc6809::Indirect16BitExtendedOffset(uint8_t postByte, uint8_t* clocksUsed)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+	static uint16_t address;
+
+	switch (++(*clocksUsed))
+	{
+	case 100:		//	R		Address High
+		address = (Read(reg_PC++) << 4);
+		break;
+	case 101:		//	R		Address Low
+		address |= Read(reg_PC++);
+		break;
+	case 102:		//	R		Don't Care
+		break;
+	case 103:		//	R		Indirect High
+		scratch_hi = Read(address);
+		break;
+	case 104:		//	R		Indirect Low
+		scratch_lo = Read(address + 1);
+		break;
+	case 105:		//	R		Don't Care
+		reg_scratch += address;
+		*clocksUsed = 10;
+		break;
+	}
+}
+
 
 
 //*********************************************************************************************************************************
@@ -5363,7 +6670,7 @@ uint8_t Mc6809::LSR_ext()
 		AdjustCC_Z(data_lo);
 		reg_CC &= ~CC::N;
 		break;
-	case 7:		//	E	Data				EA
+	case 7:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
 		clocksUsed = 255;
 		break;
@@ -5527,7 +6834,7 @@ uint8_t Mc6809::NEG_ext()
 		AdjustCC_N(data_lo);
 		AdjustCC_Z(data_lo);
 		break;
-	case 7:		//	E	Data				EA
+	case 7:		//	W	Data				EA
 		Write(reg_scratch, data_lo);
 		clocksUsed = 255;
 		break;
@@ -6156,7 +7463,7 @@ uint8_t Mc6809::ROL_dir()
 		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
 		AdjustCC_V(data_lo);
 		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = (data_lo << 1) | scratch_lo;
+		data_lo = (data_lo << 1) | carry;
 		AdjustCC_N(data_lo);
 		AdjustCC_Z(data_lo);
 		break;
@@ -6197,7 +7504,7 @@ uint8_t Mc6809::ROL_ext()
 		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
 		AdjustCC_V(data_lo);
 		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		data_lo = (data_lo << 1) | scratch_lo;
+		data_lo = (data_lo << 1) | carry;
 		AdjustCC_N(data_lo);
 		AdjustCC_Z(data_lo);
 		break;
@@ -6499,12 +7806,12 @@ uint8_t Mc6809::SBCA_ext()
 		break;
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
-		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		data = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
 		reg_A = (data & 0xff);
-		AdjustCC_H(reg_B);
-		AdjustCC_N(reg_B);
-		AdjustCC_Z(reg_B);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
@@ -6527,12 +7834,12 @@ uint8_t Mc6809::SBCA_imm()
 		break;
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
-		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
-		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		data = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
 		reg_A = (data & 0xff);
-		AdjustCC_H(reg_B);
-		AdjustCC_N(reg_B);
-		AdjustCC_Z(reg_B);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
 		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
@@ -8079,68 +9386,2210 @@ uint8_t Mc6809::RESET_inh()
 
 
 //*********************************************************************************************************************************
-// Indexed modes for opcodes
+// Indexed mode opcodes
 //*********************************************************************************************************************************
 
-uint8_t Mc6809::ADCA_idx()	// H N Z V C all modified. reg_A modified
-{}
-uint8_t Mc6809::ADCB_idx() {}
-uint8_t Mc6809::ADDA_idx() {}
-uint8_t Mc6809::ADDB_idx() {}
+
+//*****************************************************************************
+//	ADCA				indexed
+//*****************************************************************************
+uint8_t Mc6809::ADCA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		data = reg_A + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADCB				indexed
+//*****************************************************************************
+uint8_t Mc6809::ADCB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		data = reg_B + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDA				indexed
+//*****************************************************************************
+uint8_t Mc6809::ADDA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		data = reg_A + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDB				indexed
+//*****************************************************************************
+uint8_t Mc6809::ADDB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		data = reg_B + scratch_lo;
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ADDD				indexed
+//*****************************************************************************
 uint8_t Mc6809::ADDD_idx()
 {
-	static uint8_t data_hi;
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			$ffff
+		scratch_hi = Read(reg_scratch);
+		break;
+	case 11:		//	R	Data Low			EA+1
+		scratch_lo = Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		data = reg_D + reg_scratch;
+		AdjustCC_V(reg_scratch, reg_D, (data & 0xffff));
+		reg_D = data & 0xffff;
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
 }
-uint8_t Mc6809::ANDA_idx() {}
-uint8_t Mc6809::ANDB_idx() {}
-uint8_t Mc6809::ASL_LSL_idx() {}
-uint8_t Mc6809::ASR_idx() {}
-uint8_t Mc6809::BITA_idx() {}
-uint8_t Mc6809::BITB_idx() {}
-uint8_t Mc6809::CLR_idx() {}
-uint8_t Mc6809::CMPA_idx() {}
-uint8_t Mc6809::CMPB_idx() {}
-uint8_t Mc6809::CMPD_idx() {}
-uint8_t Mc6809::CMPS_idx() {}
-uint8_t Mc6809::CMPU_idx() {}
-uint8_t Mc6809::CMPX_idx() {}
-uint8_t Mc6809::CMPY_idx() {}
-uint8_t Mc6809::COM_idx() {}
-uint8_t Mc6809::DEC_idx() {}
-uint8_t Mc6809::EORA_idx() {}
-uint8_t Mc6809::EORB_idx() {}
-uint8_t Mc6809::INC_idx() {}
-uint8_t Mc6809::JMP_idx() {}
-uint8_t Mc6809::JSR_idx() {}
-uint8_t Mc6809::LDA_idx() {}
-uint8_t Mc6809::LDB_idx() {}
-uint8_t Mc6809::LDD_idx() {}
-uint8_t Mc6809::LDS_idx() {}
-uint8_t Mc6809::LDU_idx() {}
-uint8_t Mc6809::LDX_idx() {}
-uint8_t Mc6809::LDY_idx() {}
-uint8_t Mc6809::LEAS_idx() {}
-uint8_t Mc6809::LEAU_idx() {}
-uint8_t Mc6809::LEAX_idx() {}
-uint8_t Mc6809::LEAY_idx() {}
-uint8_t Mc6809::LSR_idx() {}
-uint8_t Mc6809::NEG_idx() {}
-uint8_t Mc6809::ORA_idx() {}
-uint8_t Mc6809::ORB_idx() {}
-uint8_t Mc6809::ROL_idx() {}
-uint8_t Mc6809::ROR_idx() {}
-uint8_t Mc6809::SBCA_idx() {}
-uint8_t Mc6809::SBCB_idx() {}
-uint8_t Mc6809::STA_idx() {}
-uint8_t Mc6809::STB_idx() {}
-uint8_t Mc6809::STD_idx() {}
-uint8_t Mc6809::STS_idx() {}
-uint8_t Mc6809::STU_idx() {}
-uint8_t Mc6809::STX_idx() {}
-uint8_t Mc6809::STY_idx() {}
-uint8_t Mc6809::SUBA_idx() {}
-uint8_t Mc6809::SUBB_idx() {}
-uint8_t Mc6809::SUBD_idx() {}
+
+
+//*****************************************************************************
+//	ANDA				indexed
+//*****************************************************************************
+uint8_t Mc6809::ANDA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC &= ~CC::V;
+		AdjustCC_Z(reg_A);
+		AdjustCC_N(reg_A);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ANDB				indexed
+//*****************************************************************************
+uint8_t Mc6809::ANDB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC &= ~CC::V;
+		AdjustCC_Z(reg_B);
+		AdjustCC_N(reg_B);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ASL					indexed
+//	LSL					indexed
+//*****************************************************************************
+uint8_t Mc6809::ASL_LSL_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't care			$ffff
+		AdjustCC_C((uint16_t)(data_lo << 1));
+		AdjustCC_V(data_lo);
+		data_lo = (data_lo << 1) & 0xfe;
+		AdjustCC_Z(data_lo);
+		AdjustCC_N(data_lo);
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ASR					indexed
+//*****************************************************************************
+uint8_t Mc6809::ASR_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't care			$ffff
+		data_lo = data_lo & 0x80;
+		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		reg_A = ((data_lo >> 1) & 0x7f) | scratch_lo;
+		AdjustCC_Z(data_lo);
+		AdjustCC_N(data_lo);
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITA				indexed
+//*****************************************************************************
+uint8_t Mc6809::BITA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		reg_A &= scratch_lo;
+		reg_CC &= ~CC::V;
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	BITB				indexed
+//*****************************************************************************
+uint8_t Mc6809::BITB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		reg_B &= scratch_lo;
+		reg_CC &= ~CC::V;
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CLR					indexed
+//*****************************************************************************
+uint8_t Mc6809::CLR_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		reg_CC = (reg_CC & CC::H) | CC::Z;
+		break;
+	case 12:		// W	Data				EA
+		Write(reg_scratch, 0);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPA				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		data = Read(reg_scratch);
+		reg_scratch = reg_A - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_A, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPB				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		data = Read(reg_scratch);
+		reg_scratch = reg_B - data;
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		AdjustCC_V(reg_B, data, scratch_lo);
+		AdjustCC_C(reg_scratch);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPD				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPD_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data = 0;
+	uint32_t tempRegValue;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 11:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		tempRegValue = reg_D - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_D, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPS				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPS_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data = 0;
+	uint32_t tempRegValue;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 11:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		tempRegValue = reg_S - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_S, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPU				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPU_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data = 0;
+	uint32_t tempRegValue;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 11:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		tempRegValue = reg_U - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_U, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPX				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPX_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data = 0;
+	uint32_t tempRegValue;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 11:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		tempRegValue = reg_X - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_X, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	CMPY				indexed
+//*****************************************************************************
+uint8_t Mc6809::CMPY_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data = 0;
+	uint32_t tempRegValue;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			EA
+		data = Read(reg_scratch) << 8;
+		break;
+	case 11:		//	R	Data Low			EA+1
+		data |= Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		tempRegValue = reg_Y - data;
+		AdjustCC_N((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_Z((uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_V(reg_Y, data, (uint16_t)(tempRegValue & 0xffff));
+		AdjustCC_C(tempRegValue);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	COM					indexed
+//*****************************************************************************
+uint8_t Mc6809::COM_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		data_lo ^= 0xff;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		reg_CC &= ~(CC::V);
+		reg_CC |= (CC::C);
+		break;
+	case 12:		// W  Data			EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	DEC					indexed
+//*****************************************************************************
+uint8_t Mc6809::DEC_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x80) == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		--data_lo;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORA				indexed
+//*****************************************************************************
+uint8_t Mc6809::EORA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		reg_A ^= Read(reg_scratch);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	EORB				indexed
+//*****************************************************************************
+uint8_t Mc6809::EORB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		reg_B ^= Read(reg_scratch);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	INC					indexed
+//*****************************************************************************
+uint8_t Mc6809::INC_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x7f) == 0x7f) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		++data_lo;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		break;
+	case 12:		// W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	JMP					indexed
+//*****************************************************************************
+uint8_t Mc6809::JMP_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		if(clocksUsed == 10)
+			reg_PC = reg_scratch;
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	JSR					indexed
+//*****************************************************************************
+uint8_t Mc6809::JSR_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Don't Care			EA
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		break;
+	case 12:		// W	PC High				SP-1
+		Write(reg_S--,PC_hi);
+		break;
+	case 13:		//	W	PC Low				SP-2
+		Write(reg_S--, PC_lo);
+		clocksUsed = 255;
+		reg_PC = reg_scratch;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDA					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		reg_A = Read(reg_scratch);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDB					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		reg_B = Read(reg_scratch);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDD					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDD_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:	//	R	Register High		EA
+		reg_A = Read(reg_scratch++);
+		break;
+	case 11:		//	R	Register Low		EA+1
+		reg_B = Read(reg_scratch);
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDS					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDS_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:	//	R	Register High		EA
+		S_hi = Read(reg_scratch++);
+		break;
+	case 11:		//	R	Register Low		EA+1
+		S_lo = Read(reg_scratch);
+		AdjustCC_N(reg_S);
+		AdjustCC_Z(reg_S);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDU					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDU_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:	//	R	Register High		EA
+		U_hi = Read(reg_scratch++);
+		break;
+	case 11:		//	R	Register Low		EA+1
+		U_lo = Read(reg_scratch);
+		AdjustCC_N(reg_U);
+		AdjustCC_Z(reg_U);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDX					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDX_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:	//	R	Register High		EA
+		X_hi = Read(reg_scratch++);
+		break;
+	case 11:		//	R	Register Low		EA+1
+		X_lo = Read(reg_scratch);
+		AdjustCC_N(reg_X);
+		AdjustCC_Z(reg_X);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LDY					indexed
+//*****************************************************************************
+uint8_t Mc6809::LDY_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:	//	R	Register High		EA
+		Y_hi = Read(reg_scratch++);
+		break;
+	case 11:		//	R	Register Low		EA+1
+		Y_lo = Read(reg_scratch);
+		AdjustCC_N(reg_Y);
+		AdjustCC_Z(reg_Y);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LEAS				indexed
+//*****************************************************************************
+uint8_t Mc6809::LEAS_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		if((postByte & 0x80) ==  0 || (postByte & 0x0f) > 1)
+			reg_S = reg_scratch;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LEAU				indexed
+//*****************************************************************************
+uint8_t Mc6809::LEAU_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		if ((postByte & 0x80) == 0 || (postByte & 0x0f) > 1)
+			reg_U = reg_scratch;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LEAX				indexed
+//*****************************************************************************
+uint8_t Mc6809::LEAX_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		if ((postByte & 0x80) == 0 || (postByte & 0x0f) > 1)
+		{
+			reg_X = reg_scratch;
+			AdjustCC_Z(reg_X);
+		}
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LEAY				indexed
+//*****************************************************************************
+uint8_t Mc6809::LEAY_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		if ((postByte & 0x80) == 0 || (postByte & 0x0f) > 1)
+		{
+			reg_Y = reg_scratch;
+			AdjustCC_Z(reg_Y);
+		}
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	LSR					indexed
+//*****************************************************************************
+uint8_t Mc6809::LSR_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = ((data_lo >> 1) & 0x7f);
+		AdjustCC_Z(data_lo);
+		reg_CC &= ~CC::N;
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	NEG					indexed
+//*****************************************************************************
+uint8_t Mc6809::NEG_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		reg_CC = (data_lo == 0x80) ? (reg_CC | CC::V) : (reg_CC & ~CC::V);
+		reg_CC = (data_lo != 0) ? (reg_CC & ~CC::C) : (reg_CC | CC::C);
+		data_lo = 0 - data_lo;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORA					indexed
+//*****************************************************************************
+uint8_t Mc6809::ORA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		reg_A |= scratch_lo;
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ORB					indexed
+//*****************************************************************************
+uint8_t Mc6809::ORB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		reg_B |= scratch_lo;
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		reg_CC &= ~CC::V;
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ROL					indexed
+//*****************************************************************************
+uint8_t Mc6809::ROL_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+	uint8_t carry = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		carry = ((reg_CC & CC::C) != 0) ? 1 : 0;
+		AdjustCC_V(data_lo);
+		reg_CC = ((data_lo & 0x80) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = (data_lo << 1) | carry;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		break;
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	ROR					indexed
+//*****************************************************************************
+uint8_t Mc6809::ROR_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint8_t data_lo = 0;
+	uint8_t carry = 0;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		data_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		carry = ((reg_CC & CC::C) != 0) ? 0x80 : 0;
+		reg_CC = ((data_lo & 0x01) != 0) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
+		data_lo = (data_lo >> 1) | carry;
+		AdjustCC_N(data_lo);
+		AdjustCC_Z(data_lo);
+		break;
+	case 12:		//	W	Data				EA
+		Write(reg_scratch, data_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCA				indexed
+//*****************************************************************************
+uint8_t Mc6809::SBCA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		data = reg_A - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		reg_A = (data & 0xff);
+		AdjustCC_H(reg_A);
+		AdjustCC_N(reg_A);
+		AdjustCC_Z(reg_A);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	SBCB				indexed
+//*****************************************************************************
+uint8_t Mc6809::SBCB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		scratch_lo = Read(reg_scratch);
+		data = reg_B - scratch_lo - ((reg_CC & CC::C) == CC::C ? 1 : 0);
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
+		reg_B = (data & 0xff);
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STA				indexed
+//*****************************************************************************
+uint8_t Mc6809::STA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, reg_A);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STB				indexed
+//*****************************************************************************
+uint8_t Mc6809::STB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, reg_B);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STD					indexed
+//*****************************************************************************
+uint8_t Mc6809::STD_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, reg_A);
+		break;
+	case 11:
+		Write(++reg_scratch, reg_B);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STS					indexed
+//*****************************************************************************
+uint8_t Mc6809::STS_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+2
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, S_hi);
+		break;
+	case 11:
+		Write(++reg_scratch, S_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STU					indexed
+//*****************************************************************************
+uint8_t Mc6809::STU_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, U_hi);
+		break;
+	case 11:
+		Write(++reg_scratch, U_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STX					indexed
+//*****************************************************************************
+uint8_t Mc6809::STX_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, X_hi);
+		break;
+	case 11:
+		Write(++reg_scratch, X_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	STY					indexed
+//*****************************************************************************
+uint8_t Mc6809::STY_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	OpCode 2nd Byte		PC+1
+		reg_PC++;
+		break;
+	case 3:		//	R	Post Byte			PC+2
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		Write(reg_scratch, Y_hi);
+		break;
+	case 11:
+		Write(++reg_scratch, Y_lo);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	INC					indexed
+//*****************************************************************************
+uint8_t Mc6809::SUBA_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	INC					indexed
+//*****************************************************************************
+uint8_t Mc6809::SUBB_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	INC					indexed
+//*****************************************************************************
+uint8_t Mc6809::SUBD_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+	uint16_t data;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data High			$ffff
+		scratch_hi = Read(reg_scratch);
+		break;
+	case 11:		//	R	Data Low			EA+1
+		scratch_lo = Read(++reg_scratch);
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		data = reg_D + reg_scratch;
+		AdjustCC_V(reg_scratch, reg_D, (data & 0xffff));
+		reg_D = data & 0xffff;
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
+
+
+//*****************************************************************************
+//	INC					indexed
+//*****************************************************************************
 uint8_t Mc6809::TST_idx() {}
 
 
