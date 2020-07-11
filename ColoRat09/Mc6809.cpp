@@ -11223,7 +11223,6 @@ uint8_t Mc6809::STA_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11257,7 +11256,6 @@ uint8_t Mc6809::STB_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11291,7 +11289,6 @@ uint8_t Mc6809::STD_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11328,7 +11325,6 @@ uint8_t Mc6809::STS_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11368,7 +11364,6 @@ uint8_t Mc6809::STU_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11405,7 +11400,6 @@ uint8_t Mc6809::STX_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11442,7 +11436,6 @@ uint8_t Mc6809::STY_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11476,13 +11469,12 @@ uint8_t Mc6809::STY_idx()
 
 
 //*****************************************************************************
-//	INC					indexed
+//	SUBA				indexed
 //*****************************************************************************
 uint8_t Mc6809::SUBA_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11509,13 +11501,12 @@ uint8_t Mc6809::SUBA_idx()
 
 
 //*****************************************************************************
-//	INC					indexed
+//	SUBB				indexed
 //*****************************************************************************
 uint8_t Mc6809::SUBB_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
 
 	switch (++clocksUsed)
 	{
@@ -11542,13 +11533,14 @@ uint8_t Mc6809::SUBB_idx()
 
 
 //*****************************************************************************
-//	INC					indexed
+//	SUBD				indexed
 //*****************************************************************************
 uint8_t Mc6809::SUBD_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
+	uint16_t data = 0;
+	uint32_t  tempRegValue = 0;
 
 	switch (++clocksUsed)
 	{
@@ -11560,18 +11552,18 @@ uint8_t Mc6809::SUBD_idx()
 		clocksUsed = 100;
 		break;
 	case 10:		//	R	Data High			$ffff
-		scratch_hi = Read(reg_scratch);
+		data = Read(reg_scratch) << 4;
 		break;
 	case 11:		//	R	Data Low			EA+1
-		scratch_lo = Read(++reg_scratch);
+		data |= Read(++reg_scratch);
 		break;
 	case 12:		//	R	Don't Care			$ffff
-		data = reg_D + reg_scratch;
-		AdjustCC_V(reg_scratch, reg_D, (data & 0xffff));
-		reg_D = data & 0xffff;
-		AdjustCC_H(reg_B);
-		AdjustCC_N(reg_B);
-		AdjustCC_Z(reg_B);
+		tempRegValue = Read(reg_PC++);
+		data = reg_D - tempRegValue;
+		AdjustCC_V(reg_D, tempRegValue, (uint16_t)(data & 0xffff));
+		reg_D = (uint16_t)(data & 0xffff);
+		AdjustCC_N(reg_D);
+		AdjustCC_Z(reg_D);
 		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
@@ -11588,9 +11580,43 @@ uint8_t Mc6809::SUBD_idx()
 
 
 //*****************************************************************************
-//	INC					indexed
+//	TST					indexed
 //*****************************************************************************
-uint8_t Mc6809::TST_idx() {}
+uint8_t Mc6809::TST_idx()
+{
+	static uint8_t postByte;
+	uint8_t mode;
+
+	switch (++clocksUsed)
+	{
+	case 1:		//	R	OpCode Fetch		PC
+		reg_PC++;
+		break;
+	case 2:		//	R	Post Byte			PC+1
+		postByte = Read(reg_PC++);
+		clocksUsed = 100;
+		break;
+	case 10:		//	R	Data				EA
+		scratch_lo = Read(reg_scratch);
+		break;
+	case 11:		//	R	Don't Care			$ffff
+		AdjustCC_N(scratch_lo);
+		AdjustCC_Z(scratch_lo);
+		reg_CC &= ~CC::V;
+		break;
+	case 12:		//	R	Don't Care			$ffff
+		clocksUsed = 255;
+		break;
+	default:
+		mode = postByte & 0x90 >> 4;
+		if (mode == 0 || mode == 8)
+			Direct(postByte, &clocksUsed);
+		else
+			Indirect(postByte, &clocksUsed);
+		break;
+	}
+	return(clocksUsed);
+}
 
 
 //.
