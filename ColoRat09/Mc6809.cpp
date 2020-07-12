@@ -384,58 +384,165 @@ void Mc6809::AdjustCC_C(uint32_t data)
 
 
 //*****************************************************************************
-//	Direct
+//	IndexedIncRegister()
 //*****************************************************************************
-void Mc6809::Direct(uint8_t postByte, uint8_t* clocksUsed)
+void Mc6809::IndexedIncRegister(uint8_t postByte)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (reg_ID)
+	{
+	case 00:		// reg X
+		++reg_X;
+		break;
+	case 01:		// reg Y
+		++reg_Y;
+		break;
+	case 02:		// reg U
+		++reg_U;
+		break;
+	case 03:		// reg S
+		++reg_S;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndexedDecRegister()
+//*****************************************************************************
+void Mc6809::IndexedDecRegister(uint8_t postByte)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (reg_ID)
+	{
+	case 00:		// reg X
+		--reg_X;
+		break;
+	case 01:		// reg Y
+		--reg_Y;
+		break;
+	case 02:		// reg U
+		--reg_U;
+		break;
+	case 03:		// reg S
+		--reg_S;
+		break;
+	}
+}
+
+
+//*****************************************************************************
+//	IndexedAddToScratchRegister()
+//*****************************************************************************
+void Mc6809::IndexedAddToScratchRegister(uint8_t postByte)
+{
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (reg_ID)
+	{
+	case 00:		// reg X
+		reg_scratch += reg_X;
+		break;
+	case 01:		// reg Y
+		reg_scratch += reg_Y;
+		break;
+	case 02:		// reg U
+		reg_scratch += reg_U;
+		break;
+	case 03:		// reg S
+		reg_scratch += reg_S;
+		break;
+	}
+}
+
+
+const uint8_t Mc6809::HIGH_BYTE = 0;
+const uint8_t Mc6809::LOW_BYTE = 1;
+const uint8_t Mc6809::SINGLE_BYTE = 0;
+
+
+//*****************************************************************************
+//	Direct()
+//*****************************************************************************
+uint8_t Mc6809::IndexedReadByteFromIndex(uint8_t postByte, uint8_t offset)
+{
+	uint16_t address = 0;
+	uint8_t reg_ID = (postByte & 0x60) >> 5;
+
+	switch (reg_ID)
+	{
+	case 00:		// reg X
+		address = reg_X + offset;
+		break;
+	case 01:		// reg Y
+		address = reg_Y + offset;
+		break;
+	case 02:		// reg U
+		address = reg_U + offset;
+		break;
+	case 03:		// reg S
+		address = reg_S + offset;
+		break;
+	}
+	return(Read(address));
+}
+
+//*****************************************************************************
+//	Direct()
+//*****************************************************************************
+uint8_t Mc6809::Direct(uint8_t postByte, uint8_t clocksUsed)
 {
 	auto idxMode = (((postByte & 0x80) == 0) ? 0 : (postByte & 0x9f));
 
 	switch (idxMode)
 	{
 	case 0x84:		// no offset
-		DirectNoOffset(postByte, clocksUsed);
+		clocksUsed = DirectNoOffset(postByte, clocksUsed);
 		break;
 	case 0x00:		// 5-bit offset
-		Direct5bitOffset(postByte, clocksUsed);
+		clocksUsed = Direct5bitOffset(postByte, clocksUsed);
 		break;
 	case 0x88:		// 8-bit offset
-		Direct8BitOffset(postByte, clocksUsed);
+		clocksUsed = Direct8BitOffset(postByte, clocksUsed);
 		break;
 	case 0x89:		// 16-bit offset
-		Direct16BitOffset(postByte, clocksUsed);
+		clocksUsed = Direct16BitOffset(postByte, clocksUsed);
 		break;
 	case 0x86:		// A Accumulator Offset
-		DirectAccAOffset(postByte, clocksUsed);
+		clocksUsed = DirectAccAOffset(postByte, clocksUsed);
 		break;
 	case 0x85:		// B Accumulator Offset
-		DirectAccBOffset(postByte, clocksUsed);
+		clocksUsed = DirectAccBOffset(postByte, clocksUsed);
 		break;
 	case 0x8b:		// D Accumulator Offset
-		DirectAccDOffset(postByte, clocksUsed);
+		clocksUsed = DirectAccDOffset(postByte, clocksUsed);
 		break;
 	case 0x80:		// Increment by 1
-		DirectInc1Offset(postByte, clocksUsed);
+		clocksUsed = DirectInc1Offset(postByte, clocksUsed);
 		break;
 	case 0x81:		// Increment by 2
-		DirectInc2Offset(postByte, clocksUsed);
+		clocksUsed = DirectInc2Offset(postByte, clocksUsed);
 		break;
 	case 0x82:		// Decrement by 1
-		DirectDec1Offset(postByte, clocksUsed);
+		clocksUsed = DirectDec1Offset(postByte, clocksUsed);
 		break;
 	case 0x83:		// Decrement by 2
-		DirectDec2Offset(postByte, clocksUsed);
+		clocksUsed = DirectDec2Offset(postByte, clocksUsed);
 		break;
 	case 0x8c:		// 8-bit offset from PC
-		Direct8BitFromPcOffset(postByte, clocksUsed);
+		clocksUsed = Direct8BitFromPcOffset(postByte, clocksUsed);
 		break;
 	case 0x8d:		// 16-bit offset from PC
-		Direct16BitFromPcOffset(postByte, clocksUsed);
+		clocksUsed = Direct16BitFromPcOffset(postByte, clocksUsed);
 		break;
 	case 0x8f:		// 16-bit address - INVALID
 	default:		// Invalid/Undefined values
-		*clocksUsed = 0xff;
+		clocksUsed = 0xff;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -443,7 +550,7 @@ void Mc6809::Direct(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectNoOffset				Indexed - Direct - No Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::DirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectNoOffset(uint8_t postByte, uint8_t clocksUsed)
 {
 	uint8_t reg_ID = (postByte & 0x60) >> 5;
 
@@ -462,7 +569,8 @@ void Mc6809::DirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
 		reg_scratch = reg_S;
 		break;
 	}
-	*clocksUsed = 10;
+	clocksUsed = 9;
+	return(clocksUsed);
 }
 
 
@@ -470,36 +578,21 @@ void Mc6809::DirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	Direct5bitOffset			Indexed - Direct - 5-bit Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::Direct5bitOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Direct5bitOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
-		scratch_hi = (((postByte & 0x10) == 0x10) ? 0xfff0 : 0x0000);
+		reg_scratch = (((postByte & 0x10) == 0x10) ? 0xfff0 : 0x0000);
 		break;
 	case 101:		//	R	Don't Care
-		scratch_lo = (postByte & 0x0f);
+		scratch_lo |= (postByte & 0x0f);
 
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
-		*clocksUsed = 10;
+		IndexedAddToScratchRegister(postByte);
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -507,11 +600,9 @@ void Mc6809::Direct5bitOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	Direct8BitOffset			Indexed - Direct - 8-Bit Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::Direct8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Direct8BitOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Offset
 		scratch_lo = Read(reg_PC++);
@@ -519,24 +610,11 @@ void Mc6809::Direct8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 	case 101:		//	R	Don't Care
 		scratch_hi = (((scratch_lo & 0x80) == 0x80) ? 0xff : 0x00);
 
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
-		*clocksUsed = 10;
+		IndexedAddToScratchRegister(postByte);
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -544,11 +622,9 @@ void Mc6809::Direct8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	Direct16BitOffset			Indexed - Direct - 16-Bit Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::Direct16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Direct16BitOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Offset High
 		scratch_hi = Read(reg_PC++);
@@ -559,26 +635,13 @@ void Mc6809::Direct16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 	case 102:		//	R	Don't Care
 		break;
 	case 103:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
+		IndexedAddToScratchRegister(postByte);
 		break;
 	case 104:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -586,11 +649,9 @@ void Mc6809::Direct16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectAccAOffset			Indexed - Direct - A Accumulator Offset
 //								Accumulator Offset from register 2s complement
 //*****************************************************************************
-void Mc6809::DirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectAccAOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
 		scratch_lo = reg_A;
@@ -598,24 +659,11 @@ void Mc6809::DirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
 	case 101:		//	R	Don't Care
 		scratch_hi = ((reg_A & 0x80) == 0x80 ? 0xff : 0);
 
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
-		*clocksUsed = 10;
+		IndexedAddToScratchRegister(postByte);
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -623,11 +671,9 @@ void Mc6809::DirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectAccBOffset			Indexed - Direct - B Accumulator Offset
 //								Accumulator Offset from register 2s complement
 //*****************************************************************************
-void Mc6809::DirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectAccBOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
 		scratch_lo = reg_B;
@@ -635,24 +681,11 @@ void Mc6809::DirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
 	case 101:		//	R	Don't Care
 		scratch_hi = ((reg_B & 0x80) == 0x80 ? 0xff : 0);
 
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
-		*clocksUsed = 10;
+		IndexedAddToScratchRegister(postByte);
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -660,41 +693,25 @@ void Mc6809::DirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectAccDOffset			Indexed - Direct - D Accumulator Offset
 //								Accumulator Offset from register 2s complement
 //*****************************************************************************
-void Mc6809::DirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectAccDOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
-		scratch_hi = reg_A;
+		reg_scratch = reg_D;
 		break;
 	case 101:		//	R	Don't Care
-		scratch_lo = reg_B;
 		break;
 	case 102:		//	R	Don't Care
 		break;
 	case 103:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
+		IndexedAddToScratchRegister(postByte);
 		break;
 	case 104:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -702,51 +719,21 @@ void Mc6809::DirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectInc1Offset			Indexed - Direct - Increment Offset by 1
 //								Auto Increment/Decrement Register
 //*****************************************************************************
-void Mc6809::DirectInc1Offset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectInc1Offset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
-
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
+		IndexedAddToScratchRegister(postByte);
 		break;
 	case 101:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			++reg_X;
-			break;
-		case 01:		// reg Y
-			++reg_Y;
-			break;
-		case 02:		// reg U
-			++reg_U;
-			break;
-		case 03:		// reg S
-			++reg_S;
-			break;
-		}
+		IndexedIncRegister(postByte);
 		break;
 	case 102:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -754,68 +741,24 @@ void Mc6809::DirectInc1Offset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectInc2Offset			Indexed - Direct - Increment Offset by 2
 //								Auto Increment/Decrement Register
 //*****************************************************************************
-void Mc6809::DirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectInc2Offset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
-
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
+		IndexedAddToScratchRegister(postByte);
 		break;
 	case 101:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			++reg_X;
-			break;
-		case 01:		// reg Y
-			++reg_Y;
-			break;
-		case 02:		// reg U
-			++reg_U;
-			break;
-		case 03:		// reg S
-			++reg_S;
-			break;
-		}
+		IndexedIncRegister(postByte);
 		break;
 	case 102:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			++reg_X;
-			break;
-		case 01:		// reg Y
-			++reg_Y;
-			break;
-		case 02:		// reg U
-			++reg_U;
-			break;
-		case 03:		// reg S
-			++reg_S;
-			break;
-		}
+		IndexedIncRegister(postByte);
 		break;
 	case 103:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -823,50 +766,21 @@ void Mc6809::DirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectDec1Offset			Indexed - Direct - Decrement Offset by 1
 //								Auto Increment/Decrement Register
 //*****************************************************************************
-void Mc6809::DirectDec1Offset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectDec1Offset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			--reg_X;
-			break;
-		case 01:		// reg Y
-			--reg_Y;
-			break;
-		case 02:		// reg U
-			--reg_U;
-			break;
-		case 03:		// reg S
-			--reg_S;
-			break;
-		}
+		IndexedDecRegister(postByte);
 		break;
 	case 101:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
+		IndexedAddToScratchRegister(postByte);
 		break;
 	case 102:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -874,67 +788,24 @@ void Mc6809::DirectDec1Offset(uint8_t postByte, uint8_t* clocksUsed)
 //	DirectDec2Offset			Indexed - Direct - Decrement Offset by 2
 //								Auto Increment/Decrement Register
 //*****************************************************************************
-void Mc6809::DirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::DirectDec2Offset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			--reg_X;
-			break;
-		case 01:		// reg Y
-			--reg_Y;
-			break;
-		case 02:		// reg U
-			--reg_U;
-			break;
-		case 03:		// reg S
-			--reg_S;
-			break;
-		}
+		IndexedDecRegister(postByte);
 		break;
 	case 101:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			--reg_X;
-			break;
-		case 01:		// reg Y
-			--reg_Y;
-			break;
-		case 02:		// reg U
-			--reg_U;
-			break;
-		case 03:		// reg S
-			--reg_S;
-			break;
-		}
+		IndexedDecRegister(postByte);
 		break;
 	case 102:		//	R	Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_scratch += reg_X;
-			break;
-		case 01:		// reg Y
-			reg_scratch += reg_Y;
-			break;
-		case 02:		// reg U
-			reg_scratch += reg_U;
-			break;
-		case 03:		// reg S
-			reg_scratch += reg_S;
-			break;
-		}
+		IndexedAddToScratchRegister(postByte);
 		break;
 	case 103:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -943,11 +814,9 @@ void Mc6809::DirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed)
 //								Constant offset from Program Counter
 //								2s complement
 //*****************************************************************************
-void Mc6809::Direct8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Direct8BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Offset
 		scratch_lo = Read(reg_PC++);
@@ -956,9 +825,10 @@ void Mc6809::Direct8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 		scratch_hi = ((scratch_lo & 0x80) == 0x80 ? 0xff : 0);
 
 		reg_scratch += reg_PC;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -967,11 +837,9 @@ void Mc6809::Direct8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 //								Constant offset from Program Counter
 //								2s complement
 //*****************************************************************************
-void Mc6809::Direct16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Direct16BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Offset High
 		scratch_hi = Read(reg_PC++);
@@ -987,66 +855,66 @@ void Mc6809::Direct16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 		break;
 	case 105:		//	R	Don't Care
 		reg_scratch += reg_PC;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
 //*****************************************************************************
-//	Indirect
+//	Indirect()
 //*****************************************************************************
-void Mc6809::Indirect(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Indirect(uint8_t postByte, uint8_t clocksUsed)
 {
 	auto idxMode = postByte & 0x9f;
-	if(*clocksUsed == 2)
+
+	if ((postByte & 0x80) == 0)
+		idxMode = 0;
+
+	switch (idxMode)
 	{
-		if ((postByte & 0x80) == 0)
-			idxMode = 0;
-		switch (idxMode)
-		{
-		case 0x94:		// no offset
-			IndirectNoOffset(postByte, clocksUsed);
-			break;
-		case 0x00:		// 5-bit offset - DEFAULTS to 8-bit offset
-		case 0x98:		// 8-bit offset
-			Indirect8BitOffset(postByte, clocksUsed);
-			break;
-		case 0x99:		// 16-bit offset
-			Indirect16BitOffset(postByte, clocksUsed);
-			break;
-		case 0x96:		// A Accumulator Offset
-			IndirectAccAOffset(postByte, clocksUsed);
-			break;
-		case 0x95:		// B Accumulator Offset
-			IndirectAccBOffset(postByte, clocksUsed);
-			break;
-		case 0x9b:		// D Accumulator Offset
-			IndirectAccDOffset(postByte, clocksUsed);
-			break;
-		case 0x91:		// Increment by 2
-			IndirectInc2Offset(postByte, clocksUsed);
-			break;
-		case 0x93:		// Decrement by 2
-			IndirectDec2Offset(postByte, clocksUsed);
-			break;
-		case 0x9c:		// 8-bit offset from PC
-			Indirect8BitFromPcOffset(postByte, clocksUsed);
-			break;
-		case 0x9d:		// 16-bit offset from PC
-			Indirect16BitFromPcOffset(postByte, clocksUsed);
-			break;
-		case 0x9f:		// 16-bit address
-			Indirect16BitExtendedOffset(postByte, clocksUsed);
-			break;
-		case 0x90:		// Increment by 1 - NOT ALLOWED
-		case 0x92:		// Decrement by 1 - NOT ALLOWED
-		default:		// Invalid/Undefined values
-			*clocksUsed = 0xff;
-			break;
-		}
-		++(*clocksUsed);
+	case 0x94:		// no offset
+		clocksUsed = IndirectNoOffset(postByte, clocksUsed);
+		break;
+	case 0x00:		// 5-bit offset - DEFAULTS to 8-bit offset
+	case 0x98:		// 8-bit offset
+		clocksUsed = Indirect8BitOffset(postByte, clocksUsed);
+		break;
+	case 0x99:		// 16-bit offset
+		clocksUsed = Indirect16BitOffset(postByte, clocksUsed);
+		break;
+	case 0x96:		// A Accumulator Offset
+		clocksUsed = IndirectAccAOffset(postByte, clocksUsed);
+		break;
+	case 0x95:		// B Accumulator Offset
+		clocksUsed = IndirectAccBOffset(postByte, clocksUsed);
+		break;
+	case 0x9b:		// D Accumulator Offset
+		clocksUsed = IndirectAccDOffset(postByte, clocksUsed);
+		break;
+	case 0x91:		// Increment by 2
+		clocksUsed = IndirectInc2Offset(postByte, clocksUsed);
+		break;
+	case 0x93:		// Decrement by 2
+		clocksUsed = IndirectDec2Offset(postByte, clocksUsed);
+		break;
+	case 0x9c:		// 8-bit offset from PC
+		clocksUsed = Indirect8BitFromPcOffset(postByte, clocksUsed);
+		break;
+	case 0x9d:		// 16-bit offset from PC
+		clocksUsed = Indirect16BitFromPcOffset(postByte, clocksUsed);
+		break;
+	case 0x9f:		// 16-bit address
+		clocksUsed = Indirect16BitExtendedOffset(postByte, clocksUsed);
+		break;
+	case 0x90:		// Increment by 1 - NOT ALLOWED
+	case 0x92:		// Decrement by 1 - NOT ALLOWED
+	default:		// Invalid/Undefined values
+		clocksUsed = 0xff;
+		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1054,52 +922,23 @@ void Mc6809::Indirect(uint8_t postByte, uint8_t* clocksUsed)
 //	IndirectNoOffset			Indexed - Indirect - No Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::IndirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::IndirectNoOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
-
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Don't Care
 		break;
 	case 101:		//	R	Indirect High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_hi = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			scratch_hi = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			scratch_hi = Read(reg_U);
-			break;
-		case 03:		// reg S
-			scratch_hi = Read(reg_S);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 102:		//	R	Indirect Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_lo = Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			scratch_lo = Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			scratch_lo = Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			scratch_lo = Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 103:		//	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1107,29 +946,14 @@ void Mc6809::IndirectNoOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	Indirect8BitOffset			Indexed - Indirect - (5-bit ->) 8-bit Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::Indirect8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Indirect8BitOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R	Offset
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			offset = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			offset = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			offset = Read(reg_U);
-			break;
-		case 03:		// reg S
-			offset = Read(reg_S);
-			break;
-		}
+		offset = IndexedReadByteFromIndex(postByte, SINGLE_BYTE);
 		break;
 	case 101:		//	Don't Care
 		if ((offset & 0x80) == 0x80)
@@ -1141,12 +965,13 @@ void Mc6809::Indirect8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 		scratch_hi = Read(offset);
 		break;
 	case 103:		//	R	Indirect Low
-		scratch_lo = Read(offset + 1);
+		scratch_lo = Read(++offset);
 		break;
 	case 104:		//	R	Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1154,48 +979,20 @@ void Mc6809::Indirect8BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	Indirect16BitOffset			Indexed - Indirect - 16-Bit Offset
 //								Constant offset from Regester   2s complement
 //*****************************************************************************
-void Mc6809::Indirect16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Indirect16BitOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Offset High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			offset = (Read(reg_X + 1) << 4);
-			break;
-		case 01:		// reg Y
-			offset = (Read(reg_Y + 1) << 4);
-			break;
-		case 02:		// reg U
-			offset = (Read(reg_U + 1) << 4);
-			break;
-		case 03:		// reg S
-			offset = (Read(reg_S + 1) << 4);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 101:		//	R		Offset Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			offset |= Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			offset |= Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			offset |= Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			offset |= Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 102:		//	R		Don't Care
+		offset = reg_scratch;
 		break;
 	case 103:		//	R		Don't Care
 		break;
@@ -1205,12 +1002,13 @@ void Mc6809::Indirect16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 		scratch_hi = Read(offset);
 		break;
 	case 106:		//	R		Indirect Low
-		scratch_lo = Read(offset + 1);
+		scratch_lo = Read(++offset);
 		break;
 	case 107:		//	R		Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1218,12 +1016,11 @@ void Mc6809::Indirect16BitOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	IndirectAccAOffset			Indexed - Indirect - A Accumulator Offset
 //								Accumulator Offset from register 2s complement
 //*****************************************************************************
-void Mc6809::IndirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::IndirectAccAOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Don't Care
 		offset = reg_A;
@@ -1235,44 +1032,17 @@ void Mc6809::IndirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
 			offset &= 0x00ff;
 		break;
 	case 102:		//	R		Indirect High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_hi = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			scratch_hi = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			scratch_hi = Read(reg_U);
-			break;
-		case 03:		// reg S
-			scratch_hi = Read(reg_S);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 103:		//	R		Indirect Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_lo = Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			scratch_lo = Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			scratch_lo = Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			scratch_lo = Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 104:		//	R		Don't Care
 		reg_scratch += offset;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1280,12 +1050,11 @@ void Mc6809::IndirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	IndirectAccBOffset			Indexed - Indirect - B Accumulator Offset
 //								Accumulator Offset from register 2s complement
 //*****************************************************************************
-void Mc6809::IndirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::IndirectAccBOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Don't Care
 		offset = reg_A;
@@ -1297,44 +1066,17 @@ void Mc6809::IndirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
 			offset &= 0x00ff;
 		break;
 	case 102:		//	R		Indirect High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_hi = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			scratch_hi = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			scratch_hi = Read(reg_U);
-			break;
-		case 03:		// reg S
-			scratch_hi = Read(reg_S);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 103:		//	R		Indirect Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_lo = Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			scratch_lo = Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			scratch_lo = Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			scratch_lo = Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 104:		//	R		Don't Care
 		reg_scratch += offset;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1342,12 +1084,11 @@ void Mc6809::IndirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	IndirectAccDOffset			Indexed - Indirect - D Accumulator Offset
 //								Accumulator Offset from register 2s complement
 //*****************************************************************************
-void Mc6809::IndirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::IndirectAccDOffset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Don't Care
 		offset = reg_D;
@@ -1361,44 +1102,17 @@ void Mc6809::IndirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
 	case 104:		//	R		Don't Care
 		break;
 	case 105:		//	R		Indirect High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_hi = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			scratch_hi = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			scratch_hi = Read(reg_U);
-			break;
-		case 03:		// reg S
-			scratch_hi = Read(reg_S);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 106:		//	R		Indirect Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_lo = Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			scratch_lo = Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			scratch_lo = Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			scratch_lo = Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 107:		//	R		Don't Care
 		reg_scratch += offset;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1406,12 +1120,11 @@ void Mc6809::IndirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed)
 //	IndirectInc2Offset			Indexed - Indirect - Increment Offset by 2
 //								Auto Increment/Decrement Register
 //*****************************************************************************
-void Mc6809::IndirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::IndirectInc2Offset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Don't Care
 		break;
@@ -1422,58 +1135,18 @@ void Mc6809::IndirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
 	case 103:		//	R		Don't Care
 		break;
 	case 104:		//	R		Indirect High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_hi = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			scratch_hi = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			scratch_hi = Read(reg_U);
-			break;
-		case 03:		// reg S
-			scratch_hi = Read(reg_S);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 105:		//	R		Indirect Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_lo = Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			scratch_lo = Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			scratch_lo = Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			scratch_lo = Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 106:		//	R		Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			reg_X += 2;
-			break;
-		case 01:		// reg Y
-			reg_Y += 2;
-			break;
-		case 02:		// reg U
-			reg_U += 2;
-			break;
-		case 03:		// reg S
-			reg_S += 2;
-			break;
-		}
-		*clocksUsed = 10;
+		IndexedIncRegister(postByte);
+		IndexedIncRegister(postByte);
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1481,89 +1154,33 @@ void Mc6809::IndirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed)
 //	IndirectDec2Offset			Indexed - Indirect - Decrement Offset by 2
 //								Auto Increment/Decrement Register
 //*****************************************************************************
-void Mc6809::IndirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::IndirectDec2Offset(uint8_t postByte, uint8_t clocksUsed)
 {
-	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			--reg_X;
-			break;
-		case 01:		// reg Y
-			--reg_Y;
-			break;
-		case 02:		// reg U
-			--reg_U;
-			break;
-		case 03:		// reg S
-			--reg_S;
-			break;
-		}
+		IndexedDecRegister(postByte);
 		break;
 	case 101:		//	R		Don't Care
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			--reg_X;
-			break;
-		case 01:		// reg Y
-			--reg_Y;
-			break;
-		case 02:		// reg U
-			--reg_U;
-			break;
-		case 03:		// reg S
-			--reg_S;
-			break;
-		}
+		IndexedDecRegister(postByte);
 		break;
 	case 102:		//	R		Don't Care
 		break;
 	case 103:		//	R		Don't Care
 		break;
 	case 104:		//	R		Indirect High
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_hi = Read(reg_X);
-			break;
-		case 01:		// reg Y
-			scratch_hi = Read(reg_Y);
-			break;
-		case 02:		// reg U
-			scratch_hi = Read(reg_U);
-			break;
-		case 03:		// reg S
-			scratch_hi = Read(reg_S);
-			break;
-		}
+		scratch_hi = IndexedReadByteFromIndex(postByte, HIGH_BYTE);
 		break;
 	case 105:		//	R		Indirect Low
-		switch (reg_ID)
-		{
-		case 00:		// reg X
-			scratch_lo = Read(reg_X + 1);
-			break;
-		case 01:		// reg Y
-			scratch_lo = Read(reg_Y + 1);
-			break;
-		case 02:		// reg U
-			scratch_lo = Read(reg_U + 1);
-			break;
-		case 03:		// reg S
-			scratch_lo = Read(reg_S + 1);
-			break;
-		}
+		scratch_lo = IndexedReadByteFromIndex(postByte, LOW_BYTE);
 		break;
 	case 106:		//	R		Don't Care
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1572,12 +1189,12 @@ void Mc6809::IndirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed)
 //								Constant offset from Program Counter
 //								2s complement
 //*****************************************************************************
-void Mc6809::Indirect8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Indirect8BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed)
 {
 	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Offset
 		offset = Read(reg_PC++);
@@ -1596,9 +1213,10 @@ void Mc6809::Indirect8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 		break;
 	case 104:		//	R		Don't Care
 		reg_scratch += offset;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1607,12 +1225,12 @@ void Mc6809::Indirect8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 //								Constant offset from Program Counter
 //								2s complement
 //*****************************************************************************
-void Mc6809::Indirect16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Indirect16BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed)
 {
 	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t offset;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Offset High
 		offset = (Read(reg_PC++) << 4);
@@ -1636,9 +1254,10 @@ void Mc6809::Indirect16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 		break;
 	case 108:		//	R		Don't Care
 		reg_scratch += offset;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1647,12 +1266,12 @@ void Mc6809::Indirect16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed)
 //									Constant offset from Program Counter
 //									2s complement
 //*****************************************************************************
-void Mc6809::Indirect16BitExtendedOffset(uint8_t postByte, uint8_t* clocksUsed)
+uint8_t Mc6809::Indirect16BitExtendedOffset(uint8_t postByte, uint8_t clocksUsed)
 {
 	uint8_t reg_ID = (postByte & 0x60) >> 5;
 	static uint16_t address;
 
-	switch (++(*clocksUsed))
+	switch (clocksUsed)
 	{
 	case 100:		//	R		Address High
 		address = (Read(reg_PC++) << 4);
@@ -1670,9 +1289,10 @@ void Mc6809::Indirect16BitExtendedOffset(uint8_t postByte, uint8_t* clocksUsed)
 		break;
 	case 105:		//	R		Don't Care
 		reg_scratch += address;
-		*clocksUsed = 10;
+		clocksUsed = 9;
 		break;
 	}
+	return(clocksUsed);
 }
 
 
@@ -1700,8 +1320,7 @@ uint8_t Mc6809::RESET()
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Don't care			$fffe
-		if (Reset)
-			--clocksUsed;
+		Reset == false;
 		break;
 	case 2:		//	R	Don't care			$fffe
 		reg_CC = (CC::I | CC::F);
@@ -2009,7 +1628,7 @@ uint8_t Mc6809::ADCA_imm()	// H N Z V C all modified. reg_A modified
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				PC+1
-		scratch_lo = Read(reg_scratch);
+		scratch_lo = Read(reg_PC++);
 		data = reg_A + scratch_lo + ((reg_CC & CC::C) == CC::C ? 1 : 0);
 		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
 		reg_A = (data & 0xff);
@@ -2241,7 +1860,7 @@ uint8_t Mc6809::ADDB_dir()
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		data = reg_B + scratch_lo;
-		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
 		reg_B = (data & 0xff);
 		AdjustCC_H(reg_B);
 		AdjustCC_N(reg_B);
@@ -2277,7 +1896,7 @@ uint8_t Mc6809::ADDB_ext()
 	case 5:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
 		data = reg_B + scratch_lo;
-		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
 		reg_B = (data & 0xff);
 		AdjustCC_H(reg_B);
 		AdjustCC_N(reg_B);
@@ -2305,7 +1924,7 @@ uint8_t Mc6809::ADDB_imm()
 	case 2:		//	R	Data				PC+1
 		scratch_lo = Read(reg_PC++);
 		data = reg_B + scratch_lo;
-		AdjustCC_V(scratch_lo, reg_A, (data & 0xff));
+		AdjustCC_V(scratch_lo, reg_B, (data & 0xff));
 		reg_B = (data & 0xff);
 		AdjustCC_H(reg_B);
 		AdjustCC_N(reg_B);
@@ -2323,6 +1942,7 @@ uint8_t Mc6809::ADDB_imm()
 //*****************************************************************************
 uint8_t Mc6809::ADDD_dir()
 {
+	static uint16_t address;
 	static uint32_t data;
 	switch (++clocksUsed)
 	{
@@ -2330,16 +1950,16 @@ uint8_t Mc6809::ADDD_dir()
 		reg_PC++;
 		break;
 	case 2:		//	R	Address Low			PC+1
-		scratch_lo = Read(reg_PC++);
+		address = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't Care			$ffff
-		scratch_hi = reg_DP;
+		address |= (reg_DP << 8);
 		break;
 	case 4:		//	R	Data High			$ffff
-		scratch_hi = Read(reg_scratch);
+		scratch_hi = Read(address);
 		break;
 	case 5:		//	R	Data Low			EA+1
-		scratch_lo = Read(++reg_scratch);
+		scratch_lo = Read(++address);
 		break;
 	case 6:		//	R	Don't Care			$ffff
 		data = reg_D + reg_scratch;
@@ -2361,8 +1981,8 @@ uint8_t Mc6809::ADDD_dir()
 //*****************************************************************************
 uint8_t Mc6809::ADDD_ext()
 {
-	static uint16_t data;
-	uint32_t tempRegValue;
+	static uint16_t address;
+	uint32_t data;
 
 	switch (++clocksUsed)
 	{
@@ -2370,26 +1990,27 @@ uint8_t Mc6809::ADDD_ext()
 		reg_PC++;
 		break;
 	case 2:		//	R	Address High		PC+1
-		scratch_hi = Read(reg_PC++);
+		address = Read(reg_PC++) << 8;
 		break;
 	case 3:		//	R	Address Low			PC+2
-		scratch_lo = Read(reg_PC++);
+		address |= Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't Care			$ffff
 		break;
-	case 5:		//	R	Data High			$ffff
-		data = Read(reg_scratch) << 8;
+	case 5:		//	R	address High			$ffff
+		scratch_hi = Read(address) << 8;
 		break;
-	case 6:		//	R	Data Low			EA+1
-		data |= Read(++reg_scratch);
+	case 6:		//	R	address Low			EA+1
+		scratch_lo |= Read(++address);
 		break;
 	case 7:		//	R	Don't Care			$ffff
-		tempRegValue = reg_D + data;
-		AdjustCC_V(data, reg_D, tempRegValue);
-		reg_D = tempRegValue & 0xffff;
-		AdjustCC_N(reg_D);
-		AdjustCC_Z(reg_D);
-		AdjustCC_C(tempRegValue);
+		data = reg_D + reg_scratch;
+		AdjustCC_V(reg_scratch, reg_D, (data & 0xffff));
+		reg_D = data & 0xffff;
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -2402,7 +2023,7 @@ uint8_t Mc6809::ADDD_ext()
 //*****************************************************************************
 uint8_t Mc6809::ADDD_imm()
 {
-	uint32_t tempRegValue;
+	uint32_t data;
 
 	switch (++clocksUsed)
 	{
@@ -2416,12 +2037,13 @@ uint8_t Mc6809::ADDD_imm()
 		scratch_lo = Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't Care			$ffff
-		tempRegValue = reg_D + reg_scratch;
-		AdjustCC_V(reg_scratch, reg_D, tempRegValue);
-		reg_D = tempRegValue & 0xffff;
-		AdjustCC_N(reg_D);
-		AdjustCC_Z(reg_D);
-		AdjustCC_C(tempRegValue);
+		data = reg_D + reg_scratch;
+		AdjustCC_V(reg_scratch, reg_D, (data & 0xffff));
+		reg_D = data & 0xffff;
+		AdjustCC_H(reg_B);
+		AdjustCC_N(reg_B);
+		AdjustCC_Z(reg_B);
+		AdjustCC_C(data);
 		clocksUsed = 255;
 		break;
 	}
@@ -2500,7 +2122,7 @@ uint8_t Mc6809::ANDA_imm()
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				PC+1
-		scratch_lo = Read(reg_scratch);
+		scratch_lo = Read(reg_PC++);
 		reg_A &= scratch_lo;
 		reg_CC &= ~CC::V;
 		AdjustCC_Z(reg_A);
@@ -2583,7 +2205,7 @@ uint8_t Mc6809::ANDB_imm()
 		reg_PC++;
 		break;
 	case 2:		//	R	Data				PC+1
-		scratch_lo = Read(reg_scratch);
+		scratch_lo = Read(reg_PC++);
 		reg_B &= scratch_lo;
 		reg_CC &= ~CC::V;
 		AdjustCC_Z(reg_B);
@@ -2797,7 +2419,7 @@ uint8_t Mc6809::ASRB_inh()
 uint8_t Mc6809::ASR_dir()
 {
 	static uint8_t data_lo;
-	uint8_t data_ghst;
+	uint8_t dataSign;
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
@@ -2813,9 +2435,9 @@ uint8_t Mc6809::ASR_dir()
 		data_lo = Read(reg_scratch);
 		break;
 	case 5:		//	R	Don't care			$ffff
-		data_ghst = data_lo & 0x80;
+		dataSign = data_lo & 0x80;
 		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = ((data_lo >> 1) & 0x7f) | scratch_lo;
+		reg_A = ((data_lo >> 1) & 0x7f) | dataSign;
 		AdjustCC_Z(data_lo);
 		AdjustCC_N(data_lo);
 		break;
@@ -2834,7 +2456,7 @@ uint8_t Mc6809::ASR_dir()
 uint8_t Mc6809::ASR_ext()
 {
 	static uint8_t data_lo;
-	uint8_t data_ghst;
+	uint8_t dataSign;
 
 	switch (++clocksUsed)
 	{
@@ -2853,9 +2475,9 @@ uint8_t Mc6809::ASR_ext()
 		data_lo = Read(reg_scratch);
 		break;
 	case 6:		//	R	Don't care			$ffff
-		data_ghst = data_lo & 0x80;
+		dataSign = data_lo & 0x80;
 		reg_CC = ((data_lo & 0x01) == 1) ? (reg_CC | CC::C) : (reg_CC & ~CC::C);
-		reg_A = ((data_lo >> 1) & 0x7f) | scratch_lo;
+		reg_A = ((data_lo >> 1) & 0x7f) | dataSign;
 		AdjustCC_Z(data_lo);
 		AdjustCC_N(data_lo);
 		break;
@@ -3003,7 +2625,7 @@ uint8_t Mc6809::BITA_dir()
 		scratch_lo = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't Care			$ffff
-		scratch_hi = reg_DP;;
+		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
@@ -3086,7 +2708,7 @@ uint8_t Mc6809::BITB_dir()
 		scratch_lo = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't Care			$ffff
-		scratch_hi = reg_DP;;
+		scratch_hi = reg_DP;
 		break;
 	case 4:		//	R	Data				EA
 		scratch_lo = Read(reg_scratch);
@@ -4433,7 +4055,6 @@ uint8_t Mc6809::COM_ext()
 		scratch_lo = Read(reg_PC++);
 		break;
 	case 4:		//	R	Don't Care			$ffff
-		scratch_hi = reg_DP;
 		break;
 	case 5:		//	R	Data				EA
 		data_lo = Read(reg_scratch);
@@ -4465,8 +4086,7 @@ uint8_t Mc6809::CWAI_inh()
 		reg_PC++;
 		break;
 	case 2:		//	R	CC Mask				PC+1
-		scratch_lo = Read(reg_PC);
-		reg_PC++;
+		scratch_lo = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't Care			PC+2
 		reg_PC++;
@@ -4541,7 +4161,7 @@ uint8_t Mc6809::CWAI_inh()
 	return(clocksUsed);
 }
 
-
+continue from here;
 //*****************************************************************************
 //	DAA					inherent
 //*****************************************************************************
@@ -9422,9 +9042,9 @@ uint8_t Mc6809::ADCA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9463,9 +9083,9 @@ uint8_t Mc6809::ADCB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9504,9 +9124,9 @@ uint8_t Mc6809::ADDA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9545,9 +9165,9 @@ uint8_t Mc6809::ADDB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9561,7 +9181,8 @@ uint8_t Mc6809::ADDD_idx()
 {
 	static uint8_t postByte;
 	uint8_t mode;
-	uint16_t data;
+	uint32_t data;
+	static uint16_t address;
 
 	switch (++clocksUsed)
 	{
@@ -9573,10 +9194,11 @@ uint8_t Mc6809::ADDD_idx()
 		clocksUsed = 100;
 		break;
 	case 10:		//	R	Data High			$ffff
-		scratch_hi = Read(reg_scratch);
+		address = reg_scratch;
+		scratch_hi = Read(address);
 		break;
 	case 11:		//	R	Data Low			EA+1
-		scratch_lo = Read(++reg_scratch);
+		scratch_lo = Read(++address);
 		break;
 	case 12:		//	R	Don't Care			$ffff
 		data = reg_D + reg_scratch;
@@ -9591,9 +9213,9 @@ uint8_t Mc6809::ADDD_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9628,9 +9250,9 @@ uint8_t Mc6809::ANDA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9665,9 +9287,9 @@ uint8_t Mc6809::ANDB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9710,9 +9332,9 @@ uint8_t Mc6809::ASL_LSL_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9754,9 +9376,9 @@ uint8_t Mc6809::ASR_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9791,9 +9413,9 @@ uint8_t Mc6809::BITA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9828,9 +9450,9 @@ uint8_t Mc6809::BITB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9867,9 +9489,9 @@ uint8_t Mc6809::CLR_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9906,9 +9528,9 @@ uint8_t Mc6809::CMPA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9945,9 +9567,9 @@ uint8_t Mc6809::CMPB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -9993,9 +9615,9 @@ uint8_t Mc6809::CMPD_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10041,9 +9663,9 @@ uint8_t Mc6809::CMPS_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10089,9 +9711,9 @@ uint8_t Mc6809::CMPU_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10134,9 +9756,9 @@ uint8_t Mc6809::CMPX_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10182,9 +9804,9 @@ uint8_t Mc6809::CMPY_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10226,9 +9848,9 @@ uint8_t Mc6809::COM_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10269,9 +9891,9 @@ uint8_t Mc6809::DEC_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10305,9 +9927,9 @@ uint8_t Mc6809::EORA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10341,9 +9963,9 @@ uint8_t Mc6809::EORB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10384,9 +10006,9 @@ uint8_t Mc6809::INC_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10413,9 +10035,9 @@ uint8_t Mc6809::JMP_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		if(clocksUsed == 10)
 			reg_PC = reg_scratch;
 		break;
@@ -10456,9 +10078,9 @@ uint8_t Mc6809::JSR_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10492,9 +10114,9 @@ uint8_t Mc6809::LDA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10528,9 +10150,9 @@ uint8_t Mc6809::LDB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10567,9 +10189,9 @@ uint8_t Mc6809::LDD_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10609,9 +10231,9 @@ uint8_t Mc6809::LDS_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10648,9 +10270,9 @@ uint8_t Mc6809::LDU_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10687,9 +10309,9 @@ uint8_t Mc6809::LDX_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10729,9 +10351,9 @@ uint8_t Mc6809::LDY_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10763,9 +10385,9 @@ uint8_t Mc6809::LEAS_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10797,9 +10419,9 @@ uint8_t Mc6809::LEAU_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10834,9 +10456,9 @@ uint8_t Mc6809::LEAX_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10871,9 +10493,9 @@ uint8_t Mc6809::LEAY_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10914,9 +10536,9 @@ uint8_t Mc6809::LSR_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10958,9 +10580,9 @@ uint8_t Mc6809::NEG_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -10995,9 +10617,9 @@ uint8_t Mc6809::ORA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11032,9 +10654,9 @@ uint8_t Mc6809::ORB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11079,9 +10701,9 @@ uint8_t Mc6809::ROL_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11124,9 +10746,9 @@ uint8_t Mc6809::ROR_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11166,9 +10788,9 @@ uint8_t Mc6809::SBCA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11207,9 +10829,9 @@ uint8_t Mc6809::SBCB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11240,9 +10862,9 @@ uint8_t Mc6809::STA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11273,9 +10895,9 @@ uint8_t Mc6809::STB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11309,9 +10931,9 @@ uint8_t Mc6809::STD_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11348,9 +10970,9 @@ uint8_t Mc6809::STS_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11384,9 +11006,9 @@ uint8_t Mc6809::STU_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11420,9 +11042,9 @@ uint8_t Mc6809::STX_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11459,9 +11081,9 @@ uint8_t Mc6809::STY_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11491,9 +11113,9 @@ uint8_t Mc6809::SUBA_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11523,9 +11145,9 @@ uint8_t Mc6809::SUBB_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11570,9 +11192,9 @@ uint8_t Mc6809::SUBD_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);
@@ -11610,9 +11232,9 @@ uint8_t Mc6809::TST_idx()
 	default:
 		mode = postByte & 0x90 >> 4;
 		if (mode == 0 || mode == 8)
-			Direct(postByte, &clocksUsed);
+			clocksUsed = Direct(postByte, clocksUsed);
 		else
-			Indirect(postByte, &clocksUsed);
+			clocksUsed = Indirect(postByte, clocksUsed);
 		break;
 	}
 	return(clocksUsed);

@@ -28,6 +28,11 @@ private:
 
 	uint8_t clocksUsed;
 
+	static const uint8_t HIGH_BYTE;
+	static const uint8_t LOW_BYTE;
+	static const uint8_t SINGLE_BYTE;
+
+
 protected:
 	enum CC : uint8_t
 	{
@@ -41,6 +46,9 @@ protected:
 		E = (1 << 7),	// Entire Flag - indicates All registers are stored on the stack during an interrupt ( 1 for all, 0 for CC and PC only)
 	};
 
+	//-------------------------------------------------------------------------
+	// enumeration for EXG and TFR mnemonics
+	//-------------------------------------------------------------------------
 	enum REG : uint8_t
 	{
 		D = 0X00,
@@ -245,33 +253,38 @@ protected:
 	void AdjustCC_V(uint16_t reg1, uint16_t data, uint16_t result);
 	void AdjustCC_C(uint32_t word);
 
-	void Direct(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectNoOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Direct5bitOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Direct8BitOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Direct16BitOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectInc1Offset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectDec1Offset(uint8_t postByte, uint8_t* clocksUsed);
-	void DirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed);
-	void Direct8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Direct16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
+	void IndexedIncRegister(uint8_t postByte);
+	void IndexedDecRegister(uint8_t poatByte);
+	void IndexedAddToScratchRegister(uint8_t postByte);
+	uint8_t IndexedReadByteFromIndex(uint8_t postByte, uint8_t offset = 0);
 
-	void Indirect(uint8_t postByte, uint8_t* clocksUsed);
-	void IndirectNoOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Indirect8BitOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Indirect16BitOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void IndirectAccAOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void IndirectAccBOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void IndirectAccDOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void IndirectInc2Offset(uint8_t postByte, uint8_t* clocksUsed);
-	void IndirectDec2Offset(uint8_t postByte, uint8_t* clocksUsed);
-	void Indirect8BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Indirect16BitFromPcOffset(uint8_t postByte, uint8_t* clocksUsed);
-	void Indirect16BitExtendedOffset(uint8_t postByte, uint8_t* clocksUsed);
+	uint8_t Direct(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectNoOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Direct5bitOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Direct8BitOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Direct16BitOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectAccAOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectAccBOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectAccDOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectInc1Offset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectInc2Offset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectDec1Offset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t DirectDec2Offset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Direct8BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Direct16BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed);
+
+	uint8_t Indirect(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t IndirectNoOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Indirect8BitOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Indirect16BitOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t IndirectAccAOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t IndirectAccBOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t IndirectAccDOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t IndirectInc2Offset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t IndirectDec2Offset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Indirect8BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Indirect16BitFromPcOffset(uint8_t postByte, uint8_t clocksUsed);
+	uint8_t Indirect16BitExtendedOffset(uint8_t postByte, uint8_t clocksUsed);
 public:
 	Mc6809(MMU* device = nullptr);
 	~Mc6809();
