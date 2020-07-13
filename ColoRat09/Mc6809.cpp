@@ -4161,7 +4161,7 @@ uint8_t Mc6809::CWAI_inh()
 	return(clocksUsed);
 }
 
-continue from here;
+
 //*****************************************************************************
 //	DAA					inherent
 //*****************************************************************************
@@ -4492,8 +4492,7 @@ uint8_t Mc6809::EXG_imm()
 		reg_PC++;
 		break;
 	case 2:		//	R	Post scratch_lo		PC+1
-		scratch_lo = Read(reg_PC);
-		reg_PC++;
+		scratch_lo = Read(reg_PC++);
 		break;
 	case 3:		//	R	Don't Care			$ffff
 		data_hi = scratch_lo & 0xf0;
@@ -6344,6 +6343,7 @@ uint8_t Mc6809::MUL_inh()
 //*****************************************************************************
 uint8_t Mc6809::NEGA_inh()
 {
+	xyz;
 	switch (++clocksUsed)
 	{
 	case 1:		//	R	Opcode Fetch		PC
